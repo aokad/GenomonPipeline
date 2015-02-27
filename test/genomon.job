@@ -1,0 +1,72 @@
+#
+# Genomon Project information
+#
+project:                genomon_test
+sample_name:            test_01
+sample_date:            20150216
+
+
+#
+# Data directory
+#
+project_root:               /home/eigos/Data/GenomonProj
+
+#
+# Input files
+#
+input_file_type:            paired # paired|single
+fastq_dir:                  None 
+fastq_file:                 ?_100_{pair_id}.fastq #a_100_1.fastq
+pair_id:
+                            - 1
+                            - 2
+split_fastq_line_number:    20
+bam_files:                  None
+bed_files:                  None
+
+#
+# Analysis
+#
+tasks:
+                    WGS:
+                        - putfastqfile
+                        - cutadapt
+                        - alignment
+                        - fisher_mutation_call
+#                    WES:
+#                        - putfastqfile
+#                        - cutadapt
+#                        - alignment
+#                        - fisher_mutationcall
+#                    Capture:
+#                        - putfastqfile
+#                        - cutadapt
+#                        - alignment
+#                        - fisher_mutationcall
+#                        - cnv
+#                        - fusion
+#                        - sv
+
+#
+# Job configuration
+#
+job_type:
+                    split_fastq:            mjob
+                    cutadapt:               mjob
+                    bwa_mem:                mjob
+                    fisher_mutation_call:   mjob
+
+memory:
+                    split_fastq:            2G
+                    cutadapt:               2G
+                    bwa_mem:                8G
+                    fisher_mutation_call:   2G
+
+#
+# Analysis parameters
+#
+adaptor:
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+base_quality_cutoff:    15
+mapq_cutoff:            30
