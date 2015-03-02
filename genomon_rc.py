@@ -26,8 +26,8 @@ splitfile = \
 #
 #$ -S /bin/bash         # set shell in UGE
 #$ -cwd                 # execute at the submitted dir
-#$ -e {results}/log     # log file directory
-#$ -o {results}/log     # log file directory
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
 pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
@@ -41,7 +41,7 @@ done
 
 """
 
-fastq2bam = \
+bwa_mem = \
 """
 #!/bin/bash
 #
@@ -49,8 +49,8 @@ fastq2bam = \
 #
 #$ -S /bin/bash         # set shell in UGE
 #$ -cwd                 # execute at the submitted dir
-#$ -e {results}/log     # log file directory
-#$ -o {results}/log     # log file directory
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
 pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
@@ -73,8 +73,8 @@ merge_bam = \
 #
 #$ -S /bin/bash         # set shell in UGE
 #$ -cwd                 # execute at the submitted dir
-#$ -e {results}/log     # log file directory
-#$ -o {results}/log     # log file directory
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
 pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
@@ -106,11 +106,11 @@ project_directory:
                     - fastq
                     - bam
                     - annovar
+                    - fisher
                     - cnv
                     - fusion
                     - sv
 """
 
-data_dir = "{proj}/data/{date}/{name}"
-results_dir = "{proj}/results/{year:0>4}{month:0>2}{day:0>2}/{date}_{name}"
+end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annovar', 'fisher', 'cnv', 'fusion', 'sv' )
 

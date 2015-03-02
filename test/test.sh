@@ -13,5 +13,6 @@ date            # print date
 echo arg1=$1    # print 1st argument of shell script
 
 python $1 genomon.py --config_file /home/eigos/Data/GenomonProj/genomon_test/genomon.cfg \
-                     --job_file /home/eigos/Data/GenomonProj/genomon_test/test_01_20150216.yaml \
-                     --jobs 8
+                     --job_file /home/eigos/Data/GenomonProj/genomon_test/genomon.job \
+                     --jobs 6 \
+                     --verbose 10

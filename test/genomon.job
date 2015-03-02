@@ -29,37 +29,30 @@ bed_files:                  None
 #
 tasks:
                     WGS:
-                        - putfastqfile
-                        - cutadapt
-                        - alignment
+                        - split_fastq
+                        - bwa_mem
+                        - merge_bam
                         - fisher_mutation_call
 #                    WES:
-#                        - putfastqfile
-#                        - cutadapt
-#                        - alignment
-#                        - fisher_mutationcall
 #                    Capture:
-#                        - putfastqfile
-#                        - cutadapt
-#                        - alignment
-#                        - fisher_mutationcall
-#                        - cnv
-#                        - fusion
-#                        - sv
+#                    RNA:
+#                    SV:
+#                    CNV:
+#                    Fusion:
 
 #
 # Job configuration
 #
 job_type:
-                    split_fastq:            mjob
-                    cutadapt:               mjob
-                    bwa_mem:                mjob
-                    fisher_mutation_call:   mjob
+                    split_fastq:            sjob
+                    bwa_mem:                sjob
+                    merge_bam:              sjob
+                    fisher_mutation_call:   sjob
 
 memory:
                     split_fastq:            2G
-                    cutadapt:               2G
                     bwa_mem:                8G
+                    merge_bam:              4G
                     fisher_mutation_call:   2G
 
 #
@@ -70,3 +63,5 @@ adaptor:
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 base_quality_cutoff:    15
 mapq_cutoff:            30
+max_indel:              2
+

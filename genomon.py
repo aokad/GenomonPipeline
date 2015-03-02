@@ -26,8 +26,7 @@ class Geno(object):
     options = None
     conf    = None
     job     = None
-    data    = None
-    results = None
+    dir     = {}
     RT      = None
 
 
@@ -74,7 +73,7 @@ def printheader( myself, options ):
 
 
 ########################################
-def make_dir( dir_tmp, cwd ):
+def replace_reserved_string( dir_tmp, cwd ):
     """
     Reserved names to replace strings defined in job configuration file
         project_directory   -> defined as project in job configuration file
@@ -85,6 +84,7 @@ def make_dir( dir_tmp, cwd ):
     #
     # Replace reserved strings
     #
+    dir_replace = None
     if dir_tmp == 'project_directory':
         dir_replace = Geno.job.get( 'project' )
     elif dir_tmp == 'data_date':
@@ -100,32 +100,60 @@ def make_dir( dir_tmp, cwd ):
                     day = Geno.now.day ) 
     else:
         dir_replace = dir_tmp
+    
+    return dir_replace
 
-    #
-    # Make directories
-    #
-    cwd_tmp = cwd + '/' + dir_replace
-    if not os.path.exists( cwd_tmp ):
-        os.makedirs ( cwd_tmp )
-    return cwd_tmp
+def make_dir( dir ):
+    if not os.path.exists( dir ):
+        os.makedirs( dir )
+    return dir
 
-def make_dirs( dir_tree, cwd ):
+def get_dir ( dir_tree, cwd, dir_name ):
     """
-    make directory by dir_tree
+    return the path to the specified directory by dir_tree
+
     """
     if isinstance( dir_tree, dict ):
         for dir_tmp in dir_tree.keys():
-            if isinstance( dir_tmp, str ):
-                cwd_tmp = make_dir( dir_tmp, cwd )
-            make_dirs( dir_tree[ dir_tmp ], cwd_tmp  )
+            dir_replace = replace_reserved_string( dir_tmp, cwd )
+            cwd_tmp = cwd + '/' + dir_replace
+            if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
+                return cwd_tmp
+            if ( isinstance( dir_tree[ dir_tmp ], dict ) or
+                 isinstance( dir_tree[ dir_tmp ], list ) ):
+                dir_returned =  get_dir( dir_tree[ dir_tmp ], cwd_tmp, dir_name  )
+
+                if None != dir_returned:
+                    return dir_returned
+            
     elif isinstance( dir_tree, list ):
         n = 0
         for dir_tmp in dir_tree:
-            if isinstance( dir_tmp, str ):
-                make_dir( dir_tmp, cwd )
+            if isinstance( dir_tmp, str):
+                dir_replace = replace_reserved_string( dir_tmp , cwd )
+                cwd_tmp = cwd + '/' + dir_replace
+            elif isinstance( dir_tmp, dict):
+                dir_replace = replace_reserved_string( dir_tmp.keys()[ 0 ] , cwd )
+                cwd_tmp = cwd + '/' + dir_replace
+
+            if ( ( isinstance( dir_tmp, str) and dir_tmp == dir_name ) or
+                 ( isinstance( dir_tmp, dict) and dir_tmp.keys()[0] == dir_name ) ):
+                return cwd_tmp
             else:
-                make_dirs( dir_tree[ n ], cwd )
+                if ( isinstance( dir_tree[ n ], dict ) or
+                     isinstance( dir_tree[ n ], list ) ):
+                    dir_returned =  get_dir( dir_tree[ n ], cwd, dir_name )
+                    if None != dir_returned:
+                        return dir_returned
             n = n + 1
+    else:
+        if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
+            dir_replace = replace_reserved_string( dir_tmp, cwd )
+            cwd_tmp = cwd + '/' + dir_replace
+            return cwd_tmp
+
+    return None
+
 
 def make_directories( ):
     """
@@ -139,40 +167,35 @@ def make_directories( ):
     #
     # Make sure the input data is availalbe.
     #
-    root_dir = Geno.job.get( 'project_root' )
+    
 
     try:
-        if not os.path.exists( root_dir ):
-            raise RuntimeError( "Dir: {dir} not found.".format( dir = root_dir ) )
+        if not os.path.exists( Geno.job.get( 'project_root' )):
+            raise RuntimeError( "Dir: {dir} not found.".format( dir = Geno.job.get( 'project_root' ) ) )
 
 
         #
         # make directories
         #
         dir_tree = yaml.load( res.dir_tree_resource )
-        make_dirs( dir_tree, root_dir )
-
-        project_dir = root_dir + '/' + Geno.job.get( 'project' )
 
         #
-        # data location
+        # get directory locations
         #
-        Geno.data = res.data_dir.format( 
-                    proj = project_dir,
-                    date = Geno.job.get( 'sample_date' ),
-                    name = Geno.job.get( 'sample_name' ) )
+        cwd = '.'
+        for target_dir in res.end_dir_list:
+            Geno.dir[ target_dir ] = get_dir( dir_tree, cwd, target_dir )
+            make_dir( Geno.dir[ target_dir ] )
 
-
         #
-        # results location
+        # make sure that data exists
         #
-        Geno.results = res.results_dir.format(
-                    proj = project_dir,
-                    year = Geno.now.year,
-                    month = Geno.now.month,
-                    day = Geno.now.day,
-                    date = Geno.job.get( 'sample_date' ),
-                    name = Geno.job.get( 'sample_name' ) )
+        Geno.dir[ 'data' ] = "{data}/{sample_date}/{sample_name}". format(
+                                data = get_dir( dir_tree, cwd, 'data' ),
+                                sample_date = Geno.job.get( 'sample_date' ),
+                                sample_name = Geno.job.get( 'sample_name' ) )
+        if not os.path.exists( Geno.dir[ 'data' ] ):
+            raise
 
     except IOError as (errno, strerror):
         log.error( "make_directories failed." )
@@ -192,12 +215,13 @@ def copy_config_files():
 
     src = Geno.options.config_file
     basename = os.path.basename( src )
-    dest = "{dir}/config/{basename}".format( dir = Geno.results, basename = basename )
+    config_dir = Geno.dir[ 'config' ]
+    dest = "{dir}/{basename}".format( dir = config_dir, basename = basename )
     shutil.copyfile( src, dest )
 
     src = Geno.options.job_file
     basename = os.path.basename( src )
-    dest = "{dir}/config/{basename}".format( dir = Geno.results, basename = basename )
+    dest = "{dir}/{basename}".format( dir = config_dir, basename = basename )
     shutil.copyfile( src, dest )
 
 ###############################################################################
@@ -245,8 +269,10 @@ def main():
         # Prepare directory tree for pipeline to run.
         # Copy the input configuration files to results directory
         #
-        make_directories()
-        copy_config_files()
+        os.chdir( Geno.job.get( 'project_root' ) )
+        make_directories( )
+        copy_config_files( )
+
 
         #######################################################################
         #
