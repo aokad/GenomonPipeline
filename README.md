@@ -18,11 +18,11 @@ First you need to install python modules
 2. Make directory structure like the following.
 ```
 ├── scripts --> copy *.py scripts here.
-└── test  --> this is the path for project_root in genomon.yaml
-    └── project_name  --> this is proect in yaml.
+└── test  --> this is the path for project_root in genomon.job
+    └── project_name  --> this is proect in genomon.job.
         └── data
-            └── 20150227 --> this is sample_date in yaml
-                └── test01 --> this is sample_name in yaml.
+            └── 20150227 --> this is sample_date in genomon.job
+                └── test01 --> this is sample_name in genomon.job.
 
 
 ```
