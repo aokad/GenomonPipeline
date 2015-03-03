@@ -30,5 +30,5 @@ First you need to install python modules
 4. Copy *.py files to scripts.
 5. Edit genomon.cfg to specify tools and reference.
 6. Edit genomon.yaml to specify project_root, project_name, sample_name, and sample_date
-7. Edit test.sh and specify the the path to genomon.py, genomon.cfg, genomon.yaml.
+7. Edit test.sh and specify the the path to genomon.py, genomon.cfg, genomon.job.
 8. Run test.sh
