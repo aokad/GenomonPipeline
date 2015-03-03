@@ -1,15 +1,15 @@
 #
 # Genomon Project information
 #
-project:                genomon_test
-sample_name:            test_01
-sample_date:            20150216
+project:                test
+sample_name:            test01
+sample_date:            20150303
 
 
 #
 # Data directory
 #
-project_root:               /home/eigos/Data/GenomonProj
+project_root:               /home/[user]/GenomonProj
 
 #
 # Input files
