@@ -11,15 +11,17 @@ First you need to install python modules
   pip install --user ruffus
   pip install --user mpi4py
   pip install --user pyyaml
+  pip install --user cutadapt
   and so on.
 ```
+cutadapt is going to be install at ~/.local/bin/cutadapt.
 
 1. Download zip file and extract it.
 2. Make directory structure like the following.
 3. Copy fastq files to test/project_name/data/20150227/test01.
 4. Copy *.py files to scripts.
 5. Edit genomon.cfg to specify tools and reference. You can use the current file without modification.
-6. Edit genomon.yaml to specify project_root, project_name, sample_name, and sample_date.
+6. Edit genomon.job to specify project_root, project_name, sample_name, and sample_date.
 7. Edit test.sh and specify the the path to genomon.py, genomon.cfg, genomon.job.
 8. Run test.sh
 
