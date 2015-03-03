@@ -56,6 +56,7 @@ def construct_arguments( ):
     ge_arg.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",    type = str )
     ge_arg.add_argument( '-f', "--job_file",     help = "Genomon pipeline job file",              type = str )
     ge_arg.add_argument( '-m', "--mpi",          help = "Enable MPI",   action ='store_true',     default = False )
+    ge_arg.add_argument( '-l', "--fullpath",     help = "Use full path in scripts",   action ='store_true',     default = False )
 
     return parser
 
@@ -169,9 +170,11 @@ def make_directories( ):
     #
     
 
+    error_message = ''
     try:
         if not os.path.exists( Geno.job.get( 'project_root' )):
-            raise RuntimeError( "Dir: {dir} not found.".format( dir = Geno.job.get( 'project_root' ) ) )
+            log.error( "Dir: {dir} not found.".format( dir = Geno.job.get( 'project_root' ) ) )
+            raise
 
 
         #
@@ -182,7 +185,11 @@ def make_directories( ):
         #
         # get directory locations
         #
-        cwd = '.'
+        cwd = Geno.job.get( 'project_root' )
+        if not Geno.options.fullpath:
+            os.chdir( cwd )
+            cwd = '.'
+
         for target_dir in res.end_dir_list:
             Geno.dir[ target_dir ] = get_dir( dir_tree, cwd, target_dir )
             make_dir( Geno.dir[ target_dir ] )
@@ -195,6 +202,7 @@ def make_directories( ):
                                 sample_date = Geno.job.get( 'sample_date' ),
                                 sample_name = Geno.job.get( 'sample_name' ) )
         if not os.path.exists( Geno.dir[ 'data' ] ):
+            log.error( "Dir: {dir} not found.".format( dir = Geno.dir[ 'data' ] ) )
             raise
 
     except IOError as (errno, strerror):
@@ -202,7 +210,7 @@ def make_directories( ):
         log.error( "IOError {0}]{1}".format( errno, strerror ) )
     except:
         log.error( "make_directories failed." )
-        log.error( "Unexpected error: {1}".format( sys.exc_info()[0] ) )
+        log.error( "Unexpected error: {1}".format( error_message ) )
 
 ########################################
 def copy_config_files():
@@ -213,15 +221,30 @@ def copy_config_files():
     """
     global Geno
 
-    src = Geno.options.config_file
-    basename = os.path.basename( src )
     config_dir = Geno.dir[ 'config' ]
-    dest = "{dir}/{basename}".format( dir = config_dir, basename = basename )
+
+    src = Geno.options.config_file
+    basename = os.path.splitext( os.path.basename( src ) )[ 0 ]
+    ext = os.path.splitext( os.path.basename( src ) )[ 1 ]
+    config_backup = res.file_timestamp_format.format(
+                                        name=basename,
+                                        year=Geno.now.year,
+                                        month=Geno.now.month,
+                                        day=Geno.now.day,
+                                        hour=Geno.now.hour,
+                                        min=Geno.now.minute,
+                                        msecond=Geno.now.microsecond )
+    dest = "{dir}/{basename}{ext}".format( dir = config_dir,
+                                            basename = config_backup,
+                                            ext = ext )
     shutil.copyfile( src, dest )
 
     src = Geno.options.job_file
-    basename = os.path.basename( src )
-    dest = "{dir}/{basename}".format( dir = config_dir, basename = basename )
+    basename = os.path.splitext( os.path.basename( src ) )[ 0 ]
+    ext = os.path.splitext( os.path.basename( src ) )[ 1 ]
+    dest = "{dir}/{basename}{ext}".format( dir = config_dir,
+                                            basename = config_backup,
+                                            ext = ext )
     shutil.copyfile( src, dest )
 
 ###############################################################################
@@ -242,7 +265,7 @@ def main():
 
         if len(argvs) < 3:
             arg_parser.print_help()
-            raise "Argument"
+            raise
 
         Geno.options = arg_parser.parse_args()
 
@@ -269,7 +292,8 @@ def main():
         # Prepare directory tree for pipeline to run.
         # Copy the input configuration files to results directory
         #
-        os.chdir( Geno.job.get( 'project_root' ) )
+        if not Geno.options.fullpath:
+            os.chdir( '.' )
         make_directories( )
         copy_config_files( )
 

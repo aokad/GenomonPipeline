@@ -16,11 +16,13 @@ date_format = "{year:0>4d}{month:0>2d}{day:0>2d}"
 #
 qsub_cmd = "qsub -sync yes -now no -l {job_type},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
 
-shell_script_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
+file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
 
-splitfile = \
-"""
+splitfile = """
 #!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
 #
 # Set SGE
 #
@@ -41,9 +43,58 @@ done
 
 """
 
-bwa_mem = \
-"""
+cutadapt = """
 #!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+#infastq=$1
+#outfastq=$2
+#tmpoutfastq=$3
+#casavacoDE=$4
+#adapters=$5
+#cutadapt=$6
+#scriptdir=$7
+
+
+source {scriptdir}/utility.sh
+
+# sleep 
+sh {scriptdir}/sleep.sh
+
+ADAPTERS=`echo "{adapters}" | sed -e 's/,/ /g'`
+for adapter in ${adapters}
+do
+    optadapters="${optadapters}"" ""-a ${adapter}"
+done
+
+echo "{cutadapt} ${optadapters} {infastq} > {tmpoutfastq}"
+{cutadapt} ${optadapters} {infastq} > {tmpoutfastq}
+check_error $?
+
+echo "{scriptdir}/fastqNPadding.pl {casavacode} {tmpoutfastq} > {outfastq}"
+{scriptdir}/fastqNPadding.pl {casavacode} {tmpoutfastq} > {outfastq}
+check_error $?
+
+"""
+
+
+
+bwa_mem = """
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
 #
 # Set SGE
 #
@@ -69,6 +120,9 @@ merge_bam = \
 """
 #!/bin/bash
 #
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -86,6 +140,23 @@ set -xv
     {input_bam_files}
 """
 
+fisher_mutation_call = """
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+
+"""
 
 #
 # Misc

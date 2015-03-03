@@ -15,13 +15,21 @@ import genomon_rc as rc
 #
 class RunTask:
 
-    def __init__( self, enable_mpi = False, ncpus = 0, log = None ):
+    def __init__(   self,
+                    enable_mpi = False,
+                    ncpus = 0,
+                    log = None,
+                    resubmit = False,
+                    max_mem = 32
+                ):
         """
         Constructor
 
         """
         self.enable_mpi = enable_mpi
         self.log = log
+        self.resubmit = resubmit
+        self.max_mem = max_mem
 
         if enable_mpi:
             self.ncpus = ncpus
@@ -100,40 +108,59 @@ class RunTask:
         if job_type == 'mjob':
             job_type = ''
 
-        cmd_tmp = rc.qsub_cmd.format(
-                            s_vmem  = memory,
-                            mem_req = memory[:-1],
-                            job_type = job_type,
-                            cmd     = run_cmd )
-
         return_code = 0
-        std_out = None
-        std_err = None
-        try:
-            process = subprocess.Popen( cmd_tmp,
-                                        shell=True,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE )
+        p_return_code = 0
+        while True:
 
-            std_out, std_err = process.communicate()
+            cmd_tmp = rc.qsub_cmd.format(
+                                s_vmem  = memory,
+                                mem_req = memory[:-1],
+                                job_type = job_type,
+                                cmd     = run_cmd )
 
-        except OSError as e:
-            self.log.error( "RunTask.runtaskby_qsub failed." )
-            self.log.error( "OS error." )
-            return_code = 1
+            std_out = None
+            std_err = None
+            try:
+                process = subprocess.Popen( cmd_tmp,
+                                            shell=True,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE )
 
-        except IOErr as (errno, strerror):
-            self.log.error( "RunTask.runtaskby_qsub failed." )
-            self.log.error( "IOError {0}{1}",format( errno, strerror ) )
-            return_code = 1
+                std_out, std_err = process.communicate()
+                p_return_code = process.returncode
 
-        except:
-            self.log.error( "RunTask.runtaskby_qsub failed." )
-            self.log.error( "Unexpected error." )
-            return_code = 1
-                
-        self.log.info( "STDOUT: {stdout}".format( stdout = std_out ) )
-        self.log.info( "STDERR: {stderr}".format( stderr = std_err ) )
+            except OSError as e:
+                self.log.error( "RunTask.runtaskby_qsub failed." )
+                self.log.error( "OS error." )
+                return_code = 1
+
+            except IOErr as (errno, strerror):
+                self.log.error( "RunTask.runtaskby_qsub failed." )
+                self.log.error( "IOError: {0}{1}".format( errno, strerror ) )
+                return_code = 1
+
+            except CalledProcessError as e:
+                self.log.error( "CalledProcessError: return code: {id}".format( id = e.returncode ) )
+                return_code = 1
+
+            except:
+                self.log.error( "RunTask.runtaskby_qsub failed." )
+                self.log.error( "Unexpected error." )
+                return_code = 1
+
+            else:
+                return_code = 0
+                    
+            self.log.info( "STDOUT: {stdout}".format( stdout = std_out ) )
+            self.log.info( "STDERR: {stderr}".format( stderr = std_err ) )
+
+            memory = str( int( memory[0:-1] ) * 2 ) + 'G'
+
+            if ( return_code == 0 or
+                 not self.resubmit or
+                 int( memory[0:-1] ) > self.max_mem
+               ):
+                break
 
         return return_code
 

@@ -127,8 +127,8 @@ def get_starting_files():
     specified job configuration file.
 
     1) Get file name from job configuration files
-    2) Globl files
-    3) Create list for each pair of fastq files
+    2) Glob files
+    3) Create a list for each pair of fastq files
 
     """
 
@@ -364,7 +364,7 @@ def split_fastq(
         now = datetime.now()
         function_name = 'split_fastq'
         suffix_len = len( output_suffix )
-        shell_script_name = res.shell_script_format.format(
+        shell_script_name = res.file_timestamp_format.format(
                                         name=function_name,
                                         year=now.year,
                                         month=now.month,
@@ -408,6 +408,78 @@ def split_fastq(
     return True
 
 #
+# Stage 2: cutadapt
+#
+def cutadapt(
+    input_file,
+    output_file
+    ):
+    """
+       Apply cutadapt to remove adaptor sequences from reads
+    """
+
+    try:
+        log.info( "# {function}\n".format( function = whoami() ) +
+                     "in: {input}\n".format( input=input_file) +
+                     "out: {output}\n".format( output=output_file) )
+
+        #
+        # Make sure files exist.
+        #
+        if not os.path.isfile( input_file ):
+            log.error( "file: {file} does not exist.".format( file=input_file ) )
+            return 0
+
+        #
+        # Make shell script
+        #
+        function_name = 'cutadapt'
+        now = datetime.now()
+        shell_script_name = res.file_timestamp_format.format(
+                                        name=function_name,
+                                        year=now.year,
+                                        month=now.month,
+                                        day=now.day,
+                                        hour=now.hour,
+                                        min=now.minute,
+                                        msecond=now.microsecond )
+        shell_script_full_path = "{script}/{file}.sh".format(
+                                        script = Geno.dir[ 'script' ],
+                                        file = shell_script_name )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( res.bwa_mem.format(
+                                        log = Geno.dir[ 'log' ],
+                                        infastq = input_file,
+                                        outfastq = output_file,
+                                        tmpfastq = output_file + '.tmp',
+                                        adapters = ','.join( Geno.job.get( 'adaptor' ) ),
+                                        cutadapt = Geno.conf.get( 'SOFTWARE', 'cutadapt' ),
+                                        scriptdir = Geno.dir[ 'script' ],
+                                        ) )
+        shell_script_file.close()
+
+        #
+        # Run
+        #
+        Geno.RT.runtask( Geno.job.get( 'job_type' )[ function_name ],
+                         Geno.job.get( 'memory' )[ function_name ],
+                         shell_script_full_path )
+
+
+    except IOError as (errno, strerror):
+        log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
+        return_code = False
+
+    except ValueError:
+        log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_code = False
+
+    except:
+        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+
+
+    return True
+#
 # Stage 2: bwa_mem
 #
 def bwa_mem(
@@ -440,7 +512,7 @@ def bwa_mem(
         #
         function_name = 'bwa_mem'
         now = datetime.now()
-        shell_script_name = res.shell_script_format.format(
+        shell_script_name = res.file_timestamp_format.format(
                                         name=function_name,
                                         year=now.year,
                                         month=now.month,
@@ -506,7 +578,7 @@ def merge_bam(
         # Make shell script
         #
         now = datetime.now()
-        shell_script_name = res.shell_script_format.format(
+        shell_script_name = res.file_timestamp_format.format(
                                         name='merge_bam',
                                         year=now.year,
                                         month=now.month,
@@ -572,7 +644,7 @@ def fisher_mutation_call(
         #
         now = datetime.now()
         function_name = 'fisher_mutation_call'
-        shell_script_name = res.shell_script_format.format(
+        shell_script_name = res.file_timestamp_format.format(
                                         name=function_name,
                                         year=now.year,
                                         month=now.month,
@@ -644,6 +716,7 @@ split_fastq_parameters = generate_parameters_for_split_fastq( starting_files )
 #
 #   STAGE 1 split fastq
 #
+@active_if ( 'split_fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @parallel( split_fastq_parameters )
 @check_if_uptodate( check_file_exists_for_split_fastq )
 def stage_1( input_file, output_prefix, output_suffix ):
@@ -651,28 +724,42 @@ def stage_1( input_file, output_prefix, output_suffix ):
 
 #####################################################################
 #
-#   STAGE 2 fastq to bam
+#   STAGE 2 cutadapt
 #
+@active_if ( 'cutadapt' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @files( generate_parameters_for_bwa_mem )
 @check_if_uptodate( check_file_exists_for_bwa_mem )
 @follows( stage_1 )
 def stage_2( input_file1, input_file2, output_file ):
+    cutadapt( input_file1, input_file2, output_file )
+
+#####################################################################
+#
+#   STAGE 3 fastq to bam
+#
+@active_if ( 'bwa_mem' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@files( generate_parameters_for_bwa_mem )
+@check_if_uptodate( check_file_exists_for_bwa_mem )
+@follows( stage_2 )
+def stage_3( input_file1, input_file2, output_file ):
     bwa_mem( input_file1, input_file2, output_file )
 
 #####################################################################
 #
-#   STAGE 3 merge
+#   STAGE 4 merge
 #
+@active_if ( 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @files( generate_parameters_for_merge_bam )
 @check_if_uptodate( check_file_exists_for_merge_bam )
-@follows( stage_2 )
-def stage_3( input_prefix, input_suffix, output_file ):
+@follows( stage_3 )
+def stage_4( input_prefix, input_suffix, output_file ):
     merge_bam( input_prefix, input_suffix, output_file )
 
 #####################################################################
 #
 #   STAGE 4 mutation call
 #
+#@active_if ( 'fisher_mutation_call' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 # @files( generate_parameters_for_mutation_call )
 # @check_if_uptodate( check_file_exists_for_mutation_call )
 # @follows( stage_3 )
@@ -684,7 +771,7 @@ def stage_3( input_prefix, input_suffix, output_file ):
 #
 #   LAST STAGE 
 #
-@follows( stage_3 )
+@follows( stage_4 )
 def last_function():
     log.info( "Genomon pipline has finished successflly!" )
     return True
