@@ -26,7 +26,7 @@ First you need to install python modules
 ```
 ├── scripts --> copy *.py scripts here.
 └── test  --> this is the path for project_root in genomon.job
-    └── project_name  --> this is proect in genomon.job.
+    └── project_name  --> this is project in genomon.job.
         └── data
             └── 20150303 --> this is sample_date in genomon.job
                 └── test01 --> this is sample_name in genomon.job.
