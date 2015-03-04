@@ -10,12 +10,6 @@ resource file
 # General
 #
 date_format = "{year:0>4d}{month:0>2d}{day:0>2d}"
-
-#
-# Commands
-#
-qsub_cmd = "qsub -sync yes -now no -l {job_type},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
-
 file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
 
 splitfile = """
@@ -61,8 +55,8 @@ set -xv
 #infastq=$1
 #outfastq=$2
 #tmpoutfastq=$3
-#casavacoDE=$4
-#adapters=$5
+#casavacode=$4
+#optadapters=$5
 #cutadapt=$6
 #scriptdir=$7
 
@@ -72,14 +66,8 @@ source {scriptdir}/utility.sh
 # sleep 
 sh {scriptdir}/sleep.sh
 
-ADAPTERS=`echo "{adapters}" | sed -e 's/,/ /g'`
-for adapter in ${adapters}
-do
-    optadapters="${optadapters}"" ""-a ${adapter}"
-done
-
-echo "{cutadapt} ${optadapters} {infastq} > {tmpoutfastq}"
-{cutadapt} ${optadapters} {infastq} > {tmpoutfastq}
+echo "{cutadapt} {optadapters} {infastq} > {tmpoutfastq}"
+{cutadapt} {optadapters} {infastq} > {tmpoutfastq}
 check_error $?
 
 echo "{scriptdir}/fastqNPadding.pl {casavacode} {tmpoutfastq} > {outfastq}"
@@ -165,13 +153,13 @@ dir_tree_resource = \
 """
 project_directory:
     data:
-        data_date:
+        sample_date:
             sample_name
     results:
         run_date:
-            data_date_sample_name:
+            sample_date_sample_name:
                 - config
-                - script
+                - script:
                 - log
                 - out:
                     - fastq
@@ -185,3 +173,7 @@ project_directory:
 
 end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annovar', 'fisher', 'cnv', 'fusion', 'sv' )
 
+script_files = ( 'shell/utility.sh',
+                 'shell/sleep.sh',
+                 'perl/fastqNPadding.pl'
+        )

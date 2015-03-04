@@ -20,7 +20,8 @@ class RunTask:
                     ncpus = 0,
                     log = None,
                     resubmit = False,
-                    max_mem = 32
+                    max_mem = 32,
+                    qsub_cmd = None,
                 ):
         """
         Constructor
@@ -30,6 +31,7 @@ class RunTask:
         self.log = log
         self.resubmit = resubmit
         self.max_mem = max_mem
+        self.qsub_cmd = qsub_cmd
 
         if enable_mpi:
             self.ncpus = ncpus
@@ -112,7 +114,7 @@ class RunTask:
         p_return_code = 0
         while True:
 
-            cmd_tmp = rc.qsub_cmd.format(
+            cmd_tmp = self.qsub_cmd.format(
                                 s_vmem  = memory,
                                 mem_req = memory[:-1],
                                 job_type = job_type,

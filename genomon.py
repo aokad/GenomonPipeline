@@ -19,6 +19,7 @@ import yaml
 #
 # Globals
 #
+global log
 log = None
 global Geno
 class Geno(object):
@@ -56,7 +57,7 @@ def construct_arguments( ):
     ge_arg.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",    type = str )
     ge_arg.add_argument( '-f', "--job_file",     help = "Genomon pipeline job file",              type = str )
     ge_arg.add_argument( '-m', "--mpi",          help = "Enable MPI",   action ='store_true',     default = False )
-    ge_arg.add_argument( '-l', "--fullpath",     help = "Use full path in scripts",   action ='store_true',     default = False )
+    ge_arg.add_argument( '-l', "--abpath",       help = "Use absolute path in scripts", action ='store_true', default = False )
 
     return parser
 
@@ -78,7 +79,7 @@ def replace_reserved_string( dir_tmp, cwd ):
     """
     Reserved names to replace strings defined in job configuration file
         project_directory   -> defined as project in job configuration file
-        data_date           -> defined sample_date in job configuration file
+        sample_date         -> defined sample_date in job configuration file
         sample_name         -> defined sample_name in job configuration file
         run_date            -> date of the pipeline to run
     """
@@ -88,11 +89,11 @@ def replace_reserved_string( dir_tmp, cwd ):
     dir_replace = None
     if dir_tmp == 'project_directory':
         dir_replace = Geno.job.get( 'project' )
-    elif dir_tmp == 'data_date':
+    elif dir_tmp == 'sample_date':
         dir_replace = str( Geno.job.get( 'sample_date' ) )
     elif dir_tmp == 'sample_name':
         dir_replace = Geno.job.get( 'sample_name' )
-    elif dir_tmp == 'data_date_sample_name':
+    elif dir_tmp == 'sample_date_sample_name':
         dir_replace = str( Geno.job.get( 'sample_date' ) ) + '_' + Geno.job.get( 'sample_name' )
     elif dir_tmp == 'run_date':
         dir_replace = res.date_format.format( 
@@ -180,13 +181,15 @@ def make_directories( ):
         #
         # make directories
         #
-        dir_tree = yaml.load( res.dir_tree_resource )
+        dir_tree  = Geno.job.get( 'project_dir_tree' )
+        if not dir_tree:
+            dir_tree  = yaml.load( res.dir_tree_resource  )
 
         #
         # get directory locations
         #
         cwd = Geno.job.get( 'project_root' )
-        if not Geno.options.fullpath:
+        if not Geno.options.abpath:
             os.chdir( cwd )
             cwd = '.'
 
@@ -195,15 +198,17 @@ def make_directories( ):
             make_dir( Geno.dir[ target_dir ] )
 
         #
-        # make sure that data exists
+        # data diretory
+        # make symbolic link from the original input_file_dir
+        #   if input_file_dir is not the same as data dir
         #
         Geno.dir[ 'data' ] = "{data}/{sample_date}/{sample_name}". format(
                                 data = get_dir( dir_tree, cwd, 'data' ),
                                 sample_date = Geno.job.get( 'sample_date' ),
                                 sample_name = Geno.job.get( 'sample_name' ) )
-        if not os.path.exists( Geno.dir[ 'data' ] ):
-            log.error( "Dir: {dir} not found.".format( dir = Geno.dir[ 'data' ] ) )
-            raise
+        if ( not os.path.exists( Geno.dir[ 'data' ] ) and
+             Geno.job.get( 'input_file_dir' ) != Geno.dir[ 'data' ] ):
+                os.symlink( Geno.job.get( 'input_file_dir' ), Geno.dir[ 'data' ] )
 
     except IOError as (errno, strerror):
         log.error( "make_directories failed." )
@@ -247,12 +252,30 @@ def copy_config_files():
                                             ext = ext )
     shutil.copyfile( src, dest )
 
+########################################
+def copy_script_files():
+    """
+    Copy genomon script files to script directory
+
+    """
+    global Geno
+
+    for script_file in res.script_files:
+        src = "{dir}/{file}".format(
+                    dir = Geno.dir[ 'genomon' ],
+                    file = script_file )
+        dest = "{dir}/{file}".format(
+                    dir = Geno.dir[ 'script' ],
+                    file = os.path.basename( script_file )
+                )
+        shutil.copy( src, dest )
+
+    
 ###############################################################################
 #
 # main
 #
 def main():
-    global starting_files
     global log
     global Geno
 
@@ -268,6 +291,7 @@ def main():
             raise
 
         Geno.options = arg_parser.parse_args()
+        Geno.dir[ 'genomon' ] = os.path.dirname( os.path.realpath(__file__) )
 
         #
         # Logging setup
@@ -291,47 +315,45 @@ def main():
         #
         # Prepare directory tree for pipeline to run.
         # Copy the input configuration files to results directory
+        # Link input_data to project's data directory
         #
-        if not Geno.options.fullpath:
-            os.chdir( '.' )
-        make_directories( )
-        copy_config_files( )
-
-
-        #######################################################################
-        #
-        # Run the defined pipeline
-        #
+        make_directories()
+        copy_config_files()
+        copy_script_files()
 
         #
         # Initalize RunTask object
         #
-        Geno.RT = RunTask( enable_mpi = Geno.options.mpi, log = log, ncpus = Geno.options.jobs )
+        Geno.RT = RunTask( enable_mpi = Geno.options.mpi,
+                           log = log,
+                           ncpus = Geno.options.jobs,
+                           qsub_cmd = Geno.job.get( 'qsub_cmd' ) )
 
         #
-        # Get the list of starting files
+        # Print information
         #
         log.info( '# main: process={num}'.format( num = Geno.options.jobs ) )
 
+        #######################################################################
         #
-        # Figure out what to run from job configuration file
+        # Run the defined pipeline
+        # Figure out what analysis to run from job configuration file
         #
         job_tasks = Geno.job.get( 'tasks' )
 
-        if True:
-            if job_tasks[ 'WGS' ]:
-                import wgs_pipeline as pipeline
+        if job_tasks[ 'WGS' ]:
+            import wgs_pipeline as pipeline
 
-            elif job_tasks[ 'WES' ]:
-                import wes_pipeline as pipeline
+        elif job_tasks[ 'WES' ]:
+            import wes_pipeline as pipeline
 
-            elif job_tasks[ 'Capture' ]:
-                import capture_pipeline as pipeline
+        elif job_tasks[ 'Capture' ]:
+            import capture_pipeline as pipeline
 
-            pipeline_run(   target_tasks = [ pipeline.last_function ],
-                            multiprocess = Geno.options.jobs,
-                            logger = log,
-                            verbose = Geno.options.verbose )
+        pipeline_run(   target_tasks = [ pipeline.last_function ],
+                        multiprocess = Geno.options.jobs,
+                        logger = log )
+                        
                             
 
         #
@@ -354,3 +376,4 @@ def main():
 ################################################################################
 if __name__ == "__main__":
     main()
+

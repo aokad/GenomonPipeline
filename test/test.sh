@@ -13,4 +13,4 @@ echo arg1=$1    # print 1st argument of shell script
 python $1 genomon.py --config_file /home/[user]/GenomonProj/script/test/genomon.cfg \
                      --job_file /home/[user]/GenomonProj/script/test/genomon.job \
                      --jobs 6 \
-                     --verbose 10
+                     --verbose 5

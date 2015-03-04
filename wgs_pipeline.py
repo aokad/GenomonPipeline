@@ -50,6 +50,26 @@ def check_file_exists_for_split_fastq(
                             outsuffix = output_suffix,
                             input = input_file )
 
+def check_file_exists_for_cutadapt(
+        input_file,
+        output_file
+        ):
+
+    """
+    Checks if output file exists for cutadapt
+
+    """
+
+    if not os.path.exists( output_file ):
+        return True, "Missing file {output} for {input}.".format( output = output_file, input = input_file )
+    else:
+        in_time = os.path.getmtime( input_file )
+        out_time = os.path.getmtime( output_file )
+        if in_time > out_time:
+            return True, "{output} is older than {input}.".format( output = output_file, input = input_file )
+        else:
+            return False, "File {output} exits for {input}.".format( output = output_file, input = input_file )
+
 def check_file_exists_for_bwa_mem(
         input_file1,
         input_file2,
@@ -119,71 +139,7 @@ def check_file_exists_for_mutation_call(
 #
 
 #
-# Get starting files
-#
-def get_starting_files():
-    """
-    Get the list of starting files from
-    specified job configuration file.
-
-    1) Get file name from job configuration files
-    2) Glob files
-    3) Create a list for each pair of fastq files
-
-    """
-
-    file_type   = Geno.job.get( 'input_file_type' )
-    bed_file    = Geno.job.get( 'bed_file' )
-
-    file_list = []
-
-    try:
-        #
-        # A) Paired-end fastq files
-        #
-        if file_type == 'paired':
-            fastq_file = []
-            for pair_id in Geno.job.get( 'pair_id' ):
-                fastq_file.append( Geno.job.get( 'fastq_file' ).format( pair_id = pair_id ) )
-
-            if ( fastq_file[ 0 ] != None and
-                 fastq_file[ 1 ] != None  ):
-
-                glob_file_list = []
-                for pair_id in [ 0, 1 ]:
-                    glob_file_list.append( sorted( glob( Geno.dir[ 'data' ] + '/' + fastq_file[ pair_id ] ) ) )
-
-                for i in range( len( glob_file_list[ 0 ] ) ):
-                    file_list.append( [
-                                    glob_file_list[ 0 ][ i ],
-                                    glob_file_list[ 1 ][ i ]
-                                    ] )
-
-        #
-        # B) Single-end fastq files
-        #
-        elif file_type == 'single':
-            fastq_file = Geno.job.get( 'fastq_file' )
-            fastq_dir  = Geno.job.get( 'fastq_dir' )
-
-            if fastq_file != None:
-                file_list = sorted( glob( Geno.dir[ 'data' ] + fastq_file ) )
-
-        #
-        # C) bam files
-        #
-        else:
-            bam_files = Geno.job.get( 'bam_file' )
-            file_list = sorted( glob( Geno.dir[ 'data' ] + bam_files ) )
-
-    except:
-        log.error( "{function} failed.".format( function = whoami() ) )
-        log.error( "Unexpected error: {1}".format( sys.exc_info()[0] ) )
-
-    return file_list
-
-#
-# For STAGE 1 split fastq
+# For STAGE 1 split_fastq
 #
 def generate_parameters_for_split_fastq( starting_files ):
     """
@@ -196,8 +152,8 @@ def generate_parameters_for_split_fastq( starting_files ):
 
     """
     input_fastq_files = []
-
-    if 'paired' == Geno.job.get( 'input_file_type' ):
+    input_file_type = Geno.job.get( 'input_file_type' )
+    if 'paired_fastq' == input_file_type:
         for file1, file2 in starting_files:
                 for input_file in ( file1, file2 ):
                     tmp_name = os.path.splitext( os.path.basename( input_file ) )
@@ -208,7 +164,7 @@ def generate_parameters_for_split_fastq( starting_files ):
                                             )
                     output_suffix = tmp_name[ 1 ]
                     input_fastq_files.append( [ input_file, output_prefix, output_suffix ] )
-    else:
+    elif 'single_fastq' == input_file_type:
         for file_name in starting_files:
             tmp_name = os.path.splitext( os.path.basename( file_name ) )
             basename = tmp_name[ 0 ]
@@ -218,9 +174,56 @@ def generate_parameters_for_split_fastq( starting_files ):
                                     )
             output_suffix = tmp_name[ 1 ]
             input_fastq_files.append( [ file_name, output_prefix, output_suffix ] )
-
+    elif 'bam' == input_file_type:
+        pass
 
     return input_fastq_files
+
+
+#
+# For STAGE 2 cutadapt
+#
+def generate_parameters_for_cutadapt():
+    """
+    Generate parameter list for STAGE 1 spilt_fastq_files
+
+    Create a list of the following
+        input_file
+        output_file
+
+    """
+    input_file_type = Geno.job.get( 'input_file_type' )
+    if 'paired_fastq' == input_file_type:
+        for file1, file2 in starting_files:
+                for input_file in ( file1, file2 ):
+                    tmp_name = os.path.splitext( os.path.basename( input_file ) )
+                    basename = tmp_name[ 0 ]
+                    glob_input_file_name = "{dir}/{file}*{ext}".format(
+                                                dir = Geno.dir[ 'fastq' ],
+                                                file = basename, 
+                                                ext = tmp_name[ 1 ] )
+
+                    for tmp_file in glob( glob_input_file_name ):
+                        tmp_basename = os.path.basename( tmp_file )
+                        output_file = "{dir}/cutadapt_{file}".format(
+                                                dir = Geno.dir[ 'fastq' ],
+                                                file = tmp_basename )
+                        yield [ tmp_file, output_file ]
+    elif 'sinle_fastq' == input_file_type:
+        for file_name in starting_files:
+            tmp_name = os.path.splitext( os.path.basename( file_name ) )
+            basename = tmp_name[ 0 ]
+            glob_input_file_name = "{dir}/{file}*{ext}".format(
+                                        dir = Geno.dir[ 'fastq' ],
+                                        file = basename,
+                                        ext = tmp_name[ 1 ] )
+            for tmp_file in glob( glob_input_file_name ):
+                tmp_basename = os.path.basename( tmp_file )
+                output_file = "{dir}/cutadapt_{file}".format(
+                                        dir = Geno.dir[ 'fastq' ],
+                                        file = tmp_basename )
+                yield [ tmp_file, output_file ]
+
 
 
 #
@@ -290,11 +293,11 @@ def generate_parameters_for_bwa_mem():
     Generate parameter list for STAGE 2 bwa_mem
 
     """
-    seq_type = Geno.job.get( 'input_file_type' )
+    input_file_type = Geno.job.get( 'input_file_type' )
 
-    if 'paired' == seq_type:
+    if 'paired_fastq' == input_file_type:
         parameter_list = generate_parameters_for_bwa_mem_pair()
-    elif 'single' == seq_type:
+    elif 'single_fastq' == input_file_type:
         parameter_list = generate_parameters_for_bwa_mem_single()
 
 
@@ -447,12 +450,13 @@ def cutadapt(
                                         script = Geno.dir[ 'script' ],
                                         file = shell_script_name )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( res.bwa_mem.format(
+        shell_script_file.write( res.cutadapt.format(
                                         log = Geno.dir[ 'log' ],
                                         infastq = input_file,
                                         outfastq = output_file,
-                                        tmpfastq = output_file + '.tmp',
-                                        adapters = ','.join( Geno.job.get( 'adaptor' ) ),
+                                        tmpoutfastq = output_file + '.tmp',
+                                        optadapters = '-a ' + ' -a '.join( Geno.job.get( 'adaptor' ) ),
+                                        casavacode = 2,
                                         cutadapt = Geno.conf.get( 'SOFTWARE', 'cutadapt' ),
                                         scriptdir = Geno.dir[ 'script' ],
                                         ) )
@@ -714,7 +718,7 @@ split_fastq_parameters = generate_parameters_for_split_fastq( starting_files )
 
 #####################################################################
 #
-#   STAGE 1 split fastq
+#   STAGE 1 split_fastq
 #
 @active_if ( 'split_fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @parallel( split_fastq_parameters )
@@ -727,11 +731,11 @@ def stage_1( input_file, output_prefix, output_suffix ):
 #   STAGE 2 cutadapt
 #
 @active_if ( 'cutadapt' in Geno.job.get( 'tasks' )[ 'WGS' ] )
-@files( generate_parameters_for_bwa_mem )
-@check_if_uptodate( check_file_exists_for_bwa_mem )
+@files( generate_parameters_for_cutadapt )
+@check_if_uptodate( check_file_exists_for_cutadapt )
 @follows( stage_1 )
-def stage_2( input_file1, input_file2, output_file ):
-    cutadapt( input_file1, input_file2, output_file )
+def stage_2( input_file, output_file ):
+    cutadapt( input_file, output_file )
 
 #####################################################################
 #
@@ -757,13 +761,13 @@ def stage_4( input_prefix, input_suffix, output_file ):
 
 #####################################################################
 #
-#   STAGE 4 mutation call
+#   STAGE 5 mutation call
 #
 #@active_if ( 'fisher_mutation_call' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 # @files( generate_parameters_for_mutation_call )
 # @check_if_uptodate( check_file_exists_for_mutation_call )
-# @follows( stage_3 )
-# def stage_4( input_file, output_file ):
+# @follows( stage_4 )
+# def stage_5( input_file, output_file ):
 #     fisher_mutation_call( input_file, output_file )
 
 

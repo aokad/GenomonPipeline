@@ -16,8 +16,7 @@ class genomon_job:
 
         self.__log = log
         if job_file != None:
-            self.__job_file = job_file
-            self.open_job( self.__job_file )
+            self.open_job( job_file )
 
     def open_job( self, job_file = None ):
         if job_file != None:
