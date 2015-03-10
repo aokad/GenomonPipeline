@@ -9,6 +9,8 @@ from datetime import datetime
 from ruffus import *
 from runtask import RunTask
 from glob import glob
+import difflib
+from sample import Sample
 
 #####################################################################
 #
@@ -28,9 +30,10 @@ from utils import *
 # File update check
 #
 def check_file_exists_for_split_fastq(
-    input_file,
-    output_prefix,
-    output_suffix,
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2,
     ):
 
     """
@@ -38,63 +41,51 @@ def check_file_exists_for_split_fastq(
         glob output files with prefix and suffix
 
     """
+    log.debug( "# {function}\n".format( function = whoami() ) )
+    log.debug( "in1:   {input}\n".format( input=input_file1) )
+    log.debug( "in2:   {input}\n".format( input=input_file2) )
+    log.debug( "out1:  {output}\n".format( output=output_file1) )
+    log.debug( "out2:  {output}\n".format( output=output_file2) )
 
-    if not glob( "{prefix}*{suffix}".format( prefix = output_prefix, suffix = output_suffix ) ):
+
+    ( output_prefix, output_suffix ) = os.path.splitext( output_file1 )
+    outfile_list = glob( "{prefix}*{suffix}".format( prefix = output_prefix, suffix = output_suffix ) )
+    if not outfile_list:
+        log.debug( "Missing file {outprefix}*{outsuffix} for {input}.".format(
+                            outprefix = output_prefix,
+                            outsuffix = output_suffix,
+                            input = input_file1 ) )
         return True, "Missing file {outprefix}*{outsuffix} for {input}.".format(
                             outprefix = output_prefix,
                             outsuffix = output_suffix,
-                            input = input_file )
-    else:
-        return False, "File {outprefix}*{outsuffix} exists for {input}.".format(
-                            outprefix = output_prefix,
-                            outsuffix = output_suffix,
-                            input = input_file )
-
-def check_file_exists_for_cutadapt(
-        input_file,
-        output_file
-        ):
-
-    """
-    Checks if output file exists for cutadapt
-
-    """
-
-    if not os.path.exists( output_file ):
-        return True, "Missing file {output} for {input}.".format( output = output_file, input = input_file )
-    else:
-        in_time = os.path.getmtime( input_file )
-        out_time = os.path.getmtime( output_file )
-        if in_time > out_time:
-            return True, "{output} is older than {input}.".format( output = output_file, input = input_file )
-        else:
-            return False, "File {output} exits for {input}.".format( output = output_file, input = input_file )
-
-def check_file_exists_for_bwa_mem(
-        input_file1,
-        input_file2,
-        output_file
-        ):
-
-    """
-    Checks if output file exists for bwa_mem
-
-    """
-
-    if not os.path.exists( output_file ):
-        return True, "Missing file {output} for {input}.".format( output = output_file, input = input_file1 )
+                            input = input_file1 )
     else:
         in_time = os.path.getmtime( input_file1 )
-        out_time = os.path.getmtime( output_file )
+        out_time = os.path.getmtime( outfile_list[ 0 ] )
         if in_time > out_time:
-            return True, "{output} is older than {input}.".format( output = output_file, input = input_file1 )
+            log.debug( "{outprefix}*{outsuffix} is older than {input}.".format(
+                                outprefix = output_prefix,
+                                outsuffix = output_suffix,
+                                input = input_file1 ) )
+            return True, "{outprefix}*{outsuffix} is older than {input}.".format(
+                                outprefix = output_prefix,
+                                outsuffix = output_suffix,
+                                input = input_file1 )
         else:
-            return False, "File {output} exits for {input}.".format( output = output_file, input = input_file1 )
+            log.debug( "File {outprefix}*{outsuffix} exits for {input}.".format(
+                                outprefix = output_prefix,
+                                outsuffix = output_suffix,
+                                input = input_file1 ) )
+            return False, "File {outprefix}*{outsuffix} exits for {input}.".format(
+                                outprefix = output_prefix,
+                                outsuffix = output_suffix,
+                                input = input_file1 )
 
 def check_file_exists_for_merge_bam(
-    input_prefix,
-    input_suffix,
-    output_file
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2,
     ):
 
     """
@@ -102,20 +93,52 @@ def check_file_exists_for_merge_bam(
 
     """
 
-    if not os.path.exists( output_file ):
+    ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
+    if not os.path.exists( output_file1 ):
         return True, "Missing file {outputfile} for {input_prefix}*{input_suffix}.".format(
-                            outputfile = output_file,
+                            outputfile = output_file1,
                             input_prefix = input_prefix,
                             input_suffix = input_suffix )
     else:
         return False, "File {outputfile} exists for {input_prefix}*{input_suffix}.".format(
-                            outputfile = output_file,
+                            outputfile = output_file1,
                             input_prefix = input_prefix,
                             input_suffix = input_suffix )
 
-def check_file_exists_for_mutation_call(
-    input_file,
-    output_file
+def check_file_exists_for_bwa_mem(
+        input_file1,
+        input_file2,
+        output_file1,
+        output_file2
+    ):
+
+    """
+    Checks if output file exists for mutation_call
+
+    """
+    log.debug( "# {function}\n".format( function = whoami() ) )
+    log.debug( "in1:   {input}\n".format( input=input_file1) )
+    log.debug( "in2:   {input}\n".format( input=input_file2) )
+    log.debug( "out1:  {output}\n".format( output=output_file1) )
+    log.debug( "out2:  {output}\n".format( output=output_file2) )
+
+    ( output_prefix, output_suffix ) = os.path.splitext( output_file1 )
+    if not glob( "{prefix}*{suffix}".format( prefix = output_prefix, suffix = output_suffix ) ):
+        log.debug("Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output_file1,
+                            inputfile = input_file1 ) )
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output_file1,
+                            inputfile = input_file1 )
+    else:
+        log.debug( "File {output} exits for {input}.".format( output = output_file1, input = input_file1 ) )
+        return False, "File {output} exits for {input}.".format( output = output_file1, input = input_file1 )
+
+def check_file_exists_for_input_output(
+        input_file1,
+        input_file2,
+        output_file1,
+        output_file2
     ):
 
     """
@@ -123,14 +146,18 @@ def check_file_exists_for_mutation_call(
 
     """
 
-    if not os.path.exists( output_file ):
-        return True, "Missing file {outputfile} for {input_file}.".format(
-                            outputfile = output_file,
-                            inputfile = input_file )
+    if not os.path.exists( output_file1 ):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output_file1,
+                            inputfile = input_file1 )
     else:
-        return False, "File {outputfile} exists for {inputfile}.".format(
-                            outputfile = output_file,
-                            inputfile = input_file )
+
+        in_time = os.path.getmtime( input_file1 )
+        out_time = os.path.getmtime( output_file1 )
+        if in_time > out_time:
+            return True, "{output} is older than {input}.".format( output = output_file1, input = input_file1 )
+        else:
+            return False, "File {output} exits for {input}.".format( output = output_file1, input = input_file1 )
 
 
 #####################################################################
@@ -139,199 +166,82 @@ def check_file_exists_for_mutation_call(
 #
 
 #
-# For STAGE 1 split_fastq
+# For STAGE 1 bam2fastq
 #
-def generate_parameters_for_split_fastq( starting_files ):
+def generate_params_for_bam2fastq():
     """
-    Generate parameter list for STAGE 1 spilt_fastq_files
-
-    Create a list of the following
-        input_file
-        output_prefix
-        output_suffix
+    Generate parameter list for bam2fastq
 
     """
-    input_fastq_files = []
-    input_file_type = Geno.job.get( 'input_file_type' )
-    if 'paired_fastq' == input_file_type:
-        for file1, file2 in starting_files:
-                for input_file in ( file1, file2 ):
-                    tmp_name = os.path.splitext( os.path.basename( input_file ) )
-                    basename = tmp_name[ 0 ]
-                    output_prefix = "{dir}/{file}".format(
-                                            dir = Geno.dir[ 'fastq' ],
-                                            file = basename 
-                                            )
-                    output_suffix = tmp_name[ 1 ]
-                    input_fastq_files.append( [ input_file, output_prefix, output_suffix ] )
-    elif 'single_fastq' == input_file_type:
-        for file_name in starting_files:
-            tmp_name = os.path.splitext( os.path.basename( file_name ) )
-            basename = tmp_name[ 0 ]
-            output_prefix = "{dir}/{file}".format(
-                                    dir = Geno.dir[ 'fastq' ],
-                                    file = basename
-                                    )
-            output_suffix = tmp_name[ 1 ]
-            input_fastq_files.append( [ file_name, output_prefix, output_suffix ] )
-    elif 'bam' == input_file_type:
-        pass
 
-    return input_fastq_files
+    Sample.make_param( 'bam2fastq', '.fastq', 1, 2 )
+    for param in Sample.current():
+        yield param
 
 
 #
-# For STAGE 2 cutadapt
+# For STAGE 2 split_fastq
 #
-def generate_parameters_for_cutadapt():
+def generate_params_for_split_fastq():
     """
-    Generate parameter list for STAGE 1 spilt_fastq_files
-
-    Create a list of the following
-        input_file
-        output_file
+    Generate parameter list for spilt_fastq_files
 
     """
-    input_file_type = Geno.job.get( 'input_file_type' )
-    if 'paired_fastq' == input_file_type:
-        for file1, file2 in starting_files:
-                for input_file in ( file1, file2 ):
-                    tmp_name = os.path.splitext( os.path.basename( input_file ) )
-                    basename = tmp_name[ 0 ]
-                    glob_input_file_name = "{dir}/{file}*{ext}".format(
-                                                dir = Geno.dir[ 'fastq' ],
-                                                file = basename, 
-                                                ext = tmp_name[ 1 ] )
 
-                    for tmp_file in glob( glob_input_file_name ):
-                        tmp_basename = os.path.basename( tmp_file )
-                        output_file = "{dir}/cutadapt_{file}".format(
-                                                dir = Geno.dir[ 'fastq' ],
-                                                file = tmp_basename )
-                        yield [ tmp_file, output_file ]
-    elif 'sinle_fastq' == input_file_type:
-        for file_name in starting_files:
-            tmp_name = os.path.splitext( os.path.basename( file_name ) )
-            basename = tmp_name[ 0 ]
-            glob_input_file_name = "{dir}/{file}*{ext}".format(
-                                        dir = Geno.dir[ 'fastq' ],
-                                        file = basename,
-                                        ext = tmp_name[ 1 ] )
-            for tmp_file in glob( glob_input_file_name ):
-                tmp_basename = os.path.basename( tmp_file )
-                output_file = "{dir}/cutadapt_{file}".format(
-                                        dir = Geno.dir[ 'fastq' ],
-                                        file = tmp_basename )
-                yield [ tmp_file, output_file ]
-
-
+    
+    Sample.make_param( 'split_fastq', '.fastq', 2, 2 )
+    for param in Sample.current():
+        yield param
 
 #
-# For STAGE 2 bwa_mem
+# For STAGE 3 cutadapt
+#
+def generate_params_for_cutadapt():
+    """
+    Generate parameter list for cutadapt
+
+    """
+    
+    Sample.make_param( 'cutadapt', '_cutadapt.fastq', 2, 2 )
+    for param in Sample.current():
+        yield param
+
+#
+# For STAGE 4 bwa_mem
 #
 
-def generate_parameters_for_bwa_mem_single():
+    
+def generate_params_for_bwa_mem():
     """
-    Generate parameter list for STAGE 2 bwa_mem
-
-    input_file1
-    input_file2
-    output_file
+    Generate parameter list for bwa_mem
 
     """
-    global bwa_mem_parameters
-    bwa_mem_parameters = []
 
-    for parameter in split_fastq_parameters:
-        split_files = sorted( glob( "{prefix}*{suffix}".format(
-                                        prefix = parameter[ 1 ],
-                                        suffix = parameter[ 2 ] 
-                        ) ) )
-        for split_file in split_files:
-            bam_file = "{dir}/{file}.bam".format(
-                                dir = Geno.dir[ 'bam' ],
-                                file = os.path.splitext( os.path.basename( split_files ))[ 0 ]
-                )
-            out_param = [ split_file,
-                          '',
-                          bam_file ]
-            bwa_mem_parameters.append( out_param )
-
-    return bwa_mem_parameters
-
-def generate_parameters_for_bwa_mem_pair():
-    """
-    Generate parameter list for STAGE 2 bwa_mem
-
-    input_file1
-    input_file2
-    output_file
-    job_type
-
-    """
-    global bwa_mem_parameters
-    bwa_mem_parameters = []
-
-    for id1 in range( 0, len( split_fastq_parameters ), 2 ):
-        split_files1 = sorted( glob( "{filename}*".format( filename = split_fastq_parameters[ id1 ][ 1 ] ) ) )
-        split_files2 = sorted( glob( "{filename}*".format( filename = split_fastq_parameters[ id1 + 1 ][ 1 ] ) ) )
-
-        for file1, file2 in zip( split_files1, split_files2 ):
-            bam_file = "{dir}/{file}.bam".format(
-                                dir = Geno.dir[ 'bam' ],
-                                file = os.path.splitext( os.path.basename( file1 ))[ 0 ]
-                )
-
-            out_param = [ file1,
-                          file2,
-                          bam_file ]
-            bwa_mem_parameters.append( out_param )
-    return bwa_mem_parameters
-
-def generate_parameters_for_bwa_mem():
-    """
-    Generate parameter list for STAGE 2 bwa_mem
-
-    """
-    input_file_type = Geno.job.get( 'input_file_type' )
-
-    if 'paired_fastq' == input_file_type:
-        parameter_list = generate_parameters_for_bwa_mem_pair()
-    elif 'single_fastq' == input_file_type:
-        parameter_list = generate_parameters_for_bwa_mem_single()
-
-
-    for parameter in parameter_list:
+    Sample.make_param( 'bwa_mem', '.bam', 2, 1 ) 
+    for parameter in Sample.current():
         yield parameter
 
 #
-# For STAGE 3 merge_bam        
+# For STAGE 5 merge_bam        
 #        
-def generate_parameters_for_merge_bam():
+def generate_params_for_merge_bam():
     """
-    Generate parameter list for STAGE 2 bwa_mem
+    Generate parameter list for merge_bam
 
     """
-    global starting_files
-    global merge_bam_parameters
-    merge_bam_parameters = []
-    for parameter in starting_files:
-        base, ext = os.path.splitext( os.path.basename( parameter[ 0 ] ) )
-        basename = "{dir}/{basename}".format(
-                            dir = Geno.dir[ 'bam' ],
-                            basename = base )
-        output_bam = basename + '.bam'
-        out_param = [ basename,
-                      '.bam',
-                      output_bam ]
-        merge_bam_parameters.append( out_param )
-        yield out_param
+    
+    Sample.make_param( 'merge_bam', '.bam', 1, 1 )
+    for parameter in Sample.current():
+        yield parameter
+#
+# For STAGE 6 mutation_call
+#
+def generate_params_for_mutation_call():
 
-#
-# For STAGE 4 mutation_call
-#
-def generate_parameters_for_mutation_call():
-    pass
+    
+    Sample.make_param( 'mutation_call', '.txt', 1, 1 )
+    for parameter in Sample.current():
+        yield parameter
 
 #####################################################################
 #
@@ -339,20 +249,24 @@ def generate_parameters_for_mutation_call():
 #
 
 #
-# Stage 1: split_fastq
+# Stage 1: bam2fastq
 #
-def split_fastq(
-    input_file,
-    output_prefix,
-    output_suffix
+def bamtofastq(
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2
     ):
     """
     Split fastq file into small pieces for parallele processing
 
     """
     try:
-        log.info( "# {function}\n".format( function = whoami() ) + 
-                     "in:  {input}\n".format( input=input_file) )
+        log.info( "# {function}\n".format( function = whoami() ) )
+        log.info( "in1:   {input}\n".format( input=input_file1) )
+        log.info( "in2:   {input}\n".format( input=input_file2) )
+        log.info( "out1:  {output}\n".format( output=output_file1) )
+        log.info( "out2:  {output}\n".format( output=output_file2) )
 
         #
         # Make sure files exist.
@@ -364,28 +278,28 @@ def split_fastq(
         #
         # Make shell script
         #
-        now = datetime.now()
-        function_name = 'split_fastq'
-        suffix_len = len( output_suffix )
-        shell_script_name = res.file_timestamp_format.format(
-                                        name=function_name,
-                                        year=now.year,
-                                        month=now.month,
-                                        day=now.day,
-                                        hour=now.hour,
-                                        min=now.minute,
-                                        msecond=now.microsecond )
-        shell_script_full_path = "{script}/{file}.sh".format(
-                                        script = Geno.dir[ 'script' ],
-                                        file = shell_script_name )
+        function_name = whoami()
+        shell_script_full_path = make_script_file_name( function_name )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( res.splitfile.format(
-                                        log = Geno.dir[ 'log' ],
-                                        lines_per_file = Geno.job.get( 'split_fastq_line_number' ),
-                                        input_file = input_file,
-                                        suffix_len = suffix_len,
-                                        output_suffix = output_suffix,
-                                        output_prefix = output_prefix ) )
+
+        file_type = Geno.job.get( 'input_file_type' )
+        if 'paired_bam' == file_type:
+            shell_script_file.write( res.bamtofastq_p.format(
+                                            log = Geno.dir[ 'log' ],
+                                            bamfile = input_file1,
+                                            outfastq1 = output_file1,
+                                            outfastq2 = output_file2,
+                                            tmpfastq = output_file1 + '.tmp',
+                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' )
+                                            ) )
+        elif 'single_bam' == file_type:
+            shell_script_file.write( res.bamtofastq_s.format(
+                                            log = Geno.dir[ 'log' ],
+                                            bamfile = input_file1,
+                                            outfastq1 = output_file1,
+                                            tmpfastq = output_file1 + '.tmp',
+                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' )
+                                            ) )
         shell_script_file.close()
 
         #
@@ -394,7 +308,6 @@ def split_fastq(
         Geno.RT.runtask( Geno.job.get( 'job_type' )[ function_name ],
                          Geno.job.get( 'memory' )[ function_name ],
                          shell_script_full_path )
-
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(num = errno, error = strerror, function = whoami() ) )
@@ -411,49 +324,144 @@ def split_fastq(
     return True
 
 #
+# Stage 2: split_fastq
+#
+def split_fastq(
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2
+    ):
+    """
+    Split fastq file into small pieces for parallele processing
+
+    """
+    try:
+        log.info( "# {function}\n".format( function = whoami() ) )
+        log.info( "in1:   {input}\n".format( input=input_file1) )
+        log.info( "in2:   {input}\n".format( input=input_file2) )
+        log.info( "out1:  {output}\n".format( output=output_file1) )
+        log.info( "out2:  {output}\n".format( output=output_file2) )
+
+        #
+        # Make sure files exist.
+        #
+        if not os.path.isfile( input_file1 ):
+            log.error( "file: {file} does not exist.".format( file=input_file1 ) )
+            return 0
+
+        #
+        # Make data for array job 
+        #
+        output_prefix1 = make_sample_file_name( output_file1, "{dir}/{base}_" )
+        output_prefix2 = make_sample_file_name( output_file2, "{dir}/{base}_" )
+        array_data1 = "IN_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
+                        file1 = input_file1,
+                        file2 = input_file2 )
+        array_data2 = "OUT_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
+                        file1 = output_prefix1,
+                        file2 = output_prefix2 )
+        input_file = '${IN_FILE[$SGE_TASK_ID]}'
+        output_prefix = '${OUT_FILE[$SGE_TASK_ID]}'
+
+        output_suffix = '.fastq'
+        suffix_len = len( output_suffix )
+        function_name = whoami()
+
+        #
+        # Make shell script for array job
+        #
+        shell_script_full_path = make_script_file_name( function_name )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( res.splitfile.format(
+                                        log = Geno.dir[ 'log' ],
+                                        array_data = array_data1 + array_data2,
+                                        lines_per_file = Geno.job.get( 'split_fastq_line_number' ),
+                                        input_file = input_file,
+                                        suffix_len = suffix_len,
+                                        output_suffix = output_suffix,
+                                        output_prefix = output_prefix ) )
+        shell_script_file.close()
+
+        #
+        # Run
+        #
+        Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
+                              Geno.job.get( 'memory' )[ function_name ],
+                              shell_script_full_path,
+                              '1-2:1' )
+
+
+    except IOError as (errno, strerror):
+        log.error( "{function}: I/O error({num}): {error}".format(num = errno, error = strerror, function = whoami() ) )
+        return_code = False
+
+    except ValueError:
+        log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_code = False
+
+    except:
+        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+
+
+    return True
+
+
+#
 # Stage 2: cutadapt
 #
 def cutadapt(
-    input_file,
-    output_file
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2
     ):
     """
        Apply cutadapt to remove adaptor sequences from reads
     """
 
     try:
-        log.info( "# {function}\n".format( function = whoami() ) +
-                     "in: {input}\n".format( input=input_file) +
-                     "out: {output}\n".format( output=output_file) )
+        log.info( "# {function}\n".format( function = whoami() ) )
+        log.info( "in1:   {input}\n".format( input=input_file1) )
+        log.info( "in2:   {input}\n".format( input=input_file2) )
+        log.info( "out1:  {output}\n".format( output=output_file1) )
+        log.info( "out2:  {output}\n".format( output=output_file2) )
 
         #
-        # Make sure files exist.
+        # Make data for array job
         #
         if not os.path.isfile( input_file ):
             log.error( "file: {file} does not exist.".format( file=input_file ) )
             return 0
 
+
+        output_file1 = make_sample_file_name( output_file1, "{dir}/{base}_" ) + '_cutadapt.fastq'
+        output_file2 = make_sample_file_name( output_file2, "{dir}/{base}_" ) + '_cutadapt.fastq'
+
+        
+        array_data1 = "IN_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
+                        file1 = input_file1,
+                        file2 = input_file2 )
+        array_data2 = "OUT_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
+                        file1 = output_file1,
+                        file2 = output_file2 )
+
+        input_file = '${IN_FILE[$SGE_TASK_ID]}'
+        output_file = '${OUT_FILE[$SGE_TASK_ID]}'
+
+        suffix_len = len( output_suffix )
+        function_name = whoami()
+
         #
         # Make shell script
         #
-        function_name = 'cutadapt'
-        now = datetime.now()
-        shell_script_name = res.file_timestamp_format.format(
-                                        name=function_name,
-                                        year=now.year,
-                                        month=now.month,
-                                        day=now.day,
-                                        hour=now.hour,
-                                        min=now.minute,
-                                        msecond=now.microsecond )
-        shell_script_full_path = "{script}/{file}.sh".format(
-                                        script = Geno.dir[ 'script' ],
-                                        file = shell_script_name )
+        shell_script_full_path = make_script_file_name( function_name )
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( res.cutadapt.format(
                                         log = Geno.dir[ 'log' ],
                                         infastq = input_file,
                                         outfastq = output_file,
+                                        array_data = array_data1 + array_data2,
                                         tmpoutfastq = output_file + '.tmp',
                                         optadapters = '-a ' + ' -a '.join( Geno.job.get( 'adaptor' ) ),
                                         casavacode = 2,
@@ -465,9 +473,10 @@ def cutadapt(
         #
         # Run
         #
-        Geno.RT.runtask( Geno.job.get( 'job_type' )[ function_name ],
-                         Geno.job.get( 'memory' )[ function_name ],
-                         shell_script_full_path )
+        Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
+                              Geno.job.get( 'memory' )[ function_name ],
+                              shell_script_full_path,
+                              '1-2:1' )
 
 
     except IOError as (errno, strerror):
@@ -483,13 +492,15 @@ def cutadapt(
 
 
     return True
+
 #
 # Stage 2: bwa_mem
 #
 def bwa_mem(
-    input_file1,            # 1st parameter is Input
-    input_file2,            # 2nd parameter is Input
-    output_file             # 3rd parameter is Output
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2
     ):
     """
        Align sequence reads in FASTQ file.
@@ -497,53 +508,61 @@ def bwa_mem(
     """
 
     try:
-        log.info( "# {function}\n".format( function = whoami() ) +
-                     "in1: {input}\n".format( input=input_file1) +
-                     "in2: {input}\n".format( input=input_file2) +
-                     "out: {output}\n".format( output=output_file) )
+        log.info( "# {function}\n".format( function = whoami() ) )
+        log.info( "in1:   {input}\n".format( input=input_file1) )
+        log.info( "in2:   {input}\n".format( input=input_file2) )
+        log.info( "out1:  {output}\n".format( output=output_file1) )
+        log.info( "out2:  {output}\n".format( output=output_file2) )
 
         #
-        # Make sure files exist.
+        # Make data for array job 
         #
-        if ( not os.path.isfile( input_file1 ) or
-             not os.path.isfile( input_file2 ) ) :
-            log.error( "file: {file} does not exist.".format( file=input_file1 ) )
-            log.error( "file: {file} does not exist.".format( file=input_file2 ) )
-            return 0
+        fastq_list = []
+        for file_name in ( input_file1, input_file2 ):
+            ( input_prefix, input_suffix ) = os.path.splitext( file_name )
+            fastq_list.append( sorted( glob( "{input_prefix}*{input_suffix}".format(
+                                        input_prefix = input_prefix,
+                                        input_suffix = input_suffix ) ) ) )
+        str1 = "FILE1=(\n"
+        str2 = "FILE2=(\n"
+        str3 = "FILE3=(\n"
+        id = 0
+        for fastq1, fastq2 in zip( fastq_list[ 0 ], fastq_list[ 1 ] ):
+            bam = "{dir}/{file}.bam".format( dir = Geno.dir[ 'bam' ],
+                                             file = os.path.splitext( os.path.basename( fastq1 ) )[ 0 ] )
+            id += 1
+            str1 += " [{id}]=\"{file}\"\n".format( id = id, file = fastq1 )
+            str2 += " [{id}]=\"{file}\"\n".format( id = id, file = fastq2 )
+            str3 += " [{id}]=\"{file}\"\n".format( id = id, file = bam )
+        str1 += " )\n"
+        str2 += " )\n"
+        str3 += " )\n"
 
+        
         #
-        # Make shell script
+        # Make shell script for array job
         #
-        function_name = 'bwa_mem'
-        now = datetime.now()
-        shell_script_name = res.file_timestamp_format.format(
-                                        name=function_name,
-                                        year=now.year,
-                                        month=now.month,
-                                        day=now.day,
-                                        hour=now.hour,
-                                        min=now.minute,
-                                        msecond=now.microsecond )
-        shell_script_full_path = "{script}/{file}.sh".format(
-                                        script = Geno.dir[ 'script' ],
-                                        file = shell_script_name )
+        function_name = whoami()
+        shell_script_full_path = make_script_file_name( function_name )
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( res.bwa_mem.format(
                                         log = Geno.dir[ 'log' ],
                                         bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
                                         hg19_fa = Geno.conf.get( 'REFERENCE', 'hg19_fasta' ),
-                                        fastq1 = input_file1,
-                                        fastq2 = input_file2,
+                                        array_data = str1 + str2 + str3,
+                                        fastq1 = "${FILE1[$SGE_TASK_ID]}",
+                                        fastq2 = "${FILE2[$SGE_TASK_ID]}",
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                        bam = output_file ) )
+                                        bam = "${FILE3[$SGE_TASK_ID]}" ) )
         shell_script_file.close()
 
         #
         # Run
         #
-        Geno.RT.runtask( Geno.job.get( 'job_type' )[ function_name ],
-                         Geno.job.get( 'memory' )[ function_name ],
-                         shell_script_full_path )
+        Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
+                              Geno.job.get( 'memory' )[ function_name ],
+                              shell_script_full_path,
+                              "1-{id}:1".format( id = id ) )
 
 
     except IOError as (errno, strerror):
@@ -564,9 +583,10 @@ def bwa_mem(
 # Stage 3: merge_bam
 #
 def merge_bam(
-    input_prefix,
-    input_suffix,
-    output_file
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2
     ):
     """
        Merge split bam files
@@ -574,34 +594,32 @@ def merge_bam(
     """
 
     try:
-        log.info( "# {function}\n".format( function = whoami() ) +
-                     "in: {prefix}*{suffix}\n".format( prefix=input_prefix, suffix = input_suffix ) +
-                     "out: {output}\n".format( output=output_file) )
+        log.info( "# {function}\n".format( function = whoami() ) )
+        log.info( "in1:   {input}\n".format( input=input_file1) )
+        log.info( "in2:   {input}\n".format( input=input_file2) )
+        log.info( "out1:  {output}\n".format( output=output_file1) )
+        log.info( "out2:  {output}\n".format( output=output_file2) )
+
+        #
+        # Make data for array job 
+        #
+        ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
+        input_files = "{input_prefix}*{input_suffix}".format(
+                                    input_prefix = input_prefix,
+                                    input_suffix = input_suffix )
 
         #
         # Make shell script
         #
-        now = datetime.now()
-        shell_script_name = res.file_timestamp_format.format(
-                                        name='merge_bam',
-                                        year=now.year,
-                                        month=now.month,
-                                        day=now.day,
-                                        hour=now.hour,
-                                        min=now.minute,
-                                        msecond=now.microsecond )
-        shell_script_full_path = "{script}/{file}.sh".format(
-                                        script = Geno.dir[ 'script' ],
-                                        file = shell_script_name )
+        function_name = whoami()
+
+        shell_script_full_path = make_script_file_name( function_name )
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( res.merge_bam.format(
                                         log = Geno.dir[ 'log' ],
-                                        input_bam_files = "{prefix}*{suffix}".format(
-                                                        prefix = input_prefix,
-                                                        suffix = input_suffix
-                                                        ),
-                                        output_bam_file = output_file,
-                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' )))
+                                        input_bam_files = input_files,
+                                        output_bam_file = output_file1,
+                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ) ) )
         shell_script_file.close()
 
         #
@@ -629,9 +647,11 @@ def merge_bam(
 #
 # Stage 4: mutation_call
 #
-def fisher_mutation_call(
-    input_file,
-    output_file
+def mutation_call(
+    input_file1,
+    input_file2,
+    output_file1,
+    output_file2
     ):
     """
        Mutaion calling
@@ -639,30 +659,21 @@ def fisher_mutation_call(
     """
 
     try:
-        log.info( "# {function}\n".format( function = whoami() ) +
-                     "in: {prefix}*{suffix}\n".format( prefix=input_prefix, suffix = input_suffix ) +
-                     "out: {output}\n".format( output=output_file) )
+        log.info( "# {function}\n".format( function = whoami() ) )
+        log.info( "in1:   {input}\n".format( input=input_file1) )
+        log.info( "in2:   {input}\n".format( input=input_file2) )
+        log.info( "out1:  {output}\n".format( output=output_file1) )
+        log.info( "out2:  {output}\n".format( output=output_file2) )
 
         #
         # Make shell script
         #
-        now = datetime.now()
-        function_name = 'fisher_mutation_call'
-        shell_script_name = res.file_timestamp_format.format(
-                                        name=function_name,
-                                        year=now.year,
-                                        month=now.month,
-                                        day=now.day,
-                                        hour=now.hour,
-                                        min=now.minute,
-                                        msecond=now.microsecond )
-        shell_script_full_path = "{script}/{file}.sh".format(
-                                        script = Geno.dir[ 'script' ],
-                                        file = shell_script_name )
+        function_name = whoami()
+        shell_script_full_path = make_script_file_name( function_name )
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( res.mutation_call.format(
                                         log = Geno.dir[ 'log' ],
-                                        input_bam = input_file,
+                                        input_bam = input_file1,
                                         outputpath = Geno.dir[ 'fisher' ],
                                         num = 1,
                                         region = 1,
@@ -702,80 +713,96 @@ def fisher_mutation_call(
 
 #####################################################################
 #
-#   Global variables
-#
-global starting_files
-global split_fastq_parameters
-global bwa_mem_parameters
-global merge_bam_parameters
-
-#####################################################################
-#
 #   STAGE 0 data preparation
 #
-starting_files = get_starting_files()
-split_fastq_parameters = generate_parameters_for_split_fastq( starting_files )
+Sample = Sample()
 
 #####################################################################
 #
-#   STAGE 1 split_fastq
+#   STAGE 1 bam2fastq
+#   in:     bam
+#   out:    fastq
 #
-@active_if ( 'split_fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
-@parallel( split_fastq_parameters )
-@check_if_uptodate( check_file_exists_for_split_fastq )
-def stage_1( input_file, output_prefix, output_suffix ):
-    split_fastq( input_file, output_prefix, output_suffix )
+@active_if( 'bam2fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@parallel( generate_params_for_bam2fastq )
+@check_if_uptodate( check_file_exists_for_input_output )
+def stage_1( input_file, output_file ):
+    bam2fastq( input_file, output_file )
 
 #####################################################################
 #
-#   STAGE 2 cutadapt
+#   STAGE 2 split_fastq
+#   in:     fastq
+#   out:    fastq * X
 #
-@active_if ( 'cutadapt' in Geno.job.get( 'tasks' )[ 'WGS' ] )
-@files( generate_parameters_for_cutadapt )
-@check_if_uptodate( check_file_exists_for_cutadapt )
 @follows( stage_1 )
-def stage_2( input_file, output_file ):
-    cutadapt( input_file, output_file )
+@active_if( 'split_fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_split_fastq )
+@check_if_uptodate( check_file_exists_for_split_fastq )
+def stage_2( input_file1, input_file2, output_file1, output_file2 ):
+    split_fastq( input_file1, input_file2, output_file1, output_file2 )
 
 #####################################################################
 #
-#   STAGE 3 fastq to bam
+#   STAGE 3 cutadapt
+#   in:     fastq
+#   out:    fastq
 #
-@active_if ( 'bwa_mem' in Geno.job.get( 'tasks' )[ 'WGS' ] )
-@files( generate_parameters_for_bwa_mem )
-@check_if_uptodate( check_file_exists_for_bwa_mem )
 @follows( stage_2 )
-def stage_3( input_file1, input_file2, output_file ):
-    bwa_mem( input_file1, input_file2, output_file )
+@active_if( 'cutadapt' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_cutadapt )
+@check_if_uptodate( check_file_exists_for_input_output )
+def stage_3( input_file1, input_file2, output_file1, output_file2 ):
+    cutadapt( input_file1, input_file2, output_file1, output_file2 )
 
 #####################################################################
 #
-#   STAGE 4 merge
+#   STAGE 4 bwa_mem
 #
-@active_if ( 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ] )
-@files( generate_parameters_for_merge_bam )
-@check_if_uptodate( check_file_exists_for_merge_bam )
+#   in:     fastq1, fastq2
+#   out:    bam
+#
 @follows( stage_3 )
-def stage_4( input_prefix, input_suffix, output_file ):
-    merge_bam( input_prefix, input_suffix, output_file )
+@active_if( 'bwa_mem' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_bwa_mem )
+@check_if_uptodate( check_file_exists_for_bwa_mem )
+def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
+    bwa_mem( input_file1, input_file2, output_file1, output_file2 )
 
 #####################################################################
 #
-#   STAGE 5 mutation call
+#   STAGE 5 merge
 #
-#@active_if ( 'fisher_mutation_call' in Geno.job.get( 'tasks' )[ 'WGS' ] )
-# @files( generate_parameters_for_mutation_call )
-# @check_if_uptodate( check_file_exists_for_mutation_call )
-# @follows( stage_4 )
-# def stage_5( input_file, output_file ):
-#     fisher_mutation_call( input_file, output_file )
+#   in:     bam * X
+#   out:    bam
+#
+@follows( stage_4 )
+@active_if( 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_merge_bam )
+@check_if_uptodate( check_file_exists_for_merge_bam )
+def stage_5( input_file1, input_file2, output_file1, output_file2 ):
+    merge_bam( input_file1, input_file2, output_file1, output_file2 )
+
+#####################################################################
+#
+#   STAGE 6 mutation call
+#
+#   in:     bam
+#   out:    vcf
+#
+@follows( stage_5 )
+@active_if ( 'mutation_call' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_mutation_call )
+@check_if_uptodate( check_file_exists_for_input_output )
+def stage_6(  input_file1, input_file2, output_file1, output_file2 ):
+    mutation_call(  input_file1, input_file2, output_file1, output_file2 )
 
 
 #####################################################################
 #
 #   LAST STAGE 
 #
-@follows( stage_4 )
+@follows( stage_6 )
 def last_function():
     log.info( "Genomon pipline has finished successflly!" )
     return True

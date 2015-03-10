@@ -352,8 +352,8 @@ def main():
 
         pipeline_run(   target_tasks = [ pipeline.last_function ],
                         multiprocess = Geno.options.jobs,
-                        logger = log )
-                        
+                        logger = log,
+                        verbose = 0 )
                             
 
         #

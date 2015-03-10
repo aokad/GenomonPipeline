@@ -53,6 +53,15 @@ class RunTask:
             self.disconnect()
 
 
+    def run_arrayjob( self, job_type, memory, run_cmd, id_list ):
+        if self.enable_mpi:
+            pass
+        else:
+            run_cmd_tmp = "-t {id_list}, {cmd}".format(
+                                id_list = id_list,
+                                cmd = run_cmd )
+            self.__runtask_by_qsub( job_type, memory, run_cmd_tmp )
+
     def runtask( self, job_type, memory, run_cmd ):
         """
         Front end funtion to run task
