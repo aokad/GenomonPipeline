@@ -33,13 +33,17 @@ project_dir_tree:
 # Input files
 #
 input_file_dir:             /home/eigos/Data/GenomonProj/genomon_test/data/20150216/sampledata
-input_file_type:            paired_fastq # paired_fastq,  single_fastq, bam
+input_file_type:            paired_fastq # paired_fastq,  single_fastq, paired_bam, single_bam
 file_name:                  ?_100_{pair_id}.fastq
 control_file_name:          a_100_{pair_id}.fastq
 disease_file_name:          b_100_{pair_id}.fastq
 pair_id:
                             - 1
                             - 2
+sample_sub_type:
+                            - s_B*
+                            - s_O*
+
 #bed_files:                  None # for Panel
 
 
@@ -55,21 +59,44 @@ tasks:
 split_fastq_line_number:    20
 
 # tasks type
-#                    WES:
-#                    Panel:
-#                    RNA:
-#
-#                        - bam2fastq
+#                    WGS:
+#                        - bamtofastq
 #                        - split_fastq
 #                        - cutadapt
 #                        - bwa_mem
 #                        - merge_bam
 #                        - markduplicate
-#                        - fisher_mutation_call
-#                        - ebcall_mutation_call
-#                        - copy_number
-#                        - sv
-#                        - fusion
+#                        - mutation_call
+#                    WES:
+#                        - bamtofastq
+#                        - split_fastq
+#                        - cutadapt
+#                        - bwa_mem
+#                        - merge_bam
+#                        - markduplicate
+#                        - mutation_call
+#                    Capture:
+#                        - bamtofastq
+#                        - split_fastq
+#                        - cutadapt
+#                        - bwa_mem
+#                        - merge_bam
+#                        - markduplicate
+#                        - mutation_call
+#                    RNA-Anders:
+#                        - start
+#                        - hiseq
+#                        - desq2
+#                    RNA-Tuxedo:
+#                        - tophat
+#                        - cufflinks
+#                        - cuffmerge
+#                        - cuffmerge
+#                        - cuffdiff
+#                        - cummerbund
+#                    CNV:
+#                    SV:
+#                    Fusion:
 
 #
 # Analysis parameters
@@ -85,15 +112,15 @@ max_indel:              2
 # Job control
 #
 job_type:
-                    bam2fastq:              mjob
-                    split_fastq:            mjob
-                    cutadapt:               mjob
-                    bwa_mem:                mjob
-                    merge_bam:              mjob
-                    fisher_mutation_call:   mjob
-                    ebcall_mutation_call:   mjob
-                    copy_number:            mjob
-                    sv:                     mjob
+                    bam2fastq:              sjob
+                    split_fastq:            sjob
+                    cutadapt:               sjob
+                    bwa_mem:                sjob
+                    merge_bam:              sjob
+                    fisher_mutation_call:   sjob
+                    ebcall_mutation_call:   sjob
+                    copy_number:            sjob
+                    sv:                     sjob
 
 memory:
                     split_fastq:            2G
