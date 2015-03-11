@@ -1,13 +1,23 @@
 #
 # Genomon Project information
 #
+# Mandatory definitions
+#   project
+#   sample_name
+#   sample_date1
 project:                genomon_test
-sample_name:            test01
-sample_date:            20150216
+sample_name:            mimorin
+sample_date:            20140930
 
 
 #
 # Data directory
+#
+# Mandatory definitions
+#   project_root
+#
+# Optional
+#   project_dir_tree
 #
 project_root:               /home/eigos/Data/GenomonProj
 project_dir_tree:
@@ -32,17 +42,30 @@ project_dir_tree:
 #
 # Input files
 #
-input_file_dir:             /home/eigos/Data/GenomonProj/genomon_test/data/20150216/sampledata
+# Mandatory definitions
+#   input_file_dir
+#   iput_file_type
+#   file_name
+#
+# Optional
+#   file_ext ( we assume that input file extion is either '.fastq' or '.bam',
+#              if the extension is other than those two, need to specify. )
+#
+#   pair_id  ( if file_name includes pair_id, need to specify )
+#
+#   sample_subdir ( if the input_file_dir includes sub-directories containting data files,
+#                   you can specify )
+#
+# Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+input_file_dir:             /home/mimorin/genomon/data/input/140930_CRC_target_barcode
 input_file_type:            paired_fastq # paired_fastq,  single_fastq, paired_bam, single_bam
-file_name:                  ?_100_{pair_id}.fastq
-control_file_name:          a_100_{pair_id}.fastq
-disease_file_name:          b_100_{pair_id}.fastq
+file_name:                  R{pair_id}.fastq.filt
+file_ext:                   .fastq.filt
 pair_id:
                             - 1
                             - 2
-sample_sub_type:
-                            - s_B*
-                            - s_O*
+sample_subdir:              s_B1N
 
 #bed_files:                  None # for Panel
 
@@ -56,7 +79,10 @@ tasks:
                         - bwa_mem
                         - merge_bam
 
-split_fastq_line_number:    20
+#
+# Split fastq file into multiple files with line number specified below.
+#
+split_fastq_line_number:    1000000
 
 # tasks type
 #                    WGS:
@@ -132,5 +158,14 @@ memory:
                     copy_number:            4G
                     sv:                     8G
 
+#
+# qsub command format
+#
+# allowd parameters:
+#   job_type    Genomon uses the value specified in job_type section.
+#   s_vmem      Genomon uses the value specified in memory section.
+#   mem_req     Genomon uses the value specified in memory section.
+#   cmd         Shell script file to run
+#
 qsub_cmd: "qsub -sync yes -now no -l {job_type},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
 
