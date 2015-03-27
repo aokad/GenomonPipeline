@@ -1,0 +1,206 @@
+#
+# Genomon Project information
+#
+# Mandatory definitions
+#   project
+#   sample_name
+#   sample_date1
+project:                genomon_test
+sample_name:            test01
+sample_date:            20150324
+
+
+#
+# Data directory
+#
+# Mandatory definitions
+#   project_root
+#
+# Optional
+#   project_dir_tree
+#
+project_root:               /home/eigos/Data/GenomonProj
+project_dir_tree:
+    project_directory:
+        data:
+            sample_date:
+                sample_name
+        results:
+            run_date:
+                sample_date_sample_name:
+                    - config
+                    - script
+                    - log
+                    - out:
+                        - fastq
+                        - bam
+                        - annovar
+                        - fisher
+                        - cnv
+                        - fusion
+                        - sv
+#
+# Input files
+#
+# Mandatory definitions
+#   input_file_dir
+#   iput_file_type
+#   file_name
+#
+# Optional
+#   file_ext ( we assume that input file extion is either '.fastq' or '.bam',
+#              if the extension is other than those two, need to specify. )
+#
+#   pair_id  ( if file_name includes pair_id, need to specify )
+#
+#   sample_subdir ( if the input_file_dir includes sub-directories containting data files,
+#                   you can specify )
+#
+# Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#input_file_dir:             /home/mimorin/genomon/data/input/140930_CRC_target_barcode
+input_file_dir:             /home/eigos/Data/GenomonProj/genomon_test/data/input/SRR330441
+input_file_type:            paired_fastq # paired_fastq,  single_fastq, paired_bam, single_bam
+file_name:                  SRR330441_{pair_id}.fastq.gz
+file_ext:                   .fastq.gz
+pair_id:
+                            - 1
+                            - 2
+#sample_subdir:              
+
+#bed_files:                  None # for Panel
+
+
+#
+# Analysis
+#
+tasks:
+                    WGS:
+                        - split_fastq
+                        - bwa_mem
+                        - merge_bam
+                        - fisher_mutation_call
+
+#
+# Split fastq file into multiple files with line number specified below.
+#
+split_fastq_line_number:    10000000
+
+# tasks type
+#                    WES:
+#                    Capture:
+#                    RNA:
+#
+#                        - bamtofastq
+#                        - split_fastq
+#                        - cutadapt
+#                        - bwa_mem
+#                        - merge_bam
+#                        - markduplicate
+#                        - fisher_mutation_call
+#                        - ebcall_mutation_call
+#                        - copy_number
+#                        - sv
+#                        - fusion
+
+#
+# Analysis parameters
+#
+#   If not defined, default values are going to be used in the pipeline.
+#
+
+#
+# SAM file header @RG
+# @RG   Read group. Unordered multiple @RG lines are allows.
+#
+#   ID  Read group identifier. Each @RG line must have a unique ID. The value of ID is used in the RG
+#       tags of alignment records. Must be unique among all read groups in header section. Read group
+#       IDs may be modified when merging SAM files in order to handle collisions.
+#   CN  Name of sequencing center producing the read.
+#   DS  Description.
+#   DT  Date the run was produced (ISO8601 date or date/time).
+#   FO  Flow order. The array of nucleotide bases that correspond to the nucleotides used for each
+#       flow of each read. Multi-base flows are encoded in IUPAC format, and non-nucleotide flows by
+#       various other characters. Format: /\*|[ACMGRSVTWYHKDBN]+/
+#   KS  The array of nucleotide bases that correspond to the key sequence of each read.
+#   LB  Library.
+#   PG  Programs used for processing the read group.
+#   PI  Predicted median insert size.
+#   PL  Platform/technology used to produce the reads. Valid values: CAPILLARY, LS454, ILLUMINA,
+#       SOLID, HELICOS, IONTORRENT and PACBIO.
+#   PU  Platform unit (e.g. flowcell-barcode.lane for Illumina or slide for SOLiD). Unique identifier.
+#   SM  Sample. Use pool name where a pool is being sequenced.
+#
+#   <examle>
+# @RG   ID:110701_SN590_0094_AC02UYABXX SM:TCGA-05-4418-10A-01D-1203-02 LB:Homo_sapiens_assembly19  PL:Illumina_HiSeq2000   CN:Harvard_GCC_02 PI: 200
+#
+#   The following words are available.
+#
+#   rg_id           for @RG ID
+#   sample_desc     for @RG SM
+#   platform        for @RG PL
+#   platform_unit   for @RG PU
+#   library         for @RG LB
+#   seq_center      for @RG CN
+#   pred_med_insert for @RG PI
+#
+rg_id:              SRR330441           #@RG ID:
+sample_desc:        test_sample         #@RG SM:
+platform:           Illumina            #@RG PL:
+library:            unknown             #@RG LB:
+platform_unit:      flowcell-barcode    #@RG PU:
+seq_center:         HGC                 #@RG CN:
+pred_med_insert:    500                 #@RG PI:
+
+# cutadapt
+adaptor:
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+# bwa mem
+min_score:              20
+
+# Fisher's exact test mutation call
+min_depth:              9
+max_indel:              2
+max_distance:           5
+base_quality:           15
+map_quality:            30
+mismatch_rate:          0.07
+
+
+
+#
+# Job control parameters
+#
+job_type:
+                    bam2fastq:              mjob
+                    split_fastq:            mjob
+                    cutadapt:               mjob
+                    bwa_mem:                ljob
+                    merge_bam:              mjob
+                    fisher_mutation_call:   mjob
+                    ebcall_mutation_call:   mjob
+                    copy_number:            mjob
+                    sv:                     mjob
+
+memory:
+                    split_fastq:            4G
+                    cutadapt:               2G
+                    bwa_mem:                8G
+                    merge_bam:              4G
+                    fisher_mutation_call:   4G
+                    ebcall_mutation_call:   4G
+                    copy_number:            4G
+                    sv:                     8G
+
+#
+# qsub command format
+#
+# allowd parameters:
+#   job_type    Genomon uses the value specified in job_type section.
+#   s_vmem      Genomon uses the value specified in memory section.
+#   mem_req     Genomon uses the value specified in memory section.
+#   cmd         Shell script file to run
+#
+qsub_cmd: "qsub -sync yes -now no -l {job_type},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
+
