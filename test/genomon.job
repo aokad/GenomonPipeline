@@ -6,8 +6,8 @@
 #   sample_name
 #   sample_date1
 project:                genomon_test
-sample_name:            mimorin
-sample_date:            20140930
+sample_name:            test01
+sample_date:            20150324
 
 
 #
@@ -58,14 +58,15 @@ project_dir_tree:
 #
 # Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
-input_file_dir:             /home/mimorin/genomon/data/input/140930_CRC_target_barcode
+#input_file_dir:             /home/mimorin/genomon/data/input/140930_CRC_target_barcode
+input_file_dir:             /home/eigos/Data/GenomonProj/genomon_test/data/input/SRR330441
 input_file_type:            paired_fastq # paired_fastq,  single_fastq, paired_bam, single_bam
-file_name:                  R{pair_id}.fastq.filt
-file_ext:                   .fastq.filt
+file_name:                  SRR330441_{pair_id}.fastq.gz
+file_ext:                   .fastq.gz
 pair_id:
                             - 1
                             - 2
-sample_subdir:              s_B1N
+#sample_subdir:              
 
 #bed_files:                  None # for Panel
 
@@ -78,6 +79,7 @@ tasks:
                         - split_fastq
                         - bwa_mem
                         - merge_bam
+                        - fisher_mutation_call
 
 #
 # Split fastq file into multiple files with line number specified below.
@@ -85,23 +87,10 @@ tasks:
 split_fastq_line_number:    10000000
 
 # tasks type
-#                    WGS:
-#                        - bamtofastq
-#                        - split_fastq
-#                        - cutadapt
-#                        - bwa_mem
-#                        - merge_bam
-#                        - markduplicate
-#                        - mutation_call
 #                    WES:
-#                        - bamtofastq
-#                        - split_fastq
-#                        - cutadapt
-#                        - bwa_mem
-#                        - merge_bam
-#                        - markduplicate
-#                        - mutation_call
 #                    Capture:
+#                    RNA:
+#
 #                        - bamtofastq
 #                        - split_fastq
 #                        - cutadapt
@@ -113,20 +102,6 @@ split_fastq_line_number:    10000000
 #                        - copy_number
 #                        - sv
 #                        - fusion
-#                    RNA-Anders:
-#                        - start
-#                        - hiseq
-#                        - desq2
-#                    RNA-Tuxedo:
-#                        - tophat
-#                        - cufflinks
-#                        - cuffmerge
-#                        - cuffmerge
-#                        - cuffdiff
-#                        - cummerbund
-#                    CNV:
-#                    SV:
-#                    Fusion:
 
 #
 # Analysis parameters
@@ -185,10 +160,11 @@ adaptor:
 min_score:              20
 
 # Fisher's exact test mutation call
+min_depth:              9
 max_indel:              2
 max_distance:           5
-base_quality_cutoff:    15
-map_quality_cutoff:     30
+base_quality:           15
+map_quality:            30
 mismatch_rate:          0.07
 
 
@@ -197,15 +173,15 @@ mismatch_rate:          0.07
 # Job control parameters
 #
 job_type:
-                    bam2fastq:              sjob
-                    split_fastq:            sjob
-                    cutadapt:               sjob
-                    bwa_mem:                sjob
-                    merge_bam:              sjob
-                    fisher_mutation_call:   sjob
-                    ebcall_mutation_call:   sjob
-                    copy_number:            sjob
-                    sv:                     sjob
+                    bam2fastq:              mjob
+                    split_fastq:            mjob
+                    cutadapt:               mjob
+                    bwa_mem:                ljob
+                    merge_bam:              mjob
+                    fisher_mutation_call:   mjob
+                    ebcall_mutation_call:   mjob
+                    copy_number:            mjob
+                    sv:                     mjob
 
 memory:
                     split_fastq:            4G
