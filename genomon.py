@@ -39,6 +39,7 @@ import genomon_rc as res
 from genomon_cfg import genomon_config as ge_cfg
 from genomon_job import genomon_job as ge_job
 from runtask import RunTask
+from utils import *
 
 ################################################################################
 #
@@ -193,15 +194,29 @@ def make_directories( ):
             os.chdir( cwd )
             cwd = '.'
 
+        subdir = Geno.job.get( 'sample_subdir' )
+        if subdir:
+            subdir_list = glob( "{dir}/{subdir}".format(
+                                    dir = Geno.job.get( 'input_file_dir' ),
+                                    subdir = subdir ) )
+
         for target_dir in res.end_dir_list:
             Geno.dir[ target_dir ] = get_dir( dir_tree, cwd, target_dir )
             make_dir( Geno.dir[ target_dir ] )
+            if subdir and target_dir in res.subdir_list:
+                for subdir_tmp in subdir_list:
+                    make_dir( "{dir}/{subdir}".format(
+                                    dir = Geno.dir[ target_dir ],
+                                    subdir = os.path.basename( subdir_tmp ) ) )
 
         #
         # data diretory
         # make symbolic link from the original input_file_dir
         #   if input_file_dir is not the same as data dir
         #
+        make_dir( "{data}/{sample_date}".format(
+                                data = get_dir( dir_tree, cwd, 'data' ),
+                                sample_date = Geno.job.get( 'sample_date' ) ) )
         Geno.dir[ 'data' ] = "{data}/{sample_date}/{sample_name}". format(
                                 data = get_dir( dir_tree, cwd, 'data' ),
                                 sample_date = Geno.job.get( 'sample_date' ),
@@ -213,9 +228,14 @@ def make_directories( ):
     except IOError as (errno, strerror):
         log.error( "make_directories failed." )
         log.error( "IOError {0}]{1}".format( errno, strerror ) )
-    except:
+
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "make_directories failed." )
         log.error( "Unexpected error: {1}".format( error_message ) )
+        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
 ########################################
 def copy_config_files():
@@ -286,9 +306,12 @@ def main():
         argvs = sys.argv
         arg_parser = construct_arguments()
 
+        #
+        # parse arguments
+        #
         if len(argvs) < 3:
             arg_parser.print_help()
-            raise
+            sys.exit( 0 )
 
         Geno.options = arg_parser.parse_args()
         Geno.dir[ 'genomon' ] = os.path.dirname( os.path.realpath(__file__) )
@@ -297,10 +320,14 @@ def main():
         # Logging setup
         #
         #  logger which can be passed to multiprocessing ruffus tasks
+        if Geno.options.verbose:
+            verbose_level = Geno.options.verbose
+        else:
+            verbose_level = 0
+
         log, log_mutex = cmdline.setup_logging( __name__,
                                                 Geno.options.log_file,
-                                                Geno.options.verbose )
-
+                                                verbose_level)
         #
         # Print header in log
         #
@@ -332,7 +359,7 @@ def main():
         #
         # Print information
         #
-        log.info( '# main: process={num}'.format( num = Geno.options.jobs ) )
+#        log.info( '# main: process={num}'.format( num = Geno.options.jobs ) )
 
         #######################################################################
         #
@@ -350,27 +377,57 @@ def main():
         elif job_tasks[ 'Capture' ]:
             import capture_pipeline as pipeline
 
+#
+#       multiprocess
+#
+#       Optional. The number of processes which should be dedicated to running in parallel independent tasks
+#            and jobs within each task. If multiprocess is set to 1, the pipeline will execute in the main process.
+#
+#       multithread
+#
+#       Optional. The number of threads which should be dedicated to running in parallel independent tasks
+#            and jobs within each task. Should be used only with drmaa.
+#            Otherwise the CPython global interpreter lock (GIL) will slow down your pipeline
+#
+#       verbose            
+#
+#       Optional parameter indicating the verbosity of the messages sent to logger: (Defaults to level 1 if unspecified)
+#
+#           level 0 : nothing
+#           level 1 : Out-of-date Task names
+#           level 2 : All Tasks (including any task function docstrings)
+#           level 3 : Out-of-date Jobs in Out-of-date Tasks, no explanation
+#           level 4 : Out-of-date Jobs in Out-of-date Tasks, with explanations and warnings
+#           level 5 : All Jobs in Out-of-date Tasks, (include only list of up-to-date tasks)
+#           level 6 : All jobs in All Tasks whether out of date or not
+#           level 10: logs messages useful only for debugging ruffus pipeline code
         pipeline_run(   target_tasks = [ pipeline.last_function ],
                         multiprocess = Geno.options.jobs,
-                        logger = log )
-                        
-                            
+                        logger = log,
+                        verbose = 50)
+#        pipeline_cleanup()
 
+#        pipeline_printout_graph( "flow_{job_type}".format( job_type = job_tasks.keys()[ 0 ] ),
+#                                 "jpg",
+#                                 [ pipeline.last_function ]
+#                )
+#        cmdline.run( Geno.options )
         #
         #######################################################################
 
     except IOError as (errno, strerror):
-        log.error( "main: I/O error({0}): {1}".format(errno, strerror) )
+        log.error( "{0}: I/O error({1}): {2}".format( whoami(), errno, strerror) )
 
     except ValueError:
-        log.error( "main: ValueError" )
+        log.error( "{0}: ValueError".format( whoami() ) )
 
-    except:
-        exc_info = sys.exc_info()
-        if log:
-            log.error( "main: Unexpected error:" )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{0}: Unexpected error".format( whoami() ) )
+        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
-    return 0
+    sys.exit( 0 )
 
 
 ################################################################################

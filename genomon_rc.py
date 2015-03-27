@@ -12,142 +12,12 @@ resource file
 date_format = "{year:0>4d}{month:0>2d}{day:0>2d}"
 file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
 
-splitfile = """
-#!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
-# Set SGE
-#
-#$ -S /bin/bash         # set shell in UGE
-#$ -cwd                 # execute at the submitted dir
-#$ -e {log}             # log file directory
-#$ -o {log}             # log file directory
-pwd                     # print current working directory
-hostname                # print hostname
-date                    # print date
-set -xv
-
-split -a {suffix_len} -d -l {lines_per_file} {input_file} {output_prefix}_
-for FILE in `ls {output_prefix}_*`
-do
-    mv $FILE $FILE{output_suffix}
-done
-
-"""
-
-cutadapt = """
-#!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
-#$ -S /bin/bash
-#$ -cwd
-#$ -e {log}             # log file directory
-#$ -o {log}             # log file directory
-pwd                     # print current working directory
-hostname                # print hostname
-date                    # print date
-set -xv
-
-#infastq=$1
-#outfastq=$2
-#tmpoutfastq=$3
-#casavacode=$4
-#optadapters=$5
-#cutadapt=$6
-#scriptdir=$7
-
-
-source {scriptdir}/utility.sh
-
-# sleep 
-sh {scriptdir}/sleep.sh
-
-echo "{cutadapt} {optadapters} {infastq} > {tmpoutfastq}"
-{cutadapt} {optadapters} {infastq} > {tmpoutfastq}
-check_error $?
-
-echo "{scriptdir}/fastqNPadding.pl {casavacode} {tmpoutfastq} > {outfastq}"
-{scriptdir}/fastqNPadding.pl {casavacode} {tmpoutfastq} > {outfastq}
-check_error $?
-
-"""
-
-
-
-bwa_mem = """
-#!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
-# Set SGE
-#
-#$ -S /bin/bash         # set shell in UGE
-#$ -cwd                 # execute at the submitted dir
-#$ -e {log}             # log file directory
-#$ -o {log}             # log file directory
-pwd                     # print current working directory
-hostname                # print hostname
-date                    # print date
-set -xv
-
-{bwa} mem \
-    -t 1 \
-    {hg19_fa} \
-    {fastq1} \
-    {fastq2} | \
-{samtools} view -Sb - \
-    > {bam}
-"""
-
-merge_bam = \
-"""
-#!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
-# Set SGE
-#
-#$ -S /bin/bash         # set shell in UGE
-#$ -cwd                 # execute at the submitted dir
-#$ -e {log}             # log file directory
-#$ -o {log}             # log file directory
-pwd                     # print current working directory
-hostname                # print hostname
-date                    # print date
-set -xv
-
-{samtools} merge \
-    -nr \
-    {output_bam_file} \
-    {input_bam_files}
-"""
-
-fisher_mutation_call = """
-#!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
-#$ -S /bin/bash
-#$ -cwd
-#$ -e {log}             # log file directory
-#$ -o {log}             # log file directory
-pwd                     # print current working directory
-hostname                # print hostname
-date                    # print date
-set -xv
-
-
-"""
-
 #
 # Misc
+#
+
+#
+# Default directory three
 #
 dir_tree_resource = \
 """
@@ -172,8 +42,38 @@ project_directory:
 """
 
 end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annovar', 'fisher', 'cnv', 'fusion', 'sv' )
+subdir_list = ( 'fastq', 'bam', 'annovar', 'fisher', 'cnv', 'fusion', 'sv' )
+data_ext_list = { 'fastq':      'fastq',
+                  'bam':        'bam',
+                  'annovar':    'txt'
+}
 
+#
+# script files to copy
+#
 script_files = ( 'shell/utility.sh',
                  'shell/sleep.sh',
-                 'perl/fastqNPadding.pl'
+                 'perl/fastqNPadding.pl',
+                 'python/bamfilter.py',
+                 'python/fisher.py'
         )
+
+#
+# Job configuration file default values
+#
+job_config_default ={
+    'max_indel': 2,
+    'max_distance': 5,
+    'map_quality': 30,
+    'base_quality': 15,
+    'mismatch_rate': 0.07,
+    'min_score': 30,
+    'min_depth': 9,
+    'rg_id': 'Unknown',
+    'sample_desc': 'Unknown',
+    'platform': 'Unknown',
+    'platform_unit': 'Unknown',
+    'seq_center': 'Unknown',
+    'pred_med_insert': 'Unknown'
+}
+

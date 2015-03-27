@@ -53,6 +53,18 @@ class RunTask:
             self.disconnect()
 
 
+    def run_arrayjob( self, job_type, memory, run_cmd, id_list ):
+        return_code = 0
+        if self.enable_mpi:
+            pass
+        else:
+            run_cmd_tmp = "-t {id_list}, {cmd}".format(
+                                id_list = id_list,
+                                cmd = run_cmd )
+            return_code = self.__runtask_by_qsub( job_type, memory, run_cmd_tmp )
+
+        return return_code
+
     def runtask( self, job_type, memory, run_cmd ):
         """
         Front end funtion to run task
@@ -60,9 +72,11 @@ class RunTask:
         """
 
         if self.enable_mpi:
-            self.__runtask_by_mpi( job_type, memory, run_cmd )
+            return_code = self.__runtask_by_mpi( job_type, memory, run_cmd )
         else:
-            self.__runtask_by_qsub( job_type, memory, run_cmd )
+            return_code = self.__runtask_by_qsub( job_type, memory, run_cmd )
+
+        return return_code
 
     def disconnect( self ):
         id = 0
@@ -88,11 +102,12 @@ class RunTask:
             self.log.error( "IOError {0}{1}",format( errno, strerror ) )
             return_code = 1
 
-        except:
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             self.log.error( "RunTask.runtaskby_qsub failed." )
             self.log.error( "Unexpected error." )
-            return_code = 1
-                
+            self.log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
             return_code = 1
 
         return return_code

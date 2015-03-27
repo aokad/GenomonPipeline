@@ -51,7 +51,11 @@ def stage_1(
     return_code = True
 
     try:
-        log.info( "# stage_1 : ", input_file);
+        log.info( "# {function} : {inputfile}, {outputfile}".format(
+                    function = whoami(),
+                    inputfile = input_file,
+                    outputfile = output_file
+                    ) )
         shutil.copyfile( input_file, output_file )
 
     except IOError as (errno, strerror):
@@ -69,12 +73,12 @@ def stage_1(
                 )
         return_code = False
 
-    except:
-        log.error( "function: Unexpected error: {error} ".format(
-                    function = whoami(),
-                    error = sys.exc_info()[0]
-                    )
-                )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error} ".format(
+                    function = whoami()))
+        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_code = False
 
 
@@ -98,7 +102,11 @@ def stage_2(
     return_code = True
 
     try:
-        log.info( "# stage_1" );
+        log.info( "# {function} : {inputfile}, {outputfile}".format(
+                    function = whoami(),
+                    inputfile = input_file,
+                    outputfile = output_file
+                    ) )
         shutil.copyfile( input_file, output_file )
 
     except IOError as (errno, strerror):
@@ -116,13 +124,12 @@ def stage_2(
                 )
         return_code = False
 
-    except:
-        log.error( "function: Unexpected error: {error} ".format(
-                    function = whoami(),
-                    error = sys.exc_info()[0]
-                    )
-                )
-        return_code = False
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error} ".format(
+                    function = whoami()))
+        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
 
     return return_code
@@ -146,7 +153,11 @@ def stage_3(
     return_code = True
 
     try:
-        log.info( "# stage_1" );
+        log.info( "# {function} : {inputfile}, {outputfile}".format(
+                    function = whoami(),
+                    inputfile = input_file,
+                    outputfile = output_file
+                    ) )
         shutil.copyfile( input_file, output_file )
 
     except IOError as (errno, strerror):
@@ -164,12 +175,11 @@ def stage_3(
                 )
         return_code = False
 
-    except:
-        log.error( "function: Unexpected error: {error} ".format(
-                    function = whoami(),
-                    error = sys.exc_info()[0]
-                    )
-                )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error} ".format(
+                    function = whoami()))
         return_code = False
 
 
@@ -179,7 +189,7 @@ def stage_3(
 #
 #   STAGE 4
 #
-@transform( stage_1, suffix( "3.txt" ), "4.txt" )
+@transform( stage_3, suffix( "3.txt" ), "4.txt" )
 @follows( stage_3 )
 @check_if_uptodate( check_file_exists )
 def stage_4(
@@ -193,7 +203,11 @@ def stage_4(
     return_code = True
 
     try:
-        log.info( "# stage_1" );
+        log.info( "# {function} : {inputfile}, {outputfile}".format(
+                    function = whoami(),
+                    inputfile = input_file,
+                    outputfile = output_file
+                    ) )
         shutil.copyfile( input_file, output_file )
 
     except IOError as (errno, strerror):
@@ -211,12 +225,11 @@ def stage_4(
                 )
         return_code = False
 
-    except:
-        log.error( "function: Unexpected error: {error} ".format(
-                    function = whoami(),
-                    error = sys.exc_info()[0]
-                    )
-                )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error} ".format(
+                    function = whoami()))
         return_code = False
 
 

@@ -32,8 +32,11 @@ class genomon_config( object ):
         except IOError as (errno, stderror ):
             self.__log.error( "genomon_config.open_cfg: IOError: error number: {num}, std_error: {stderr}".format(
                         num = errno, stderr = stderror ) )
-        except:
-            self.__log.error( "genomon_config.open_cfg: Unexpected error:", sys.exc_info()[0] )
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            self.__log.error( "genomon_config.open_cfg: Unexpected error" )
+            self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
 
     def get( self, section, item ):
