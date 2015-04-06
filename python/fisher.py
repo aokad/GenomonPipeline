@@ -100,12 +100,6 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
             return None
 
         #
-        # Result data structure preparation
-        #
-
-        indel = AutoVivification()
-
-        #
         # data_pair IDs
         # POS_CHR = 0
         # POS_COORD = 1
@@ -133,6 +127,8 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
         #
         if mp_list_len > 6:
             comparison = True
+        else:
+            comparison = False
 
         if comparison:
             input_list = [ ( POS_DATA1, mp_list[ 3 ], mp_list[ 4 ], mp_list[ 5 ] ),
@@ -141,6 +137,8 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
             input_list = [ ( POS_DATA1, mp_list[ 3 ], mp_list[ 4 ], mp_list[ 5 ] ) ]
 
         for data_id, depth, read_bases, qual_list in input_list:
+
+            indel = AutoVivification()
 
             #
             # Look for deletion/insertion and save info in 'indel' dictionary
@@ -190,11 +188,9 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
             # Count mismatch
             #
             if int( depth ) > min_depth:
-                u_ref = ref_base_U
-                l_ref = ref_base_U.lower()
 
-                read_bases = read_bases.replace( '.', u_ref )
-                read_bases = read_bases.replace( ',', l_ref )
+                read_bases = read_bases.replace( '.', ref_base_U )
+                read_bases = read_bases.replace( ',', ref_base_U.lower() )
 
                 base_num = {
                     "total_A": 0,
@@ -222,7 +218,7 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
 
                 data_pair[ data_id ][ 'bases' ] = read_bases
                 data_pair[ data_id ][ 'depth' ] = depth
-                ref_num = base_num[ 'total_' + u_ref ]
+                ref_num = base_num[ 'total_' + ref_base_U ]
 
                 mis_num = 0
                 mis_base_U = None
@@ -238,6 +234,9 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
                             mis_num = base_num[ tmp ]
                             mis_base_U = nuc
 
+                #
+                # count ins and del
+                #
                 for type in ( '+', '-' ):
                     if type in indel:
                         for key in indel[ type ].keys():
@@ -259,7 +258,7 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
                     data_pair[ data_id ][ 's_ratio' ]  = 0
 
                 #
-                # Beta distribution
+                # Beta distribution for SNV
                 #
                 data_pair[ data_id ][ '0.1' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.1 )
                 data_pair[ data_id ][ 'mid' ] = ( mis_num + 1 ) / float(ref_num + mis_num + 2 )
@@ -321,6 +320,8 @@ def print_data( data, w, min_depth, mismatch_rate ):
                         indel_id_tmp = indel_id + 1
                     elif strand == '1':
                         indel_id_tmp = indel_id
+                    elif strand == '0':
+                        continue
 
                     if data[ data_id ][ 'indel' ][ type ][ bases ][ strand ] > 0:
                         f_print_indel = True
@@ -368,7 +369,11 @@ def print_data( data, w, min_depth, mismatch_rate ):
             f_print = True or f_print
 
     if f_print:
-        outstr = '\t'.join( data[POS_CHR:POS_DATA1] ) + str_list[ 0 ] + str_list[ 1 ] + '\t' + str( data[ POS_FISHER_SNV ] )+ '\n' 
+        outstr = '\t'.join( data[POS_CHR:POS_DATA1] ) + str_list[ 0 ]
+        if data[ POS_COUNT ] == 2:
+            outstr +=  str_list[ 1 ] + '\t' + str( data[ POS_FISHER_SNV ] )
+        outstr +=  '\n'
+
         w.write( outstr )
 
 
@@ -412,7 +417,8 @@ def Pileup_and_count(
         if f_print:
             w = open( out_file, 'w' )
             w.write( "chr\tpos\tref\tobs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\t" )
-            w.write( "obs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\tfisher\n" )
+            if in_bam2:
+                w.write( "obs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\tfisher\n" )
 
         #
         # STDIN PIPE

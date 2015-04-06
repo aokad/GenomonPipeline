@@ -53,7 +53,7 @@ class RunTask:
             self.disconnect()
 
 
-    def run_arrayjob( self, job_type, memory, run_cmd, id_list ):
+    def run_arrayjob( self, job_queue, memory, run_cmd, id_list ):
         return_code = 0
         if self.enable_mpi:
             pass
@@ -61,20 +61,20 @@ class RunTask:
             run_cmd_tmp = "-t {id_list}, {cmd}".format(
                                 id_list = id_list,
                                 cmd = run_cmd )
-            return_code = self.__runtask_by_qsub( job_type, memory, run_cmd_tmp )
+            return_code = self.__runtask_by_qsub( job_queue, memory, run_cmd_tmp )
 
         return return_code
 
-    def runtask( self, job_type, memory, run_cmd ):
+    def runtask( self, job_queue, memory, run_cmd ):
         """
         Front end funtion to run task
 
         """
 
         if self.enable_mpi:
-            return_code = self.__runtask_by_mpi( job_type, memory, run_cmd )
+            return_code = self.__runtask_by_mpi( job_queue, memory, run_cmd )
         else:
-            return_code = self.__runtask_by_qsub( job_type, memory, run_cmd )
+            return_code = self.__runtask_by_qsub( job_queue, memory, run_cmd )
 
         return return_code
 
@@ -85,7 +85,7 @@ class RunTask:
             comm_tmp.Disconnect()
             id += 1
 
-    def __runtask_by_mpi( self, job_type, memory, run_cmd ):
+    def __runtask_by_mpi( self, job_queue, memory, run_cmd ):
 
         return_code = 0
 
@@ -112,7 +112,7 @@ class RunTask:
 
         return return_code
 
-    def __runtask_by_qsub( self, job_type, memory, run_cmd ):
+    def __runtask_by_qsub( self, job_queue, memory, run_cmd ):
         """
         Submit a job by qsub.
 
@@ -120,10 +120,10 @@ class RunTask:
         self.log.info( '# runtask_by_qsub' )
         self.log.info( "command = {cmd}".format(cmd = run_cmd) )
         self.log.info( "memory  = {mem}".format(mem = memory) )
-        self.log.info( "job     = {job}\n".format(job = job_type) )
+        self.log.info( "job     = {job}\n".format(job = job_queue) )
 
-        if job_type == 'mjob':
-            job_type = ''
+        if job_queue == 'mjob':
+            job_queue = ''
 
         return_code = 0
         p_return_code = 0
@@ -132,7 +132,7 @@ class RunTask:
             cmd_tmp = self.qsub_cmd.format(
                                 s_vmem  = memory,
                                 mem_req = memory[:-1],
-                                job_type = job_type,
+                                job_queue = job_queue,
                                 cmd     = run_cmd )
 
             std_out = None

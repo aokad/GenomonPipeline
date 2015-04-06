@@ -82,7 +82,7 @@ def replace_reserved_string( dir_tmp, cwd ):
         project_directory   -> defined as project in job configuration file
         sample_date         -> defined sample_date in job configuration file
         sample_name         -> defined sample_name in job configuration file
-        run_date            -> date of the pipeline to run
+        analysis_date       -> date of the pipeline to run
     """
     #
     # Replace reserved strings
@@ -96,11 +96,13 @@ def replace_reserved_string( dir_tmp, cwd ):
         dir_replace = Geno.job.get( 'sample_name' )
     elif dir_tmp == 'sample_date_sample_name':
         dir_replace = str( Geno.job.get( 'sample_date' ) ) + '_' + Geno.job.get( 'sample_name' )
-    elif dir_tmp == 'run_date':
-        dir_replace = res.date_format.format( 
-                    year = Geno.now.year, 
-                    month = Geno.now.month, 
-                    day = Geno.now.day ) 
+    elif dir_tmp == 'analysis_date':
+        dir_replace = str( Geno.job.get( 'analysis_date' ) )
+        if dir_replace == 'today' :
+            dir_replace = res.date_format.format( 
+                        year = Geno.now.year, 
+                        month = Geno.now.month, 
+                        day = Geno.now.day ) 
     else:
         dir_replace = dir_tmp
     
@@ -291,6 +293,21 @@ def copy_script_files():
         shutil.copy( src, dest )
 
     
+########################################
+def set_env_variables():
+    """
+    Set environment variables for some tools
+
+    """
+    global Geno
+
+    for tool_env in res.env_list.keys():
+        env_value = Geno.conf.get( 'ENV', tool_env )
+        for env_name in res.env_list[ tool_env ]:
+            tmp = os.environ[ env_name ]
+            os.environ[ env_name ] = tmp + ':' + env_value
+
+
 ###############################################################################
 #
 # main
@@ -347,6 +364,7 @@ def main():
         make_directories()
         copy_config_files()
         copy_script_files()
+        set_env_variables()
 
         #
         # Initalize RunTask object

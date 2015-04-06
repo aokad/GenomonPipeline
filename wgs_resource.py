@@ -231,10 +231,8 @@ OUTPUT_BAM_PREFIX=`echo {output_bam_file} | cut -d '.' -f1`
 
 {samtools} merge \
     -nr \
-    "$OUTPUT_BAM_PREFIX"_merged.bam \
+    "$OUTPUT_BAM_PREFIX".bam \
     {input_bam_files};
-
-{samtools} sort "$OUTPUT_BAM_PREFIX"_merged.bam $OUTPUT_BAM_PREFIX;
 
 {samtools} index {output_bam_file};
 """
@@ -258,7 +256,7 @@ set -xv
 CONTROL_FILTERED_BAM=`echo {control_input_bam} | cut -d '.' -f1`_filtered.bam
 DISEASE_FILTERED_BAM=`echo {disease_input_bam} | cut -d '.' -f1`_filtered.bam
 
-if [ -f {control_input_bam} ]
+if [ -f {control_input_bam} -a ! -f $CONTROL_FILTERED_BAM ]
 then
     python {script_dir}/bamfilter.py \
                --ref_fa {ref_fa} \
@@ -269,7 +267,7 @@ then
             $CONTROL_FILTERED_BAM
 fi
 
-if [ -f {disease_input_bam} ]
+if [ -f {disease_input_bam} -a ! -f $DISEASE_FILTERED_BAM ]
 then
     python {script_dir}/bamfilter.py \
                --ref_fa {ref_fa} \
@@ -280,7 +278,7 @@ then
             $DISEASE_FILTERED_BAM
 fi
 
-if [ -f $CONTROL_FILTERED_BAM -a -f $DISEASE_FILTERED_BAM ]
+if [ -f $CONTROL_FILTERED_BAM -a -f $DISEASE_FILTERED_BAM -a ! -f {output_txt} ]
 then
     samtools mpileup \
                 -BQ0 \
@@ -288,21 +286,21 @@ then
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM \
                 $DISEASE_FILTERED_BAM |\
-    python {script_dir}/pileup.py \
+    python {script_dir}/fisher.py \
                --output {output_txt}\
                --ref_fa {ref_fa}\
                --base_quality {base_quality} \
                --mismatch_rate {mismatch_rate}\
                --min_depth {min_depth}
 
-elif [ -f $CONTROL_FILTERED_BAM ]
+elif [ -f $CONTROL_FILTERED_BAM -a ! -f {output_txt} ]
 then
     samtools mpileup \
                 -BQ0 \
                 -d 10000000 \
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM |\
-    python {script_dir}/pileup.py \
+    python {script_dir}/fisher.py \
                --output {output_txt} \
                --ref_fa {ref_fa} \
                --base_quality {base_quality} \

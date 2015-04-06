@@ -26,7 +26,7 @@ project_directory:
         sample_date:
             sample_name
     results:
-        run_date:
+        analysis_date:
             sample_date_sample_name:
                 - config
                 - script:
@@ -73,7 +73,13 @@ job_config_default ={
     'sample_desc': 'Unknown',
     'platform': 'Unknown',
     'platform_unit': 'Unknown',
+    'library': 'Unknown',
     'seq_center': 'Unknown',
     'pred_med_insert': 'Unknown'
 }
+
+#
+# Environment variables
+#
+env_list = { 'libmaus_PATH': [ 'LD_LIBRARY_PATH' ] }
 

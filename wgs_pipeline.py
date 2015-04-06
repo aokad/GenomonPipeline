@@ -255,10 +255,11 @@ def extract_fastq( input_file_list, file_ext ):
     #
     # Run
     #
-    return_code = Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
-                          Geno.job.get( 'memory' )[ function_name ],
-                          shell_script_full_path,
-                          '1-{id}:1'.format( id = id ) )
+    return_code = Geno.RT.run_arrayjob(
+                            Geno.job.get( 'job_queue' )[ function_name ],
+                            Geno.job.get( 'memory' )[ function_name ],
+                            shell_script_full_path,
+                            '1-{id}:1'.format( id = id ) )
     if return_code != 0:
         log.error( "{function}: runtask failed" )
         raise
@@ -326,9 +327,10 @@ def bamtofastq(
         #
         # Run
         #
-        return_code = Geno.RT.runtask( Geno.job.get( 'job_type' )[ function_name ],
-                         Geno.job.get( 'memory' )[ function_name ],
-                         shell_script_full_path )
+        return_code = Geno.RT.runtask(
+                        Geno.job.get( 'job_queue' )[ function_name ],
+                        Geno.job.get( 'memory' )[ function_name ],
+                        shell_script_full_path )
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
@@ -421,10 +423,11 @@ def split_fastq(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
-                              Geno.job.get( 'memory' )[ function_name ],
-                              shell_script_full_path,
-                              '1-{id}:1'.format( id = id ) )
+        return_code = Geno.RT.run_arrayjob(
+                            Geno.job.get( 'job_queue' )[ function_name ],
+                            Geno.job.get( 'memory' )[ function_name ],
+                            shell_script_full_path,
+                            '1-{id}:1'.format( id = id ) )
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
@@ -524,10 +527,11 @@ def cutadapt(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
-                              Geno.job.get( 'memory' )[ function_name ],
-                              shell_script_full_path,
-                              '1-2:1' )
+        return_code = Geno.RT.run_arrayjob(
+                            Geno.job.get( 'job_queue' )[ function_name ],
+                            Geno.job.get( 'memory' )[ function_name ],
+                            shell_script_full_path,
+                            '1-2:1' )
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
@@ -629,10 +633,11 @@ def bwa_mem(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob( Geno.job.get( 'job_type' )[ function_name ],
-                              Geno.job.get( 'memory' )[ function_name ],
-                              shell_script_full_path,
-                              "1-{id}:1".format( id = id ) )
+        return_code = Geno.RT.run_arrayjob(
+                            Geno.job.get( 'job_queue' )[ function_name ],
+                            Geno.job.get( 'memory' )[ function_name ],
+                            shell_script_full_path,
+                            "1-{id}:1".format( id = id ) )
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
@@ -699,9 +704,10 @@ def merge_bam(
         #
         # Run
         #
-        return_code = Geno.RT.runtask( Geno.job.get( 'job_type' )[ 'merge_bam' ],
-                         Geno.job.get( 'memory' )[ 'merge_bam' ],
-                         shell_script_full_path )
+        return_code = Geno.RT.runtask(
+                            Geno.job.get( 'job_queue' )[ 'merge_bam' ],
+                            Geno.job.get( 'memory' )[ 'merge_bam' ],
+                            shell_script_full_path )
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
@@ -768,9 +774,10 @@ def fisher_mutation_call(
         #
         # Run
         #
-        return_code = Geno.RT.runtask( Geno.job.get( 'job_type' )[ function_name ],
-                         Geno.job.get( 'memory' )[ function_name ],
-                         shell_script_full_path )
+        return_code = Geno.RT.runtask(
+                            Geno.job.get( 'job_queue' )[ function_name ],
+                            Geno.job.get( 'memory' )[ function_name ],
+                            shell_script_full_path )
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
