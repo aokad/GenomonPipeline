@@ -352,7 +352,7 @@ set -xv
 
 OUT_BAM_PREFIX=`echo {output_bam} | sed 's/\.[^\.]\+$//'`
 
-bammarkduplicates  \
+{biobambam}/bammarkduplicates  \
     M="$OUT_BAM_PREFIX".metrics \
     tmpfile="$OUT_BAM_PREFIX".tmp \
     markthreads=8 \

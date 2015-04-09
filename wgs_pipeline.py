@@ -824,7 +824,7 @@ def markduplicates(
                                             log = Geno.dir[ 'log' ],
                                             input_bam_files = input_files,
                                             output_bam = output_file1,
-                                            picard = Geno.conf.get( 'SOFTWARE', 'picard' )
+                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
                                         )
                                     )
             shell_script_file.close()
