@@ -10,7 +10,7 @@ pwd             # print current working directory
 hostname        # print hostname
 date            # print date
 set -xv
-/usr/local/package/python2.7/2.7.2/bin/python $2 /home/eigos/Data/Genomon/genomon.py \
-           --config_file ./genomon.cfg \
+/usr/local/package/python2.7/2.7.2/bin/python $2 /home/w3varann/tools/Genomon/genomon.py \
+           --config_file /home/w3varann/tools/Genomon/genomon.cfg \
            --job_file $1 \
            --jobs 8
