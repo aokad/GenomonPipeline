@@ -49,7 +49,7 @@ class genomon_job:
     def get( self, item ):
         if self.__job != None:
             return_item = self.__job.get( item )
-            if not return_item :
+            if return_item == None:
                 if item in self.__default:
                     return_item = self.__default[ item ]
                 else:

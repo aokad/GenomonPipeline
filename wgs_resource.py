@@ -104,15 +104,34 @@ echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
 {array_data}
 
-if [ "{file_ext}" = ".gz" ]
-then
-    zcat {input_file} | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
-elif [ "{file_ext}" = ".bz2" ]
-then
-    bzip2 -dc  {input_file} | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
-else
-    split -a {suffix_len} -d -l {lines_per_file} {input_file} {output_prefix}
-fi
+case {input_file} in
+*\.gz)
+    if [ "{fastq_filter}" = "True" ]
+    then
+        zcat {input_file} | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+    else
+        zcat {input_file} | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+    fi
+    ;;
+
+*\.bz2)
+    if [ "{fastq_filter}" = "True" ]
+    then
+        bzip2 -dc  {input_file} | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+    else
+        bzip2 -dc  {input_file} | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+    fi
+    ;;
+
+*)
+    if [ "{fastq_filter}" = "True" ]
+    then
+        cat {input_file} | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+    else
+        split -a {suffix_len} -d -l {lines_per_file} {input_file} {output_prefix}
+    fi
+    ;;
+esac
 
 for FILE in `ls {output_prefix}*`
 do
@@ -192,24 +211,75 @@ echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
 {array_data}
 
-TMP_BAM=`echo {bam} | sed 's/\.bam/_unsorted.bam/'`
+UNSORTED_BAM=`echo {bam} | sed 's/\.bam/_unsorted.bam/'`
 BAM_WITHOUT_SUFFIX=`echo {bam} | sed 's/\.bam//'`
 
 {bwa} mem \
     -t 2 \
     -T {min_score} \
     -R '@RG\tID:{rg_id}\tSM:{sample_desc}\tLB:{library}\tPL:{platform}\tPU:{platform_unit}\tCN:{seq_center}\tPI:{pred_med_insert}' \
-    {hg19_fa} \
+    {ref_fa} \
     {fastq1} \
     {fastq2} | \
 {samtools} view -Sb - \
-    > $TMP_BAM;
+    > $UNSORTED_BAM;
 
-{samtools} sort $TMP_BAM $BAM_WITHOUT_SUFFIX;
+{samtools} sort $UNSORTED_BAM "$BAM_WITHOUT_SUFFIX"_sorted;
 
 """
 
-merge_bam = \
+bwa_mem_biobambam = r"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+# Set SGE
+#
+#$ -S /bin/bash         # set shell in UGE
+#$ -cwd                 # execute at the submitted dir
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+echo SGE_TASK_ID:$SGE_TASK_ID
+echo SGE_TASK_FIRST:$SGE_TASK_FIRST
+echo SGE_TASK_LAST:$SGE_TASK_LAST
+echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
+
+{array_data}
+
+BAM_WITHOUT_SUFFIX=`echo {bam} | sed 's/\.bam//'`
+
+{bwa} mem \
+    -t 2 \
+    -T {min_score} \
+    -R '@RG\tID:{rg_id}\tSM:{sample_desc}\tLB:{library}\tPL:{platform}\tPU:{platform_unit}\tCN:{seq_center}\tPI:{pred_med_insert}' \
+    {ref_fa} \
+    {fastq1} \
+    {fastq2} | \
+{samtools} view -Sb - \
+    > "$BAM_WITHOUT_SUFFIX"_unsorted.bam;
+
+{biobambam}/bamsort index=1 \
+                    level=1 \
+                    inputthreads=2 \
+                    outputthreads=2 \
+                    calmdnm=1 \
+                    calmdnmrecompindentonly=1 \
+                    calmdnmreference={ref_fa} \
+                    tmpfile="$BAM_WITHOUT_SUFFIX".tmp \
+                    inputformat=bam\
+                    indexfilename="$BAM_WITHOUT_SUFFIX"_bamsorted.bam.bai \
+                    I="$BAM_WITHOUT_SUFFIX"_unsorted.bam \
+                    O="$BAM_WITHOUT_SUFFIX"_bamsorted.bam
+
+"""
+
+samtools_merge_bam = \
 """
 #!/bin/bash
 #
@@ -227,14 +297,72 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-OUTPUT_BAM_PREFIX=`echo {output_bam_file} | cut -d '.' -f1`
+OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
 
 {samtools} merge \
-    -nr \
     "$OUTPUT_BAM_PREFIX".bam \
     {input_bam_files};
 
 {samtools} index {output_bam_file};
+
+"""
+
+markduplicates = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+# Set SGE
+#
+#$ -S /bin/bash         # set shell in UGE
+#$ -cwd                 # execute at the submitted dir
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+java -Xmx6G -Xms2G -jar {picard}/MarkDuplicates.jar \
+         ASSUME_SORTED=true \
+         I={input_bam} \
+         O={output_bam} \
+         M={output_bam}.met
+"""
+
+biobambam_markduplicates = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+# Set SGE
+#
+#$ -S /bin/bash         # set shell in UGE
+#$ -cwd                 # execute at the submitted dir
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+OUT_BAM_PREFIX=`echo {output_bam} | sed 's/\.[^\.]\+$//'`
+
+bammarkduplicates  \
+    M="$OUT_BAM_PREFIX".metrics \
+    tmpfile="$OUT_BAM_PREFIX".tmp \
+    markthreads=8 \
+    rewritebam=1 \
+    rewritebamlevel=1 \
+    index=1 \
+    md5=1\
+    {input_bam_files} \
+    O={output_bam}
+
 """
 
 fisher_mutation_call = \
@@ -253,8 +381,8 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-CONTROL_FILTERED_BAM=`echo {control_input_bam} | cut -d '.' -f1`_filtered.bam
-DISEASE_FILTERED_BAM=`echo {disease_input_bam} | cut -d '.' -f1`_filtered.bam
+CONTROL_FILTERED_BAM=`echo {control_input_bam} | sed 's/\.[^\.]\+$//'`_filtered.bam
+DISEASE_FILTERED_BAM=`echo {disease_input_bam} | sed 's/\.[^\.]\+$//'`_filtered.bam
 
 if [ -f {control_input_bam} -a ! -f $CONTROL_FILTERED_BAM ]
 then

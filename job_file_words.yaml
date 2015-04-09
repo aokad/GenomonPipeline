@@ -1,0 +1,59 @@
+mandatory:
+        - project
+        - sample_name
+        - sample_date
+        - analysis_date
+
+        - project_root
+        - input_file_dir
+        - input_file_type
+        - file_name
+
+        - tasks
+        - job_queue
+        - memory
+        - qsub_cmd
+
+optional:
+        - project_dir_tree
+        - file_ext
+        - pair_id
+        - sample_subdir
+        - control_subdir
+        - disease_subdir
+
+parameters:
+        # split_fastq
+        - split_fastq_line_number:  split_fastq
+
+        # bwa mem @RG
+        - rg_id:                    bwa_mem 
+        - sample_desc:              bwa_mem 
+        - platform:                 bwa_mem 
+        - library:                  bwa_mem 
+        - platform_unit:            bwa_mem 
+        - seq_center:               bwa_mem 
+        - pred_med_insert:          bwa_mem 
+
+        # bwa mem
+        - min_score:                bwa_mem
+
+        # Fisher's exact test mutation call
+        - min_depth:                fisher_mutation_call
+        - max_indel:                fisher_mutation_call
+        - max_distance:             fisher_mutation_call
+        - base_quality:             fisher_mutation_call
+        - map_quality:              fisher_mutation_call
+        - mismatch_rate:            fisher_mutation_call
+
+out_dir:
+        - bam2fastq:              fastq
+        - split_fastq:            fastq
+        - cutadapt:               fastq
+        - bwa_mem:                bam
+        - merge_bam:              bam
+        - fisher_mutation_call:   mutation
+        - ebcall_mutation_call:   mutation
+        - copy_number:            cnv
+        - sv:                     sv
+

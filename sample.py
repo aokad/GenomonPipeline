@@ -14,6 +14,7 @@ class Sample():
         self.__sample_id_list = [ ]
         self.__current_sample_id = 0
         self.__param = []
+        self.__f_subdir = False
 
     def __del__( self ):
         pass
@@ -52,6 +53,7 @@ class Sample():
     #   ( fastq1, fastq2 ) => bam               : out_ext = '.bam',   num_in = 2, num_out = 1
     #   ( fastq1, fastq2 ) => (fastq1, fastq2 ) : out_ext = '.fastq', num_in = 2, num_out = 2
     #   bam  => txt                             : out_ext = '.txt',   num_in = 1, num_out = 1
+    #   (control_bam, diseaes_bam )  => txt     : out_ext = '.txt',   num_in = 2, num_out = 1
     #
     def make_param(
             self,
@@ -88,7 +90,7 @@ class Sample():
                     file_type = Geno.job.get( 'input_file_type' )
                     if file_type in ( 'paired_fastq', 'single_fastq'):
                         replace_ext = '.fastq'
-                    if file_type in ( 'paired_bam', 'single_bam'):
+                    if file_type in ( 'bam'):
                         replace_ext = '.bam'
                     tmp_out1 = outfile1.replace( file_ext, replace_ext )
                     tmp_out2 = outfile2.replace( file_ext, replace_ext )
@@ -96,49 +98,33 @@ class Sample():
                     tmp_out1 = outfile1
                     tmp_out2 = outfile2
 
-                if Geno.job.get( 'sample_subdir' ):
-                    subdir = os.path.basename( os.path.dirname( tmp_out1 ) )
-                    if num_in == 1 and num_out == 2:
-                        real_outfile1 = make_sample_file_name( tmp_out1,
-                                                             "{dir}/{subdir}/{base}_1{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             subdir = subdir,
-                                                             ext = out_ext )
-                        real_outfile2 = make_sample_file_name( tmp_out1,
-                                                             "{dir}/{subdir}/{base}_2{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             subdir = subdir,
-                                                             ext = out_ext )
-                    else:
-                        real_outfile1 = make_sample_file_name( tmp_out1,
-                                                             "{dir}/{subdir}/{base}{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             subdir = subdir,
-                                                             ext = out_ext )
-                        real_outfile2 = make_sample_file_name( tmp_out2,
-                                                             "{dir}/{subdir}/{base}{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             subdir = subdir,
-                                                             ext = out_ext )
+                if self.__f_subdir:
+                    subdir = '/' + os.path.basename( os.path.dirname( tmp_out1 ) ) + '/'
                 else:
-                    if num_in == 1 and num_out == 2:
-                        real_outfile1 = make_sample_file_name( tmp_out1,
-                                                             "{dir}/{base}_1{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             ext = out_ext )
-                        real_outfile2 = make_sample_file_name( tmp_out2,
-                                                             "{dir}/{base}_2{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             ext = out_ext )
-                    else:
-                        real_outfile1 = make_sample_file_name( tmp_out1,
-                                                             "{dir}/{base}{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             ext = out_ext )
-                        real_outfile2 = make_sample_file_name( tmp_out2,
-                                                             "{dir}/{base}{ext}",
-                                                             dir = Geno.dir[ out_type ],
-                                                             ext = out_ext )
+                    subdir = '/'
+
+                if num_in == 1 and num_out == 2:
+                    real_outfile1 = make_sample_file_name( tmp_out1,
+                                                         "{dir}{subdir}{base}_1{ext}",
+                                                         dir = Geno.dir[ out_type ],
+                                                         subdir = subdir,
+                                                         ext = out_ext )
+                    real_outfile2 = make_sample_file_name( tmp_out1,
+                                                         "{dir}{subdir}{base}_2{ext}",
+                                                         dir = Geno.dir[ out_type ],
+                                                         subdir = subdir,
+                                                         ext = out_ext )
+                else:
+                    real_outfile1 = make_sample_file_name( tmp_out1,
+                                                         "{dir}{subdir}{base}{ext}",
+                                                         dir = Geno.dir[ out_type ],
+                                                         subdir = subdir,
+                                                         ext = out_ext )
+                    real_outfile2 = make_sample_file_name( tmp_out2,
+                                                         "{dir}{subdir}{base}{ext}",
+                                                         dir = Geno.dir[ out_type ],
+                                                         subdir = subdir,
+                                                         ext = out_ext )
 
                 return_list = [ outfile1, outfile2, real_outfile1, real_outfile2 ]
                 self.__param[ self.__current_sample_id ].append( return_list )
@@ -155,15 +141,17 @@ class Sample():
         ==============
         input_file_type:    paired_fastq|single_fastq|bam
         file_name:
-        control_file_name:
-        disease_filename
         pair_id
+
+        sample_subdir:
+        control_subdir:
+        disease_subdir
+
         bed_file
         
         """
 
         file_type = Geno.job.get( 'input_file_type' )
-        bed_file  = Geno.job.get( 'bed_file' )
 
         try:
             #
@@ -173,28 +161,17 @@ class Sample():
                 fastq_file = [ None, None, None ]
                 pair_id_list = Geno.job.get( 'pair_id' )
 
-                subdir = Geno.job.get( 'sample_subdir' )
-                if subdir:
-                    filename = subdir + "/{filename}"
-                else:
-                    filename = "{filename}"
-
+                glob_file_list = []
+                i = 0
                 for pair_id in pair_id_list:
-                    filename_tmp = Geno.job.get( 'file_name' ).format( pair_id = pair_id )
-                    fastq_file[ pair_id ] = ( filename.format( dir = subdir , filename = filename_tmp ) )
-                    if not fastq_file[ pair_id ]:
+                    glob_file_list.append( self.filename_list( Geno.job.get( 'file_name' ).format( pair_id = pair_id ) ) )
+
+                    if 0 == len( glob_file_list[ i ] ):
                         log.error( "{function} failed.".format( function = whoami() ) )
-                        log.error( "job configuration file does not set file_name or pair_id properly." )
+                        log.error( "Paired fastq files not found." )
                         raise
 
-                glob_file_list = []
-                for pair_id in pair_id_list:
-                    glob_file_list.append( sorted( glob( Geno.dir[ 'data' ] + '/' + fastq_file[ pair_id ] ) ) )
-
-                if 0 == len( glob_file_list ):
-                    log.error( "{function} failed.".format( function = whoami() ) )
-                    log.error( "Paired fastq files not found." )
-                    raise
+                    i += 1
 
                 for i in range( len( glob_file_list[ 0 ] ) ):
                     self.current().append( [
@@ -208,28 +185,30 @@ class Sample():
             # B) Single-end fastq files
             #
             elif file_type == 'single_fastq':
-                fastq_file = Geno.job.get( 'file_name' )
+                filename_list = self.filename_list( Geno.dir( 'file_name' ) )
 
-                if fastq_file != None:
-                    for file_name in sorted( glob( Geno.dir[ 'data' ] + fastq_file ) ):
-                        self.__param[ self.__current_sample_id ].append( [ '', '', file_name, '' ] )
-                else:
+                if 0 == len( filename_list ):
                     log.error( "{function} failed.".format( function = whoami() ) )
                     log.error( "Single fastq files not found." )
                     raise
+                else:
+                    for file_name in filename_list:
+                        self.current().append( [ '', '', file_name, '' ] )
 
             #
             # C) bam files
             #
-            elif file_type == 'paired_bam' or file_type == 'single_bam':
-                bam_files = Geno.job.get( 'file_name' )
-                for file_name in sorted( glob( Geno.dir[ 'data' ] + bam_files ) ):
-                    self.__param[ self.__current_sample_id ].append( [ '', '', file_name, '' ] )
+            elif file_type == 'bam':
+                filename_list = self.filename_list( Geno.dir( 'file_name' ) )
 
-                if 0 == len( self.current() ):
+                if 0 == len( filename_list ):
                     log.error( "{function} failed.".format( function = whoami() ) )
                     log.error( "Bam files not found." )
                     raise
+                else:
+                    for file_name in filename_list:
+                        self.current().append( [ '', '', file_name, '' ] )
+
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -237,3 +216,37 @@ class Sample():
             log.error( "{function} failed.".format( function = whoami() ) )
             log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
+
+    def filename_list( self, filename_format ):
+        fastq_type_list = []
+        fastq_file_list = []
+
+        if not filename_format:
+            return fastq_file_list
+
+        sample_subdir  = Geno.job.get( 'sample_subdir' )
+        control_subdir = Geno.job.get( 'control_subdir' )
+        disease_subdir = Geno.job.get( 'disease_subdir' )
+
+        if sample_subdir:
+            self.__f_subdir = True
+            fastq_type_list.append( "{subdir}/{filename}".format(
+                                        subdir = sample_subdir,
+                                        filename = filename_format ) )
+        elif control_subdir and disease_subdir:
+            self.__f_subdir = True
+            fastq_type_list.append( "{subdir}/{filename}".format(
+                                        subdir = control_subdir,
+                                        filename = filename_format ) )
+            fastq_type_list.append( "{subdir}/{filename}".format(
+                                        subdir = disease_subdir,
+                                        filename = filename_format ) )
+
+        else:
+            self.__f_subdir = False
+            fastq_type_list.append( filename_format )
+
+        for fastq_file in fastq_type_list:
+            fastq_file_list = fastq_file_list + sorted( glob( Geno.dir[ 'data' ] + '/' + fastq_file ) )
+
+        return fastq_file_list

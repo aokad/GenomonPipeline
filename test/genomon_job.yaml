@@ -8,8 +8,7 @@
 project:                genomon_test
 sample_name:            test01
 sample_date:            20150324
-
-
+analysis_date:          today   # either today or a specific date
 #
 # Data directory
 #
@@ -17,28 +16,38 @@ sample_date:            20150324
 #   project_root
 #
 # Optional
-#   project_dir_tree
+#   project_dir_tree    project directory tree can be specified here.
+#                       if not defined, default project data structure tree is used.
+#                       Necessary output directories are
+#                           config
+#                           script
+#                           log
+#                           fastq       only for tasks that needs fastq output.
+#                           bam         only for tasks that needs bam output.
+#                           mutation    only for tasks that needs mutation call output (e.g. fisher or ebcall )
+#                           annotaton   only for tasks that needs annotation output.
+#                           
 #
 project_root:               /home/eigos/Data/GenomonProj
-project_dir_tree:
-    project_directory:
-        data:
-            sample_date:
-                sample_name
-        results:
-            run_date:
-                sample_date_sample_name:
-                    - config
-                    - script
-                    - log
-                    - out:
-                        - fastq
-                        - bam
-                        - annovar
-                        - fisher
-                        - cnv
-                        - fusion
-                        - sv
+#project_dir_tree:
+#    project_directory:
+#        data:
+#            sample_date:
+#                sample_name
+#        results:
+#            run_date:
+#                sample_date_sample_name:
+#                    - config
+#                    - script
+#                    - log
+#                    - out:
+#                        - fastq
+#                        - bam
+#                        - mutation
+#                        - annotation
+#
+
+
 #
 # Input files
 #
@@ -58,8 +67,7 @@ project_dir_tree:
 #
 # Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
-#input_file_dir:             /home/mimorin/genomon/data/input/140930_CRC_target_barcode
-input_file_dir:             /home/eigos/Data/GenomonProj/genomon_test/data/input/SRR330441
+input_file_dir:             /home/eigos/Data/GenomonProj/input/SRR330441
 input_file_type:            paired_fastq # paired_fastq,  single_fastq, paired_bam, single_bam
 file_name:                  SRR330441_{pair_id}.fastq.gz
 file_ext:                   .fastq.gz
@@ -67,7 +75,8 @@ pair_id:
                             - 1
                             - 2
 #sample_subdir:              
-
+#control_subdir:
+#disease_subdir:
 #bed_files:                  None # for Panel
 
 
@@ -144,13 +153,13 @@ split_fastq_line_number:    10000000
 #   seq_center      for @RG CN
 #   pred_med_insert for @RG PI
 #
-rg_id:              SRR330441           #@RG ID:
-sample_desc:        test_sample         #@RG SM:
-platform:           Illumina            #@RG PL:
-library:            unknown             #@RG LB:
-platform_unit:      flowcell-barcode    #@RG PU:
-seq_center:         HGC                 #@RG CN:
-pred_med_insert:    500                 #@RG PI:
+rg_id:              SRR330441           #@RG ID: default value is Unknown if not specified
+sample_desc:        test_sample         #@RG SM: default value is Unknown if not specified
+platform:           Illumina            #@RG PL: default value is Unknown if not specified
+library:            unknown             #@RG LB: default value is Unknown if not specified
+platform_unit:      flowcell-barcode    #@RG PU: default value is Unknown if not specified
+seq_center:         HGC                 #@RG CN: default value is Unknown if not specified
+pred_med_insert:    500                 #@RG PI: default value is Unknown if not specified
 
 # cutadapt
 adaptor:
@@ -176,7 +185,7 @@ job_type:
                     bam2fastq:              mjob
                     split_fastq:            mjob
                     cutadapt:               mjob
-                    bwa_mem:                ljob
+                    bwa_mem:                mjob
                     merge_bam:              mjob
                     fisher_mutation_call:   mjob
                     ebcall_mutation_call:   mjob
@@ -186,7 +195,7 @@ job_type:
 memory:
                     split_fastq:            4G
                     cutadapt:               2G
-                    bwa_mem:                8G
+                    bwa_mem:                6G
                     merge_bam:              4G
                     fisher_mutation_call:   4G
                     ebcall_mutation_call:   4G

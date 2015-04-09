@@ -1,16 +1,3 @@
-#!/bin/bash
-#
-# Set SGE
-#
-#$ -S /bin/bash # set shell in UGE
-#$ -cwd         # execute at the submitted dir
-
-pwd             # print current working directory
-hostname        # print hostname
-date            # print date
-echo arg1=$1    # print 1st argument of shell script
-
-python $1 genomon.py --config_file /home/[user]/GenomonProj/script/test/genomon.cfg \
-                     --job_file /home/[user]/GenomonProj/script/test/genomon_job.yaml \
-                     --jobs 6 \
-                     --verbose 5
+/usr/local/package/python2.7/2.7.2/bin/python $2 ./job_file_check.py \
+        -k ./job_file_words.yaml \
+        -i $1

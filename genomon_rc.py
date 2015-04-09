@@ -34,18 +34,18 @@ project_directory:
                 - out:
                     - fastq
                     - bam
-                    - annovar
-                    - fisher
+                    - annotation
+                    - mutation
                     - cnv
                     - fusion
                     - sv
 """
 
-end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annovar', 'fisher', 'cnv', 'fusion', 'sv' )
-subdir_list = ( 'fastq', 'bam', 'annovar', 'fisher', 'cnv', 'fusion', 'sv' )
+end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv' )
+subdir_list = ( 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv' )
 data_ext_list = { 'fastq':      'fastq',
                   'bam':        'bam',
-                  'annovar':    'txt'
+                  'annotation': 'txt'
 }
 
 #
@@ -67,7 +67,7 @@ job_config_default ={
     'map_quality': 30,
     'base_quality': 15,
     'mismatch_rate': 0.07,
-    'min_score': 30,
+    'min_score': 20,
     'min_depth': 9,
     'rg_id': 'Unknown',
     'sample_desc': 'Unknown',
@@ -75,7 +75,10 @@ job_config_default ={
     'platform_unit': 'Unknown',
     'library': 'Unknown',
     'seq_center': 'Unknown',
-    'pred_med_insert': 'Unknown'
+    'pred_med_insert': '500',
+    'fastq_filter': False,
+    'split_fastq_line_number': 160000000,
+    'use_biobambam': False
 }
 
 #

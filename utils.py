@@ -5,8 +5,9 @@ Utilty functions
 import os
 import inspect
 from datetime import datetime
-from genomon_rc import file_timestamp_format as file_time
-from __main__ import Geno
+from glob import glob
+
+import genomon_rc as res
 
 #####################################################################
 #
@@ -45,14 +46,14 @@ def split_file( file_name, output_file_name, split_len ):
 
 
 ########################################
-def make_script_file_name( function_name ):
+def make_script_file_name( function_name, Geno ):
     """
     Split files by line number
 
     """
 
     now = datetime.now()
-    shell_script_name = file_time.format(
+    shell_script_name = res.file_timestamp_format.format(
                                     name=function_name,
                                     year=now.year,
                                     month=now.month,
@@ -97,4 +98,107 @@ def make_sample_file_name( filename,
                         base = basename,
                         ext = ext )
     return ret_name
+
+########################################
+def replace_reserved_string( dir_tmp, cwd, Geno ):
+    """
+    Reserved names to replace strings defined in job configuration file
+        project_directory   -> defined as project in job configuration file
+        sample_date         -> defined sample_date in job configuration file
+        sample_name         -> defined sample_name in job configuration file
+        analysis_date       -> date of the pipeline to run
+    """
+    #
+    # Replace reserved strings
+    #
+    dir_replace = None
+    if dir_tmp == 'project_directory':
+        dir_replace = Geno.job.get( 'project' )
+    elif dir_tmp == 'sample_date':
+        dir_replace = str( Geno.job.get( 'sample_date' ) )
+    elif dir_tmp == 'sample_name':
+        dir_replace = Geno.job.get( 'sample_name' )
+    elif dir_tmp == 'sample_date_sample_name':
+        dir_replace = str( Geno.job.get( 'sample_date' ) ) + '_' + Geno.job.get( 'sample_name' )
+    elif dir_tmp == 'analysis_date':
+        dir_replace = str( Geno.job.get( 'analysis_date' ) )
+        if dir_replace == 'today' :
+            dir_replace = res.date_format.format( 
+                        year = Geno.now.year, 
+                        month = Geno.now.month, 
+                        day = Geno.now.day ) 
+    else:
+        dir_replace = dir_tmp
+    
+    return dir_replace
+
+def make_dir( dir, Geno ):
+    if not os.path.exists( dir ):
+        os.makedirs( dir )
+        os.chmod( dir, Geno.dir_mode )
+    return dir
+
+def get_dir ( dir_tree, cwd, dir_name, Geno ):
+    """
+    return the path to the specified directory by dir_tree
+
+    """
+    if isinstance( dir_tree, dict ):
+        for dir_tmp in dir_tree.keys():
+            dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
+            cwd_tmp = cwd + '/' + dir_replace
+            if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
+                return cwd_tmp
+            if ( isinstance( dir_tree[ dir_tmp ], dict ) or
+                 isinstance( dir_tree[ dir_tmp ], list ) ):
+                dir_returned =  get_dir( dir_tree[ dir_tmp ], cwd_tmp, dir_name, Geno  )
+
+                if None != dir_returned:
+                    return dir_returned
+            
+    elif isinstance( dir_tree, list ):
+        n = 0
+        for dir_tmp in dir_tree:
+            if isinstance( dir_tmp, str):
+                dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
+                cwd_tmp = cwd + '/' + dir_replace
+            elif isinstance( dir_tmp, dict):
+                dir_replace = replace_reserved_string( dir_tmp.keys()[ 0 ] , cwd, Geno )
+                cwd_tmp = cwd + '/' + dir_replace
+
+            if ( ( isinstance( dir_tmp, str) and dir_tmp == dir_name ) or
+                 ( isinstance( dir_tmp, dict) and dir_tmp.keys()[0] == dir_name ) ):
+                return cwd_tmp
+            else:
+                if ( isinstance( dir_tree[ n ], dict ) or
+                     isinstance( dir_tree[ n ], list ) ):
+                    dir_returned =  get_dir( dir_tree[ n ], cwd, dir_name, Geno )
+                    if None != dir_returned:
+                        return dir_returned
+            n = n + 1
+    else:
+        if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
+            dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
+            cwd_tmp = cwd + '/' + dir_replace
+            return cwd_tmp
+
+    return None
+
+def make_input_target( subdir, dir_tree, cwd, Geno ):
+    if subdir:
+        subdir_list = glob( "{dir}/{subdir}".format(
+                                dir = Geno.job.get( 'input_file_dir' ),
+                                subdir = subdir ) )
+
+    for target_dir in res.end_dir_list:
+        tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
+        if tmp_dir:
+            Geno.dir[ target_dir ] = get_dir( dir_tree, cwd, target_dir, Geno )
+            make_dir( Geno.dir[ target_dir ], Geno )
+            if subdir and target_dir in res.subdir_list:
+                for subdir_tmp in subdir_list:
+                    make_dir( "{dir}/{subdir}".format(
+                                    dir = Geno.dir[ target_dir ],
+                                    subdir = os.path.basename( subdir_tmp ) ),
+                             Geno )
 
