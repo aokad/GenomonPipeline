@@ -92,8 +92,9 @@ def make_directories():
 
     error_message = ''
     try:
-        if not os.path.exists( Geno.job.get( 'project_root' )):
-            log.error( "Dir: {dir} not found.".format( dir = Geno.job.get( 'project_root' ) ) )
+        project_root = os.path.expanduser( Geno.job.get( 'project_root' ))
+        if not os.path.exists( project_root ):
+            log.error( "Dir: {dir} not found.".format( dir = project_root ) ) 
             raise
 
 
@@ -114,7 +115,7 @@ def make_directories():
         # get directory locations
         #
         Geno.dir[ 'cwd' ] = os.getcwd()
-        cwd = Geno.job.get( 'project_root' )
+        cwd = project_root
         if not Geno.options.abpath:
             os.chdir( cwd )
             cwd = '.'
