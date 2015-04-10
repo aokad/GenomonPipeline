@@ -232,10 +232,18 @@ def set_env_variables():
 
     for tool_env in res.env_list.keys():
         env_value = Geno.conf.get( 'ENV', tool_env )
-        for env_name in res.env_list[ tool_env ]:
-            tmp = os.environ[ env_name ]
-            os.environ[ env_name ] = tmp + ':' + env_value
+        if None != env_value:
+            for env_name in res.env_list[ tool_env ]:
+                if env_name in os.environ:
+                    tmp = os.environ[ env_name ]
+                    os.environ[ env_name ] = tmp + ':' + env_value
+                else:
+                    os.environ[ env_name ] = env_value
+            return_value = True
+        else:
+            return_value = False
 
+    return return_value
 
 ###############################################################################
 #
@@ -293,7 +301,11 @@ def main():
         make_directories()
         copy_config_files()
         copy_script_files()
-        set_env_variables()
+
+        if not set_env_variables():
+            log.error( "Necesesary value in [ENV] is not set in system configuration file." )
+            raise
+            
 
         #
         # Initalize RunTask object
@@ -318,11 +330,12 @@ def main():
         if job_tasks[ 'WGS' ]:
             import wgs_pipeline as pipeline
 
-        elif job_tasks[ 'WES' ]:
-            import wes_pipeline as pipeline
-
         elif job_tasks[ 'Capture' ]:
             import capture_pipeline as pipeline
+
+        else:
+            log.error( "Proper task is not set in job configuration file." )
+            raise
 
 #
 #       multiprocess
