@@ -4,11 +4,14 @@
 # Mandatory definitions
 #   project
 #   sample_name
-#   sample_date1
+#   sample_date
+#   analysis_date
+#
 project:                genomon_test
 sample_name:            test01
 sample_date:            20150324
 analysis_date:          today   # either today or a specific date
+
 #
 # Data directory
 #
@@ -65,7 +68,21 @@ project_root:               /home/eigos/Data/GenomonProj
 #   sample_subdir ( if the input_file_dir includes sub-directories containting data files,
 #                   you can specify )
 #
+#                   <example>
+#                   sample_subdir:  s_B1N*
+#
 # Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#   control_subdir
+#   disease_subdir
+#                   if you want to perform mutation call with control and disease samples,
+#                   you can specify control sample in 'control' and tumor sample in 'disease'.
+#                   Wild cards are NOT allowed.
+#
+#                   <example>
+#                   control_subdir: s_B1N
+#                   disease_subdir: s_B2N
+#
 #
 input_file_dir:             /home/eigos/Data/GenomonProj/input/SRR330441
 input_file_type:            paired_fastq # paired_fastq,  single_fastq, paired_bam, single_bam
@@ -96,9 +113,7 @@ tasks:
 split_fastq_line_number:    10000000
 
 # tasks type
-#                    WES:
-#                    Capture:
-#                    RNA:
+#                    WGS:
 #
 #                        - bamtofastq
 #                        - split_fastq
@@ -107,10 +122,6 @@ split_fastq_line_number:    10000000
 #                        - merge_bam
 #                        - markduplicate
 #                        - fisher_mutation_call
-#                        - ebcall_mutation_call
-#                        - copy_number
-#                        - sv
-#                        - fusion
 
 #
 # Analysis parameters
@@ -165,10 +176,36 @@ pred_med_insert:    500                 #@RG PI: default value is Unknown if not
 adaptor:
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+#
+# Default parameter values
+#
+# max_indel: 2
+# max_distance: 5
+# map_quality: 30
+# base_quality: 15
+# mismatch_rate: 0.07
+# min_score: 20
+# min_depth: 9
+# rg_id: 'Unknown'
+# sample_desc: 'Unknown'
+# platform: 'Unknown'
+# platform_unit: 'Unknown
+# library: 'Unknown'
+# seq_center: 'Unknown'
+# pred_med_insert: 'Unknown'
+# fastq_filter: False
+# split_fastq_line_number: 160000000
+# use_biobambam: False
+#
+
+#
 # bwa mem
+#
 min_score:              20
 
+#
 # Fisher's exact test mutation call
+#
 min_depth:              9
 max_indel:              2
 max_distance:           5
@@ -181,35 +218,31 @@ mismatch_rate:          0.07
 #
 # Job control parameters
 #
-job_type:
+job_queue:
                     bam2fastq:              mjob
                     split_fastq:            mjob
                     cutadapt:               mjob
                     bwa_mem:                mjob
                     merge_bam:              mjob
+                    markduplicates:         mjob
                     fisher_mutation_call:   mjob
-                    ebcall_mutation_call:   mjob
-                    copy_number:            mjob
-                    sv:                     mjob
 
 memory:
                     split_fastq:            4G
                     cutadapt:               2G
                     bwa_mem:                6G
                     merge_bam:              4G
+                    markduplicates:         8G
                     fisher_mutation_call:   4G
-                    ebcall_mutation_call:   4G
-                    copy_number:            4G
-                    sv:                     8G
 
 #
 # qsub command format
 #
 # allowd parameters:
-#   job_type    Genomon uses the value specified in job_type section.
+#   job_queue   Genomon uses the value specified in job_queue section.
 #   s_vmem      Genomon uses the value specified in memory section.
 #   mem_req     Genomon uses the value specified in memory section.
 #   cmd         Shell script file to run
 #
-qsub_cmd: "qsub -sync yes -now no -l {job_type},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
+qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
 
