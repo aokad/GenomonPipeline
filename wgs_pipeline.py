@@ -719,7 +719,8 @@ def merge_bam(
     input_file1,
     input_file2,
     output_file1,
-    output_file2
+    output_file2,
+    use_biobambam
     ):
     """
        Merge split bam files
@@ -729,28 +730,40 @@ def merge_bam(
     try:
         function_name = whoami()
         log.info( "# {function}".format( function = function_name ) )
-        log.info( "in:   {input}".format( input=input_file1) )
         log.info( "out:  {output}".format( output=output_file1) )
 
         #
         # Make data for array job 
         #
         ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
-        input_files = "{input_prefix}*_sorted{input_suffix}".format(
-                                    input_prefix = input_prefix,
-                                    input_suffix = input_suffix )
 
         #
         # Make shell script
         #
+        if use_biobambam:
+            input_file_name = "{input_prefix}*_bamsorted{input_suffix}".format(
+                                        input_prefix = input_prefix,
+                                        input_suffix = input_suffix )
+            bam_merge_resource = wgs_res.biobambam_merge_bam
+            input_files = ''
+            for file_name in glob( input_file_name ):
+                input_files += "I={file_name} ".format( file_name = file_name )
+
+        else:
+            input_files = "{input_prefix}*_sorted{input_suffix}".format(
+                                        input_prefix = input_prefix,
+                                        input_suffix = input_suffix )
+            bam_merge_resource = wgs_res.samtools_merge_bam
 
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.samtools_merge_bam.format(
+        shell_script_file.write( bam_merge_resource.format(
                                         log = Geno.dir[ 'log' ],
                                         input_bam_files = input_files,
                                         output_bam_file = output_file1,
-                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ) ) )
+                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
+                                        biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
+                                        ) )
         shell_script_file.close()
 
         #
@@ -1019,9 +1032,12 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 @check_if_uptodate( check_file_exists_for_merge_bam )
 def stage_5( input_file1, input_file2, output_file1, output_file2 ):
     if Geno.job.get( 'use_biobambam' ):
-        return True
+        if 'markdulicates' in Geno.job.get( 'tasks' )[ 'WGS']:
+            return True
+        else:
+            merge_bam( input_file1, input_file2, output_file1, output_file2, True )
     else:
-        merge_bam( input_file1, input_file2, output_file1, output_file2 )
+        merge_bam( input_file1, input_file2, output_file1, output_file2, False )
 
 
 #####################################################################

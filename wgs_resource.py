@@ -307,6 +307,37 @@ OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
 
 """
 
+biobambam_merge_bam = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+# Set SGE
+#
+#$ -S /bin/bash         # set shell in UGE
+#$ -cwd                 # execute at the submitted dir
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
+
+{biobambam}/bammerge  \
+        {input_bam_files} \
+        md5filename="$OUT_BAM_PREFIX".metrics \
+        tmpfile="$OUT_BAM_PREFIX".tmp \
+        indexfilename={output_bam_file}.bai \
+        md5=1 \
+        index=1 \
+        > {output_bam_file}
+
+"""
+
 markduplicates = \
 """
 #!/bin/bash
