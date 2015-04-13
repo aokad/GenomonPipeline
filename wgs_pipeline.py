@@ -138,7 +138,7 @@ def check_file_exists_for_markduplicates(
             else:
                 return False, "Input files do not exist."
     else:
-        return check_file_exists_for_input_output( input_file1, input_file2, output_file2, output_file2 )
+        return check_file_exists_for_input_output( input_file1, input_file2, output_file1, output_file2 )
 
 
 def check_file_exists_for_input_output(
@@ -336,10 +336,7 @@ def bamtofastq(
     """
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "in1:   {input}".format( input=input_file1) )
-        log.info( "out1:  {output}".format( output=output_file1) )
-        log.info( "out2:  {output}".format( output=output_file2) )
+        log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make sure files exist.
@@ -419,11 +416,7 @@ def split_fastq(
     """
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "in1:   {input}".format( input=input_file1) )
-        log.info( "in2:   {input}".format( input=input_file2) )
-        log.info( "out1:  {output}".format( output=output_file1) )
-        log.info( "out2:  {output}".format( output=output_file2) )
+        log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make sure files exist.
@@ -521,11 +514,7 @@ def cutadapt(
 
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "in1:   {input}".format( input=input_file1) )
-        log.info( "in2:   {input}".format( input=input_file2) )
-        log.info( "out1:  {output}".format( output=output_file1) )
-        log.info( "out2:  {output}".format( output=output_file2) )
+        log.info( "#{function}".format( function = function_name ) )
 
         file_ext = os.path.splitext( input_file1 )[ 1 ]
         if file_ext == '.bz2':
@@ -616,10 +605,7 @@ def bwa_mem(
 
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "in1:   {input}".format( input=input_file1) )
-        log.info( "in2:   {input}".format( input=input_file2) )
-        log.info( "out:   {output}".format( output=output_file1) )
+        log.info( "#{function}".format( function = function_name ) )
 
         file_ext = os.path.splitext( input_file1 )[ 1 ]
 
@@ -729,8 +715,7 @@ def merge_bam(
 
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "out:  {output}".format( output=output_file1) )
+        log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make data for array job 
@@ -809,9 +794,7 @@ def markduplicates(
 
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "in:   {input}".format( input=input_file1) )
-        log.info( "out:  {output}".format( output=output_file1) )
+        log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make shell script
@@ -902,9 +885,7 @@ def fisher_mutation_call(
 
     try:
         function_name = whoami()
-        log.info( "# {function}".format( function = function_name ) )
-        log.info( "in:   {input}".format( input=input_file1) )
-        log.info( "out:  {output}".format( output=output_file1) )
+        log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make shell script

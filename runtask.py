@@ -117,7 +117,7 @@ class RunTask:
         Submit a job by qsub.
 
         """
-        self.log.info( '# runtask_by_qsub' )
+        self.log.info( 'qsub ' )
         self.log.info( "command = {cmd}".format(cmd = run_cmd) )
         self.log.info( "memory  = {mem}".format(mem = memory) )
         self.log.info( "job     = {job}\n".format(job = job_queue) )
@@ -169,7 +169,7 @@ class RunTask:
                 return_code = 0
                     
             self.log.info( "STDOUT: {stdout}".format( stdout = std_out ) )
-            self.log.info( "STDERR: {stderr}".format( stderr = std_err ) )
+            self.log.info( "STDERR: {stderr}\n".format( stderr = std_err ) )
 
             memory = str( int( memory[0:-1] ) * 2 ) + 'G'
 

@@ -155,7 +155,7 @@ def main():
         # 1), 2)
         print( "##### Data file check  #####" )
         for dir_tmp in ( 'input_file_dir', 'project_root' ):
-            if not glob( job_yaml[ dir_tmp ] ):
+            if not glob( os.path.expanduser( job_yaml[ dir_tmp ] ) ):
                 print( "The directory specified in '{dir}:' does not exist.".format( dir = dir_tmp ) )
                 f_error |= 0x02
 
