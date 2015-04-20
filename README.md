@@ -9,29 +9,18 @@ How to test it.
 First you need to install python modules
 ```
   pip install --user ruffus
-  pip install --user mpi4py
   pip install --user pyyaml
-  pip install --user cutadapt
-  and so on.
 ```
-cutadapt is going to be install at ~/.local/bin/cutadapt.
 
-1. Download zip file and extract it.
-2. Make directory structure like the following.
-3. Copy fastq files to test/project_name/data/20150227/test01.
-4. Copy *.py files to scripts.
-5. Edit genomon.cfg to specify tools and reference. You can use the current file without modification.
-6. Edit genomon.job to specify project_root, project_name, sample_name, and sample_date.
-7. Edit test.sh and specify the the path to genomon.py, genomon.cfg, genomon.job.
-8. Run test.sh
+1. Download Genomnn.zip and extract it.
+2. Copy Genomon-master/test/run.sh to your working directory.
+3. Edit the run.sh and change the path to genomon.py and genomon.cfg in Genomon-master.
+4. Copy genomon_job.yaml to your working directory.
+5. Edit the yaml file so that the file describes your job properly. Especially, project_root, input_file_dir, input_file_type, file_name, file_ext, pair_id.
+6. Run run.sh [your job yaml file].
 
+
+Or if you are on HGC Shirokane2 or Shirokane3, copy one of job yaml files from /home/w3varann/samples/*.yaml, edit it so that the file describes your job configuration and run the following command
 ```
-├── scripts --> copy *.py scripts here.
-└── test  --> this is the path for project_root in genomon.job
-    └── project_name  --> this is project in genomon.job.
-        └── data
-            └── 20150303 --> this is sample_date in genomon.job
-                └── test01 --> this is sample_name in genomon.job.
-
-
+/home/w3varann/tools/Genomon/test/run.sh [your job yaml file]
 ```
