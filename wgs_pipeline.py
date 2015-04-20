@@ -10,7 +10,6 @@ from ruffus import *
 from runtask import RunTask
 from glob import glob
 import difflib
-from sample import Sample
 
 #####################################################################
 #
@@ -20,6 +19,7 @@ from __main__ import *
 import genomon_rc as res
 import wgs_resource as wgs_res
 from utils import *
+from sample import Sample
 
 #####################################################################
 #
@@ -1013,7 +1013,7 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 @check_if_uptodate( check_file_exists_for_merge_bam )
 def stage_5( input_file1, input_file2, output_file1, output_file2 ):
     if Geno.job.get( 'use_biobambam' ):
-        if 'markdulicates' in Geno.job.get( 'tasks' )[ 'WGS']:
+        if 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS']:
             return True
         else:
             merge_bam( input_file1, input_file2, output_file1, output_file2, True )
