@@ -12,7 +12,7 @@ First you need to install python modules
   pip install --user pyyaml
 ```
 
-1. Download Genomnn.zip and extract it.
+1. Download Genomon-master.zip and extract it.
 2. Copy Genomon-master/test/run.sh to your working directory.
 3. Edit the run.sh and change the path to genomon.py and genomon.cfg in Genomon-master.
 4. Copy genomon_job.yaml to your working directory.
@@ -20,7 +20,10 @@ First you need to install python modules
 6. Run run.sh [your job yaml file].
 
 
-Or if you are on HGC Shirokane2 or Shirokane3, copy one of job yaml files from /home/w3varann/samples/*.yaml, edit it so that the file describes your job configuration and run the following command
+Or if you are on HGC Shirokane2 or Shirokane3, 
+1. Copy one of job yaml files from /home/w3varann/samples/*.yaml
+2. Edit it so that the file describes your job configuration
+3. Run the following command
 ```
 /home/w3varann/tools/Genomon/test/run.sh [your job yaml file]
 ```
