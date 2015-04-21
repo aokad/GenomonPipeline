@@ -412,32 +412,71 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-CONTROL_FILTERED_BAM=`echo {control_input_bam} | sed 's/\.[^\.]\+$//'`_filtered.bam
-DISEASE_FILTERED_BAM=`echo {disease_input_bam} | sed 's/\.[^\.]\+$//'`_filtered.bam
+echo SGE_TASK_ID:$SGE_TASK_ID
+echo SGE_TASK_FIRST:$SGE_TASK_FIRST
+echo SGE_TASK_LAST:$SGE_TASK_LAST
+echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
-if [ -f {control_input_bam} -a ! -f $CONTROL_FILTERED_BAM ]
+source {script_dir}/interval.sh
+source {script_dir}/interval_list.sh
+
+CONTROL_INTERVAL_BAM=`echo {control_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}.bam/"`
+DISEASE_INTERVAL_BAM=`echo {disease_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}.bam/"`
+
+CONTROL_FILTERED_BAM=`echo {control_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}_filtered.bam/"`
+DISEASE_FILTERED_BAM=`echo {disease_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}_filtered.bam/"`
+
+if [ -f "{control_input_bam}" -a ! -f "$CONTROL_FILTERED_BAM" ]
 then
-    python {script_dir}/bamfilter.py \
+
+    samtools view -bh \
+                  -q 15 \
+                  {control_input_bam} \
+                  ${{INTERVAL[$SGE_TASK_ID]}} \
+              > $CONTROL_INTERVAL_BAM
+
+    {python} {script_dir}/bamfilter.py \
                --ref_fa {ref_fa} \
                --max_indel {max_indel} \
                --max_distance {max_distance} \
                --map_quality {map_quality} \
-            {control_input_bam} \
+            $CONTROL_INTERVAL_BAM \
             $CONTROL_FILTERED_BAM
 fi
 
-if [ -f {disease_input_bam} -a ! -f $DISEASE_FILTERED_BAM ]
+if [ -f "{disease_input_bam}" -a ! -f "$DISEASE_FILTERED_BAM" ]
 then
-    python {script_dir}/bamfilter.py \
+    samtools view -bh \
+                  -q 15 \
+                  {disease_input_bam} \
+                  ${{INTERVAL[$SGE_TASK_ID]}} \
+              > $DISEASE_INTERVAL_BAM
+
+    {python} {script_dir}/bamfilter.py \
                --ref_fa {ref_fa} \
                --max_indel {max_indel} \
                --max_distance {max_distance} \
                --map_quality {map_quality} \
-            {disease_input_bam} \
+            $DISEASE_INTERVAL_BAM \
             $DISEASE_FILTERED_BAM
 fi
 
-if [ -f $CONTROL_FILTERED_BAM -a -f $DISEASE_FILTERED_BAM -a ! -f {output_txt} ]
+INTERVAL_OUTPUT={output_txt}_${{INTERVAL[$SGE_TASK_ID]}}.txt
+
+if [ "$CONTROL_INTERVAL_BAM" != "nothing" ]
+then
+    SIZE_OF_CONTROL_BAM=`du -hb $CONTROL_INTERVAL_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
+else
+    SIZE_OF_CONTROL_BAM=0
+fi
+if [ "$DISEASE_INTERVAL_BAM" != "nothing" ]
+then
+    SIZE_OF_DISEASE_BAM=`du -hb $DISEASE_INTERVAL_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
+else
+    SIZE_OF_DISEASE_BAM=0
+fi
+
+if [ $SIZE_OF_CONTROL_BAM -gt 300 -a $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUTPUT  ]
 then
     samtools mpileup \
                 -BQ0 \
@@ -445,29 +484,27 @@ then
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM \
                 $DISEASE_FILTERED_BAM |\
-    python {script_dir}/fisher.py \
-               --output {output_txt}\
-               --ref_fa {ref_fa}\
+    {python} {script_dir}/fisher.py \
+               --output $INTERNVAL_OUTPUT \
+               --ref_fa {ref_fa} \
                --base_quality {base_quality} \
-               --mismatch_rate {mismatch_rate}\
+               --mismatch_rate {mismatch_rate} \
                --min_depth {min_depth}
 
-elif [ -f $CONTROL_FILTERED_BAM -a ! -f {output_txt} ]
+elif [ $SIZE_OF_CONTROL_BAM -gt 300 -a ! -e $INTERVAL_OUTPUT ]
 then
     samtools mpileup \
                 -BQ0 \
                 -d 10000000 \
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM |\
-    python {script_dir}/fisher.py \
-               --output {output_txt} \
+    {python} {script_dir}/fisher.py \
+               --output $INTERVAL_OUTPUT \
                --ref_fa {ref_fa} \
                --base_quality {base_quality} \
                --mismatch_rate {mismatch_rate} \
                --min_depth {min_depth}
 
-else           
-    exit 1
 fi
 
 """
