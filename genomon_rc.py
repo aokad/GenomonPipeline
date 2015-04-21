@@ -53,6 +53,8 @@ data_ext_list = { 'fastq':      'fastq',
 #
 script_files = ( 'shell/utility.sh',
                  'shell/sleep.sh',
+                 'shell/interval.sh',
+                 'shell/interval_list.sh',
                  'perl/fastqNPadding.pl',
                  'python/bamfilter.py',
                  'python/fisher.py'
