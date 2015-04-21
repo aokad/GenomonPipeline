@@ -53,13 +53,15 @@ class RunTask:
             self.disconnect()
 
 
-    def run_arrayjob( self, job_queue, memory, run_cmd, id_list ):
+    def run_arrayjob( self, job_queue, memory, run_cmd, id_start = 1, id_end = 1, id_step = 1 ):
         return_code = 0
         if self.enable_mpi:
             pass
         else:
-            run_cmd_tmp = "-t {id_list}, {cmd}".format(
-                                id_list = id_list,
+            run_cmd_tmp = "-t {id_start}-{id_end}:{id_step}, {cmd}".format(
+                                id_start = id_start,
+                                id_end = id_end,
+                                id_step = id_step,
                                 cmd = run_cmd )
             return_code = self.__runtask_by_qsub( job_queue, memory, run_cmd_tmp )
 
@@ -125,7 +127,6 @@ class RunTask:
         if job_queue == 'mjob':
             job_queue = ''
 
-        return_code = 0
         p_return_code = 0
         while True:
 
@@ -149,35 +150,32 @@ class RunTask:
             except OSError as e:
                 self.log.error( "RunTask.runtaskby_qsub failed." )
                 self.log.error( "OS error." )
-                return_code = 1
+                p_return_code = 1
 
             except IOErr as (errno, strerror):
                 self.log.error( "RunTask.runtaskby_qsub failed." )
                 self.log.error( "IOError: {0}{1}".format( errno, strerror ) )
-                return_code = 1
+                p_return_code = 1
 
             except CalledProcessError as e:
                 self.log.error( "CalledProcessError: return code: {id}".format( id = e.returncode ) )
-                return_code = 1
+                p_return_code = 1
 
             except:
                 self.log.error( "RunTask.runtaskby_qsub failed." )
                 self.log.error( "Unexpected error." )
-                return_code = 1
+                p_return_code = 1
 
-            else:
-                return_code = 0
-                    
             self.log.info( "STDOUT: {stdout}".format( stdout = std_out ) )
             self.log.info( "STDERR: {stderr}\n".format( stderr = std_err ) )
 
-            memory = str( int( memory[0:-1] ) * 2 ) + 'G'
+            memory = str( int( memory[0:-1] ) * 2 ) + memory[-1:]
 
-            if ( return_code == 0 or
+            if ( p_return_code == 0 or
                  not self.resubmit or
                  int( memory[0:-1] ) > self.max_mem
                ):
                 break
 
-        return return_code
+        return p_return_code
 
