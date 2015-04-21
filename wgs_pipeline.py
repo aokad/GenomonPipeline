@@ -794,7 +794,7 @@ def merge_bam(
     else:
         return_value = True
 
-    return rerturn_value
+    return return_value
 
 #
 # Stage 6: markduplicates
@@ -890,7 +890,7 @@ def markduplicates(
     else:
         return_value = True
 
-    return rerturn_value
+    return return_value
 
 #
 # Stage 7: fisher_mutation_call
@@ -962,7 +962,7 @@ def fisher_mutation_call(
     else:
         return_value = True
 
-    return rerturn_value
+    return return_value
 
 #####################################################################
 #
@@ -1026,9 +1026,6 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
                             output_file2, 
                             Geno.job.get( 'use_biobambam' ) )
 
-    if return_value != 0:
-        sys.exit( 1 )
-
 #####################################################################
 #
 #   STAGE 5 merge
@@ -1041,7 +1038,8 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 @files( generate_params_for_merge_bam )
 @check_if_uptodate( check_file_exists_for_merge_bam )
 def stage_5( input_file1, input_file2, output_file1, output_file2 ):
-    if 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS']:
+    if ( Geno.job.get( 'use_biobambam' ) and
+         'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS'] ):
         return_value = True
     else:
         return_value = merge_bam( input_file1,
