@@ -326,14 +326,17 @@ def main():
         # Figure out what analysis to run from job configuration file
         #
         job_tasks = Geno.job.get( 'tasks' )
+        run_flag = False
 
-        if job_tasks[ 'WGS' ]:
+        if 'WGS' in job_tasks:
             import wgs_pipeline as pipeline
+            run_flag = True
 
-        elif job_tasks[ 'Capture' ]:
-            import capture_pipeline as pipeline
+        elif 'RNA' in job_tasks:
+            import rna_pipeline as pipeline
+            run_flag = True
 
-        else:
+        if not run_flag:
             log.error( "Proper task is not set in job configuration file." )
             raise
 
