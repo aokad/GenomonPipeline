@@ -1,0 +1,110 @@
+#
+# Genomon Project information
+#
+project:                test
+sample_name:            SRR330441
+sample_date:            20150409
+analysis_date:          today
+
+
+#
+# Data directory
+#
+project_root:               ~/tmp
+
+#
+# Input files
+#
+input_file_dir:             /home/w3varann/samples/SRR330441
+input_file_type:            paired_fastq # paired_fastq,  single_fastq, bam
+file_name:                  SRR330441_{pair_id}.fastq.gz
+file_ext:                   .fastq.gz
+pair_id:
+                            - 1
+                            - 2
+#bed_files:                  None # for Panel
+
+
+#
+# Analysis
+#
+use_biobambam:      True
+tasks:
+                    WGS:
+                        - split_fastq
+                        - bwa_mem
+                        - merge_bam
+                        - markduplicates
+
+split_fastq_line_number:    1000000
+
+# tasks type
+#                    WES:
+#                    Panel:
+#                    RNA:
+#
+#                        - bam2fastq
+#                        - split_fastq
+#                        - cutadapt
+#                        - bwa_mem
+#                        - merge_bam
+#                        - markduplicate
+#                        - fisher_mutation_call
+#                        - ebcall_mutation_call
+#                        - copy_number
+#                        - sv
+#                        - fusion
+
+#
+# Analysis parameters
+#
+rg_id:              SRR330441           #@RG ID:
+sample_desc:        exome_at_SRA        #@RG SM:
+platform:           Illumina            #@RG PL:
+library:            Test                #@RG LB:
+platform_unit:      flowcell-barcode    #@RG PU:
+seq_center:         HGC                 #@RG CN:
+pred_med_insert:    500                 #@RG PI:
+adaptor:
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+base_quality_cutoff:    15
+mapq_cutoff:            30
+max_indel:              2
+min_score:              20
+
+#
+# Job control
+#
+job_queue:
+                    bam2fastq:              mjob
+                    split_fastq:            mjob
+                    cutadapt:               mjob
+                    bwa_mem:                mjob
+                    merge_bam:              mjob
+                    markduplicates:         mjob
+                    fisher_mutation_call:   mjob
+
+memory:
+                    split_fastq:            1G
+                    cutadapt:               2G
+                    bwa_mem:                6G
+                    merge_bam:              2G
+                    markduplicates:         5G  # if the amount if larger than 3G, the amount - 2G is specied for java -Xmx. otherwise 1G is specified for java -Xmx.
+                    fisher_mutation_call:   1G
+
+#
+# qsub command format
+#
+# allowd parameters:
+#   job_queue   Genomon uses the value specified in job_queue section.
+#   s_vmem      Genomon uses the value specified in memory section.
+#   mem_req     Genomon uses the value without 'G' specified in memory section.
+#   cmd         Shell script file to run
+#
+# For HGC Shirokane2
+qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
+
+# For HGC Shirokane3
+#qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={s_vmem} {cmd}"
+

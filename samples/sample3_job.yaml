@@ -1,0 +1,221 @@
+#
+# Genomon Project information
+#
+# Mandatory definitions
+#   project:        project name
+#   sample_name
+#   sample_name:    sample name
+#   sample_date:    the date in which sequece was performed.
+#   analysis_date:  either 'today' or a specific date
+#
+#   project name directory is going to be created at project_root specified below.
+#       {project_root}/{project}/data, results
+#
+project:                test
+sample_name:            chr1_data
+sample_date:            20150330
+analysis_date:          today
+
+#
+# Data directory
+#
+# Mandatory definitions
+#   project_root
+#
+# Optional
+#   project_dir_tree:   if not specified, the default directory tree is going to be created.
+#
+project_root:               ~/tmp
+project_dir_tree:
+    project_directory:
+        data:
+            sample_date:
+                sample_name
+        results:
+            analysis_date:
+                sample_date_sample_name:
+                    - config
+                    - script
+                    - log
+                    - out:
+                        - fastq
+                        - bam
+                        - annovar
+                        - mutation
+                        - cnv
+                        - sv
+#
+# Input files
+#
+# Mandatory definitions
+#   input_file_dir
+#   iput_file_type
+#   file_name
+#
+# Optional
+#   file_ext    we assume that input file extion is either '.fastq' or '.bam',
+#               if the extension is other than those two, need to specify.
+#
+#   pair_id     if file_name includes pair_id, need to specify )
+#
+#   sample_subdir   if the input_file_dir includes sub-directories containting data files,
+#                   you can specify.
+#
+#                   <example>
+#                   sample_subdir:  s_B1N*
+#
+#   Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#   control_subdir
+#   disease_subdir
+#                   if you want to perform mutation call with control and disease samples,
+#                   you can specify control sample in 'control' and tumor sample in 'disease'.
+#                   Wild cards are NOT allowed.
+#
+#                   <example>
+#                   control_subdir: s_B1N
+#                   disease_subdir: s_B2N
+#
+#
+
+input_file_dir:             /home/w3varann/samples/small
+input_file_type:            paired_fastq
+file_name:                  chr1_*{pair_id}.fastq
+control_subdir:             ref
+disease_subdir:             snv
+
+pair_id:
+                            - 1
+                            - 2
+#bed_files:                  None # for Panel
+
+#
+# Analysis setting
+#
+tasks:
+                    WGS:
+                        - split_fastq
+                        - bwa_mem
+                        - merge_bam
+
+#
+# Split fastq file into multiple files with line number specified below.
+#
+split_fastq_line_number:    10000000
+
+# tasks type
+#                    WES:
+#                    Capture:
+#                    RNA:
+#
+#                        - bamtofastq
+#                        - split_fastq
+#                        - cutadapt
+#                        - bwa_mem
+#                        - merge_bam
+#                        - markduplicate
+#                        - fisher_mutation_call
+#                        - ebcall_mutation_call
+#                        - copy_number
+#                        - sv
+#                        - fusion
+
+#
+# Analysis parameters
+#
+#   If not defined, default values are going to be used in the pipeline.
+#
+
+#
+# SAM file header @RG
+# @RG   Read group. Unordered multiple @RG lines are allows.
+#
+#   ID  Read group identifier. Each @RG line must have a unique ID. The value of ID is used in the RG
+#       tags of alignment records. Must be unique among all read groups in header section. Read group
+#       IDs may be modified when merging SAM files in order to handle collisions.
+#   CN  Name of sequencing center producing the read.
+#   DS  Description.
+#   DT  Date the run was produced (ISO8601 date or date/time).
+#   FO  Flow order. The array of nucleotide bases that correspond to the nucleotides used for each
+#       flow of each read. Multi-base flows are encoded in IUPAC format, and non-nucleotide flows by
+#       various other characters. Format: /\*|[ACMGRSVTWYHKDBN]+/
+#   KS  The array of nucleotide bases that correspond to the key sequence of each read.
+#   LB  Library.
+#   PG  Programs used for processing the read group.
+#   PI  Predicted median insert size.
+#   PL  Platform/technology used to produce the reads. Valid values: CAPILLARY, LS454, ILLUMINA,
+#       SOLID, HELICOS, IONTORRENT and PACBIO.
+#   PU  Platform unit (e.g. flowcell-barcode.lane for Illumina or slide for SOLiD). Unique identifier.
+#   SM  Sample. Use pool name where a pool is being sequenced.
+#
+#   <examle>
+# @RG   ID:110701_SN590_0094_AC02UYABXX SM:TCGA-05-4418-10A-01D-1203-02 LB:Homo_sapiens_assembly19  PL:Illumina_HiSeq2000   CN:Harvard_GCC_02 PI: 200
+#
+#   The following words are available.
+#
+#   rg_id           for @RG ID
+#   sample_desc     for @RG SM
+#   platform        for @RG PL
+#   platform_unit   for @RG PU
+#   library         for @RG LB
+#   seq_center      for @RG CN
+#   pred_med_insert for @RG PI
+#
+rg_id:              CRC                 #@RG ID:
+sample_desc:        test_sample         #@RG SM:
+platform:           Illumina            #@RG PL:
+library:            Test                #@RG LB:
+platform_unit:      flowcell-barcode    #@RG PU:
+seq_center:         HGC                 #@RG CN:
+pred_med_insert:    500                 #@RG PI:
+
+# cutadapt
+adaptor:
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+                        - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+# bwa mem
+min_score:              20
+
+# Fisher's exact test mutation call
+min_depth:              9
+max_indel:              2
+max_distance:           5
+base_quality:           15
+map_quality:            30
+mismatch_rate:          0.07
+
+#
+# Job control parameters
+#
+job_queue:
+                    bam2fastq:              mjob
+                    split_fastq:            mjob
+                    cutadapt:               mjob
+                    bwa_mem:                mjob
+                    merge_bam:              mjob
+                    markduplicates:         mjob
+                    fisher_mutation_call:   mjob
+
+memory:
+                    split_fastq:            1G
+                    cutadapt:               2G
+                    bwa_mem:                6G
+                    merge_bam:              2G
+                    markduplicates:         5G  # if the amount if larger than 3G, the amount - 2G is specied for java -Xmx. otherwise 1G is specified for java -Xmx.
+                    fisher_mutation_call:   1G
+
+#
+# qsub command format
+#
+# allowd parameters:
+#   job_queue   Genomon uses the value specified in job_queue section.
+#   s_vmem      Genomon uses the value specified in memory section.
+#   mem_req     Genomon uses the value without 'G' specified in memory section.
+#   cmd         Shell script file to run
+#
+# For HGC Shirokane2
+qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
+
+# For HGC Shirokane3
+#qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={s_vmem} {cmd}"
+
