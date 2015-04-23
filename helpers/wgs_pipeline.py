@@ -312,8 +312,9 @@ def extract_fastq( input_file_list, file_ext ):
                             shell_script_full_path,
                             id_start = 1,
                             id_end = id )
+    Geno.status.save_status( 'extract_fastq', input_file1, return_code )
     if return_code != 0:
-        log.error( "{function}: runtask failed" )
+        log.error( "{function}: runtask failed",format( function = 'extract_fastq' ) )
         raise
 
 
@@ -325,7 +326,7 @@ def extract_fastq( input_file_list, file_ext ):
 #
 # Stage 1: bam2fastq
 #
-def bamtofastq(
+def bam2fastq(
     input_file1,
     input_file2,
     output_file1,
@@ -379,8 +380,11 @@ def bamtofastq(
                         Geno.job.get( 'job_queue' )[ function_name ],
                         Geno.job.get( 'memory' )[ function_name ],
                         shell_script_full_path )
+
+        Geno.status.save_status( function_name, input_file1, return_code )
+
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
     except IOError as (errno, strerror):
@@ -476,8 +480,9 @@ def split_fastq(
                             shell_script_full_path,
                             id_start = 1,
                             id_end = id )
+        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
@@ -579,8 +584,9 @@ def cutadapt(
                             shell_script_full_path,
                             id_start = 1,
                             id_end = 2 )
+        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
@@ -692,8 +698,9 @@ def bwa_mem(
                             shell_script_full_path,
                             id_start = 1,
                             id_end = id )
+        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
             
 
@@ -774,8 +781,9 @@ def merge_bam(
                             Geno.job.get( 'job_queue' )[ 'merge_bam' ],
                             Geno.job.get( 'memory' )[ 'merge_bam' ],
                             shell_script_full_path )
+        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
@@ -862,6 +870,7 @@ def markduplicates(
                                             input_bam = input_file1,
                                             output_bam = output_file1,
                                             memory = java_memory,
+                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                             picard = Geno.conf.get( 'SOFTWARE', 'picard' )
                                         )
                                     )
@@ -875,8 +884,9 @@ def markduplicates(
                             Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path )
 
+        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
@@ -951,8 +961,9 @@ def fisher_mutation_call(
                             shell_script_full_path,
                             id_start = 1,
                             id_end = wgs_res.interval_num )
+        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
         #
@@ -974,8 +985,9 @@ def fisher_mutation_call(
                             Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path )
 
+        Geno.status.save_status( 'merge_fisher_result', input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed" )
+            log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
             raise
 
     except IOError as (errno, strerror):
@@ -1014,7 +1026,9 @@ Sample = Sample()
 @parallel( generate_params_for_bam2fastq )
 @check_if_uptodate( check_file_exists_for_input_output )
 def stage_1( input_file, output_file ):
-    return bam2fastq( input_file, output_file )
+    return_value =  bam2fastq( input_file, output_file )
+    if not return_value:
+        raise
 
 #####################################################################
 #
@@ -1027,7 +1041,9 @@ def stage_1( input_file, output_file ):
 @files( generate_params_for_split_fastq )
 @check_if_uptodate( check_file_exists_for_split_fastq )
 def stage_2( input_file1, input_file2, output_file1, output_file2 ):
-    return split_fastq( input_file1, input_file2, output_file1, output_file2 )
+    return_value = split_fastq( input_file1, input_file2, output_file1, output_file2 )
+    if not return_value:
+        raise
 
 #####################################################################
 #
@@ -1040,7 +1056,9 @@ def stage_2( input_file1, input_file2, output_file1, output_file2 ):
 @files( generate_params_for_cutadapt )
 @check_if_uptodate( check_file_exists_for_input_output )
 def stage_3( input_file1, input_file2, output_file1, output_file2 ):
-    return cutadapt( input_file1, input_file2, output_file1, output_file2 )
+    return_value = cutadapt( input_file1, input_file2, output_file1, output_file2 )
+    if not return_value:
+        raise
 
 #####################################################################
 #
@@ -1059,6 +1077,8 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
                             output_file1,
                             output_file2, 
                             Geno.job.get( 'use_biobambam' ) )
+    if not return_value:
+        raise
 
 #####################################################################
 #
@@ -1082,7 +1102,8 @@ def stage_5( input_file1, input_file2, output_file1, output_file2 ):
                                   output_file2,
                                   Geno.job.get( 'use_biobambam' ) )
 
-    return return_value
+    if not return_value:
+        raise
 
 #####################################################################
 #
@@ -1096,12 +1117,14 @@ def stage_5( input_file1, input_file2, output_file1, output_file2 ):
 @files( generate_params_for_markduplicates )
 @check_if_uptodate( check_file_exists_for_markduplicates )
 def stage_6( input_file1, input_file2, output_file1, output_file2 ):
-    return markduplicates( input_file1,
-                           input_file2,
-                           output_file1,
-                           output_file2, 
-                           Geno.job.get( 'use_biobambam' ) )
+    return_value =  markduplicates( input_file1,
+                                    input_file2,
+                                    output_file1,
+                                    output_file2, 
+                                    Geno.job.get( 'use_biobambam' ) )
 
+    if not return_value:
+        raise
 
 #####################################################################
 #
@@ -1115,7 +1138,9 @@ def stage_6( input_file1, input_file2, output_file1, output_file2 ):
 @files( generate_params_for_fisher_mutation_call )
 @check_if_uptodate( check_file_exists_for_input_output )
 def stage_7(  input_file1, input_file2, output_file1, output_file2 ):
-    return fisher_mutation_call(  input_file1, input_file2, output_file1, output_file2 )
+    return_value = fisher_mutation_call(  input_file1, input_file2, output_file1, output_file2 )
+    if not return_value:
+        raise
 
 
 #####################################################################

@@ -30,6 +30,7 @@ class Geno(object):
     RT      = None
     cwd     = None
     dir_mode = 0755
+    status = None
 
 
 ################################################################################
@@ -41,6 +42,7 @@ from helpers.genomon_cfg import genomon_config as ge_cfg
 from helpers.genomon_job import genomon_job as ge_job
 from helpers.runtask import RunTask
 from helpers.utils import *
+from helpers.status import genomon_status as ge_status
 
 ################################################################################
 #
@@ -203,6 +205,18 @@ def copy_config_files():
 
     shutil.copyfile( src, dest )
 
+    Geno.status = ge_status( "{dir}/{basename}".format(
+                                    dir = config_dir,
+                                    basename = config_backup ),
+                             "{year}{month}{day}-{hour}:{min}:{msecond}".format(
+                                        year=Geno.now.year,
+                                        month=Geno.now.month,
+                                        day=Geno.now.day,
+                                        hour=Geno.now.hour,
+                                        min=Geno.now.minute,
+                                        msecond=Geno.now.microsecond )
+                            )
+
 ########################################
 def copy_script_files():
     """
@@ -250,6 +264,18 @@ def set_env_variables():
     os.environ[ 'PYTHONPATH' ] = tmp + Geno.dir[ 'genomon' ]
 
     return return_value
+
+########################################
+def cleanup_intermediates():
+    """
+    Clean up intermediate files
+
+    * Split fastq files
+    * Unnecessary bam files
+    * Split mutation call results
+
+    """
+    pass
 
 ###############################################################################
 #
@@ -372,6 +398,8 @@ def main():
 #           level 10: logs messages useful only for debugging ruffus pipeline code
         pipeline_run(   target_tasks = [ pipeline.last_function ],
                         multiprocess = Geno.options.jobs,
+                        exceptions_terminate_immediately = True,
+                        log_exceptions = True,
                         checksum_level = 2,
                         logger = log )
                         
@@ -396,6 +424,12 @@ def main():
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{0}: Unexpected error".format( whoami() ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+
+    #
+    # Clean up
+    #
+    cleanup_intermediates()
+
 
     sys.exit( 0 )
 

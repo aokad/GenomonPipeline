@@ -361,6 +361,9 @@ java -Xmx{memory} -Xms1G -jar {picard}/MarkDuplicates.jar \
          I={input_bam} \
          O={output_bam} \
          M={output_bam}.met
+
+{samtools} index {output_bam}
+
 """
 
 biobambam_markduplicates = \
