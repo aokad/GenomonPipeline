@@ -7,7 +7,7 @@ import inspect
 from datetime import datetime
 from glob import glob
 
-import genomon_rc as res
+from resource import genomon_rc as res
 
 #####################################################################
 #

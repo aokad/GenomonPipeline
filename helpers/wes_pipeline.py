@@ -15,7 +15,7 @@ from runtask import RunTask
 # Private modules
 #
 from __main__ import *
-import genomon_rc as res
+from resource import genomon_rc as res
 from utils import *
 
 #####################################################################

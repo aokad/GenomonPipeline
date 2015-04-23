@@ -416,9 +416,13 @@ def Pileup_and_count(
         #
         if f_print:
             w = open( out_file, 'w' )
-            w.write( "chr\tpos\tref\tobs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\t" )
+            header_str = "chr\tpos\tref\tobs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\t"
             if in_bam2:
-                w.write( "obs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\tfisher\n" )
+                header_str += "obs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\tfisher\n"
+            else:
+                header_str += "\n"
+
+            w.write( header_str )
 
         #
         # STDIN PIPE

@@ -14,7 +14,7 @@ import yaml
 import pprint
 from glob import glob
 
-from genomon_rc import end_dir_list as end_dir_list
+from helpers.genomon_rc import end_dir_list as end_dir_list
 
 #
 # Subroutines

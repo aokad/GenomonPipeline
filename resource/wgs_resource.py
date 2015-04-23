@@ -356,7 +356,7 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-java -Xmx6G -Xms2G -jar {picard}/MarkDuplicates.jar \
+java -Xmx{memory} -Xms1G -jar {picard}/MarkDuplicates.jar \
          ASSUME_SORTED=true \
          I={input_bam} \
          O={output_bam} \
@@ -417,6 +417,10 @@ echo SGE_TASK_FIRST:$SGE_TASK_FIRST
 echo SGE_TASK_LAST:$SGE_TASK_LAST
 echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
+echo {control_input_bam}
+echo {disease_input_bam}
+echo {output_txt}
+
 source {script_dir}/interval.sh
 source {script_dir}/interval_list.sh
 
@@ -426,10 +430,10 @@ DISEASE_INTERVAL_BAM=`echo {disease_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_
 CONTROL_FILTERED_BAM=`echo {control_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}_filtered.bam/"`
 DISEASE_FILTERED_BAM=`echo {disease_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}_filtered.bam/"`
 
-if [ -f "{control_input_bam}" -a ! -f "$CONTROL_FILTERED_BAM" ]
+if [ -e "{control_input_bam}" -a ! -e "$CONTROL_FILTERED_BAM" ]
 then
 
-    samtools view -bh \
+    {samtools} view -bh \
                   -q 15 \
                   {control_input_bam} \
                   ${{INTERVAL[$SGE_TASK_ID]}} \
@@ -444,9 +448,9 @@ then
             $CONTROL_FILTERED_BAM
 fi
 
-if [ -f "{disease_input_bam}" -a ! -f "$DISEASE_FILTERED_BAM" ]
+if [ -e "{disease_input_bam}" -a ! -e "$DISEASE_FILTERED_BAM" ]
 then
-    samtools view -bh \
+    {samtools} view -bh \
                   -q 15 \
                   {disease_input_bam} \
                   ${{INTERVAL[$SGE_TASK_ID]}} \
@@ -461,45 +465,45 @@ then
             $DISEASE_FILTERED_BAM
 fi
 
-INTERVAL_OUTPUT={output_txt}_${{INTERVAL[$SGE_TASK_ID]}}.txt
+INTERVAL_OUT=`echo {output_txt} | sed "s/\.txt/_${{INTERVAL[$SGE_TASK_ID]}}.txt/"`
 
-if [ "$CONTROL_INTERVAL_BAM" != "nothing" ]
+if [ -e "$CONTROL_FILTERED_BAM"  ]
 then
-    SIZE_OF_CONTROL_BAM=`du -hb $CONTROL_INTERVAL_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
+    SIZE_OF_CONTROL_BAM=`du -hb $CONTROL_FILTERED_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
 else
     SIZE_OF_CONTROL_BAM=0
 fi
-if [ "$DISEASE_INTERVAL_BAM" != "nothing" ]
+if [ -e "$DISEASE_FILTERED_BAM"  ]
 then
-    SIZE_OF_DISEASE_BAM=`du -hb $DISEASE_INTERVAL_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
+    SIZE_OF_DISEASE_BAM=`du -hb $DISEASE_FILTERED_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
 else
     SIZE_OF_DISEASE_BAM=0
 fi
 
-if [ $SIZE_OF_CONTROL_BAM -gt 300 -a $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUTPUT  ]
+if [ $SIZE_OF_CONTROL_BAM -gt 300 -a $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUT  ]
 then
-    samtools mpileup \
+    {samtools} mpileup \
                 -BQ0 \
                 -d 10000000 \
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM \
                 $DISEASE_FILTERED_BAM |\
     {python} {script_dir}/fisher.py \
-               --output $INTERNVAL_OUTPUT \
+               --output $INTERVAL_OUT \
                --ref_fa {ref_fa} \
                --base_quality {base_quality} \
                --mismatch_rate {mismatch_rate} \
                --min_depth {min_depth}
 
-elif [ $SIZE_OF_CONTROL_BAM -gt 300 -a ! -e $INTERVAL_OUTPUT ]
+elif [ $SIZE_OF_CONTROL_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
 then
-    samtools mpileup \
+    {samtools} mpileup \
                 -BQ0 \
                 -d 10000000 \
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM |\
     {python} {script_dir}/fisher.py \
-               --output $INTERVAL_OUTPUT \
+               --output $INTERVAL_OUT \
                --ref_fa {ref_fa} \
                --base_quality {base_quality} \
                --mismatch_rate {mismatch_rate} \
@@ -508,4 +512,40 @@ then
 fi
 
 """
+
+merge_fisher_result= \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+source {script_dir}/interval_list.sh
+
+FIRST_INTERVAL=`echo $INTERVAL_LIST | head -1 | sed 's/^\([^ ]\+\) .\+$/\\1/g'`
+INTERVAL_OUT=`echo {output_txt} | sed "s/\.txt/_$FIRST_INTERVAL.txt/"`
+
+head -1 $INTERVAL_OUT > {output_txt}
+
+for INTERVAL in $INTERVAL_LIST
+do
+    INTERVAL_OUT=`echo {output_txt} | sed "s/\.txt/_${{INTERVAL[$SGE_TASK_ID]}}.txt/"`
+    if [ -f $INTERVAL_OUT ]
+    then
+        tail -n+2 $INTERVAL_OUT >> {output_txt}
+    fi
+done
+
+"""
+
+interval_num = 274
 

@@ -8,7 +8,7 @@ RunTask class
 """
 
 import subprocess
-import genomon_rc as rc
+from resource import genomon_rc as rc
 
 #
 # Run process

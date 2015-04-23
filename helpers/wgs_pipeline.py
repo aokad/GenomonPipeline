@@ -16,8 +16,8 @@ import difflib
 # Private modules
 #
 from __main__ import *
-import genomon_rc as res
-import wgs_resource as wgs_res
+from resource import genomon_rc as res
+from resource import wgs_resource as wgs_res
 from utils import *
 from sample import Sample
 
@@ -848,12 +848,20 @@ def markduplicates(
             #
             # Use Picard MarkDuplicates for samtools merge result
             #
+            tmp_memory = int( Geno.job.get( 'memory' )[ 'markduplicates' ][:-1] )
+
+            if tmp_memory > 3:
+                java_memory = str( tmp_memory - 2 ) + 'G'
+            else:
+                java_memory = '1G'
+
             shell_script_full_path = make_script_file_name( function_name, Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.markduplicates.format(
                                             log = Geno.dir[ 'log' ],
                                             input_bam = input_file1,
                                             output_bam = output_file1,
+                                            memory = java_memory,
                                             picard = Geno.conf.get( 'SOFTWARE', 'picard' )
                                         )
                                     )
@@ -919,7 +927,7 @@ def fisher_mutation_call(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         control_input_bam = input_file1,
-                                        disease_input_bam = '',
+                                        disease_input_bam = 'None',
                                         output_txt = output_file1,
                                         max_indel = Geno.job.get( 'max_indel' ),
                                         max_distance = Geno.job.get( 'max_distance' ),
@@ -927,9 +935,35 @@ def fisher_mutation_call(
                                         map_quality = Geno.job.get( 'map_quality' ),
                                         mismatch_rate = Geno.job.get( 'mismatch_rate' ),
                                         min_depth = Geno.job.get( 'min_depth' ),
+                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
+                                        python = Geno.conf.get( 'SOFTWARE', 'python' ),
                                         script_dir = Geno.dir[ 'script' ]
                                     )
                                 )
+        shell_script_file.close()
+
+        #
+        # Run
+        #
+        return_code = Geno.RT.run_arrayjob(
+                            Geno.job.get( 'job_queue' )[ function_name ],
+                            Geno.job.get( 'memory' )[ function_name ],
+                            shell_script_full_path,
+                            id_start = 1,
+                            id_end = wgs_res.interval_num )
+        if return_code != 0:
+            log.error( "{function}: runtask failed" )
+            raise
+
+        #
+        # Make shell script
+        #
+        shell_script_full_path = make_script_file_name( 'merge_fisher_result', Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.merge_fisher_result.format(
+                                        log = Geno.dir[ 'log' ],
+                                        script_dir = Geno.dir[ 'script' ],
+                                        output_txt = output_file1 ) )
         shell_script_file.close()
 
         #
@@ -939,10 +973,10 @@ def fisher_mutation_call(
                             Geno.job.get( 'job_queue' )[ function_name ],
                             Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path )
+
         if return_code != 0:
             log.error( "{function}: runtask failed" )
             raise
-
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
@@ -1071,7 +1105,7 @@ def stage_6( input_file1, input_file2, output_file1, output_file2 ):
 
 #####################################################################
 #
-#   STAGE 7 fisher_mutation call
+#   STAGE 7 fisher_mutation_call
 #
 #   in:     bam
 #   out:    vcf

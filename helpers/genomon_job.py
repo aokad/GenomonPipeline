@@ -3,7 +3,7 @@
 
 import yaml
 from __main__ import *
-from genomon_rc import job_config_default as default_values
+from resource.genomon_rc import job_config_default as default_values
 
 """
     Genomon job configuration file parse

@@ -36,11 +36,11 @@ class Geno(object):
 #
 # Private modules
 #
-import genomon_rc as res
-from genomon_cfg import genomon_config as ge_cfg
-from genomon_job import genomon_job as ge_job
-from runtask import RunTask
-from utils import *
+from resource import genomon_rc as res
+from helpers.genomon_cfg import genomon_config as ge_cfg
+from helpers.genomon_job import genomon_job as ge_job
+from helpers.runtask import RunTask
+from helpers.utils import *
 
 ################################################################################
 #
@@ -243,6 +243,12 @@ def set_env_variables():
         else:
             return_value = False
 
+    if 'PYTHONPATH' in os.environ:
+        tmp = os.environ[ 'PYTHONPATH' ] +  ':'
+    else:
+        tmp = ''
+    os.environ[ 'PYTHONPATH' ] = tmp + Geno.dir[ 'genomon' ]
+
     return return_value
 
 ###############################################################################
@@ -329,11 +335,11 @@ def main():
         run_flag = False
 
         if 'WGS' in job_tasks:
-            import wgs_pipeline as pipeline
+            from helpers import wgs_pipeline as pipeline
             run_flag = True
 
         elif 'RNA' in job_tasks:
-            import rna_pipeline as pipeline
+            from helpers import rna_pipeline as pipeline
             run_flag = True
 
         if not run_flag:
@@ -366,6 +372,7 @@ def main():
 #           level 10: logs messages useful only for debugging ruffus pipeline code
         pipeline_run(   target_tasks = [ pipeline.last_function ],
                         multiprocess = Geno.options.jobs,
+                        checksum_level = 2,
                         logger = log )
                         
 #        pipeline_cleanup()
