@@ -99,7 +99,7 @@ class RunTask:
             self.log.error( "OS error." )
             return_code = 1
 
-        except IOErr as (errno, strerror):
+        except IOError as (errno, strerror):
             self.log.error( "RunTask.runtaskby_qsub failed." )
             self.log.error( "IOError {0}{1}",format( errno, strerror ) )
             return_code = 1
@@ -147,18 +147,28 @@ class RunTask:
                 std_out, std_err = process.communicate()
                 p_return_code = process.returncode
 
+                for return_str in std_out.split( '\n' )[1:]:
+                    #
+                    # Special case:
+                    #   Job was qdel-ed by user.
+                    #   The process of 'qsub -sync y' returns 0, which is a normal exit.
+                    #   We need to detect if job is qdel-ed.
+                    #
+                    if 0 == return_str.find( 'Unable to run job' ):
+                        raise ValueError( 'Submitted job was terminated.' )
+
             except OSError as e:
                 self.log.error( "RunTask.runtaskby_qsub failed." )
                 self.log.error( "OS error." )
                 p_return_code = 1
 
-            except IOErr as (errno, strerror):
+            except IOError as (errno, strerror):
                 self.log.error( "RunTask.runtaskby_qsub failed." )
                 self.log.error( "IOError: {0}{1}".format( errno, strerror ) )
                 p_return_code = 1
 
-            except CalledProcessError as e:
-                self.log.error( "CalledProcessError: return code: {id}".format( id = e.returncode ) )
+            except ValueError as e:
+                self.log.error( e )
                 p_return_code = 1
 
             except:
