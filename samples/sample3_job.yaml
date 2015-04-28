@@ -214,8 +214,10 @@ memory:
 #   cmd         Shell script file to run
 #
 # For HGC Shirokane2
-qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={mem_req} {cmd}"
+qsub_cmd: "qsub -sync yes -now no -l s_vmem={s_vmem},mem_req={mem_req}{job_queue} {cmd}"
+drmaa_native: "-shell y -l s_vmem={s_vmem},mem_req={s_vmem}{job_queue} "
 
 # For HGC Shirokane3
-#qsub_cmd: "qsub -sync yes -now no -l {job_queue},s_vmem={s_vmem},mem_req={s_vmem} {cmd}"
+#qsub_cmd: "qsub -sync yes -now no -l s_vmem={s_vmem},mem_req={s_vmem}{job_queue}  {cmd}"
+#drmaa_native: "-shell y -l s_vmem={s_vmem},mem_req={s_vmem}{job_queue} "
 

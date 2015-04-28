@@ -86,5 +86,8 @@ job_config_default ={
 #
 # Environment variables
 #
-env_list = { 'libmaus_PATH': [ 'LD_LIBRARY_PATH' ] }
+env_list = {
+    'libmaus_PATH': [ 'LD_LIBRARY_PATH' ],
+    'drmaa_PATH':   [ 'DRMAA_LIBRARY_PATH' ]
+}
 

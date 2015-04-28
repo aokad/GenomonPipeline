@@ -60,8 +60,13 @@ def construct_arguments( ):
 
     ge_arg.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",    type = str )
     ge_arg.add_argument( '-f', "--job_file",     help = "Genomon pipeline job file",              type = str )
-    ge_arg.add_argument( '-m', "--mpi",          help = "Enable MPI",   action ='store_true',     default = False )
-    ge_arg.add_argument( '-l', "--abpath",       help = "Use absolute path in scripts", action ='store_true', default = False )
+
+    ge_arg.add_argument( '-m', "--mpi",          help = "Use MPI job submission",       action ='store_true',
+                                                                                        default = False )
+    ge_arg.add_argument( '-d', "--drmaa",        help = "Use DRMAA job submission",     action ='store_true',
+                                                                                        default = False )
+    ge_arg.add_argument( '-l', "--abpath",       help = "Use absolute path in scripts", action ='store_true',
+                                                                                        default = False )
 
     return parser
 
@@ -342,7 +347,19 @@ def main():
         #
         # Initalize RunTask object
         #
-        Geno.RT = RunTask( enable_mpi = Geno.options.mpi,
+        native_param = None
+        if Geno.options.mpi:
+            run_mode = 'MPI'
+        elif Geno.options.drmaa:
+            run_mode = 'DRMAA'
+            native_param = Geno.job.get( 'drmaa_native' )
+        else:
+            run_mode = 'qsub'
+
+        Geno.RT = RunTask( run_mode = run_mode,
+                           drmaa_native = native_param,
+                           log_dir = Geno.dir[ 'log' ],
+                           work_dir = Geno.dir[ 'cwd' ],
                            log = log,
                            ncpus = Geno.options.jobs,
                            qsub_cmd = Geno.job.get( 'qsub_cmd' ) )

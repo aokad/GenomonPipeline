@@ -16,67 +16,84 @@ from resource import genomon_rc as rc
 class RunTask:
 
     def __init__(   self,
-                    enable_mpi = False,
+                    run_mode = None,
                     ncpus = 0,
                     log = None,
                     resubmit = False,
-                    max_mem = 32,
-                    qsub_cmd = None,
+                    qsub_cmd = 'qsub',
+                    drmaa_native = None,
+                    log_dir = None,
+                    work_dir = None
                 ):
         """
         Constructor
 
         """
-        self.enable_mpi = enable_mpi
+
+        self.run_mode = run_mode
         self.log = log
         self.resubmit = resubmit
-        self.max_mem = max_mem
         self.qsub_cmd = qsub_cmd
 
-        if enable_mpi:
+        self.log.info( "RunTask: run_mode={run_mode}".format( run_mode = run_mode ) )
+
+        if run_mode == 'MPI':
             self.ncpus = ncpus
             self.comm = []
 
             from mpi4py import MPI
             self.MPI = MPI
 
-            self.log.info( "RunTask: mpi={enable_mpi}".format( enable_mpi = enable_mpi ) )
             self.log.info( "RunTask: ncpus={cpus}".format( ncpus = ncpus ) )
 
+        elif run_mode == 'DRMAA':
+            from drmaa_manage import JobManage as JM
+            self.drmaa= JM( native_param = drmaa_native, log_dir = log_dir, work_dir = work_dir )
 
     def __del__( self ):
         """
         Destructor
 
         """
-        if self.enable_mpi:
+        if self.run_mode == 'MPI':
             self.disconnect()
+        elif self.run_mode == 'DRMAA':
+            self.drmaa.delete_job_template()
 
 
-    def run_arrayjob( self, job_queue, memory, run_cmd, id_start = 1, id_end = 1, id_step = 1 ):
+    def run_arrayjob( self, run_cmd, cmd_options, id_start = 1, id_end = 1, id_step = 1 ):
         return_code = 0
-        if self.enable_mpi:
+        if self.run_mode == 'MPI':
             pass
+        elif self.run_mode == 'DRMAA':
+            return_code = self.__runtask_by_drmaa(
+                                run_cmd,
+                                cmd_options,
+                                id_start = id_start,
+                                id_end = id_end,
+                                id_step = id_step )
         else:
             run_cmd_tmp = "-t {id_start}-{id_end}:{id_step}, {cmd}".format(
                                 id_start = id_start,
                                 id_end = id_end,
                                 id_step = id_step,
                                 cmd = run_cmd )
-            return_code = self.__runtask_by_qsub( job_queue, memory, run_cmd_tmp )
+            return_code = self.__runtask_by_qsub( run_cmd_tmp, cmd_options )
 
         return return_code
 
-    def runtask( self, job_queue, memory, run_cmd ):
+    def runtask( self, run_cmd, cmd_options ):
         """
         Front end funtion to run task
 
         """
 
-        if self.enable_mpi:
-            return_code = self.__runtask_by_mpi( job_queue, memory, run_cmd )
+        if self.run_mode == 'MPI':
+            return_code = self.__runtask_by_mpi( run_cmd, cmd_options )
+        elif self.run_mode == 'DRMAA':
+            return_code = self.__runtask_by_drmaa( run_cmd, cmd_options )
         else:
-            return_code = self.__runtask_by_qsub( job_queue, memory, run_cmd )
+            return_code = self.__runtask_by_qsub( run_cmd, cmd_options )
 
         return return_code
 
@@ -87,7 +104,7 @@ class RunTask:
             comm_tmp.Disconnect()
             id += 1
 
-    def __runtask_by_mpi( self, job_queue, memory, run_cmd ):
+    def __runtask_by_mpi( self, run_cmd, cmd_options ):
 
         return_code = 0
 
@@ -114,26 +131,52 @@ class RunTask:
 
         return return_code
 
-    def __runtask_by_qsub( self, job_queue, memory, run_cmd ):
+    def __runtask_by_drmaa( self,
+                            run_cmd,
+                            cmd_options,
+                            id_start = 1,
+                            id_end = 1,
+                            id_step = 1 ):
+        """
+        Submit a job by DRMAA.
+
+        """
+        self.log.info( 'DRMAA ' )
+        self.log.info( "command         = {cmd}".format(cmd = run_cmd) )
+        self.log.info( "command options = {cmd_options}".format(cmd_options = cmd_options) )
+
+        if id_start < id_end:
+            self.log.info( "bulk job: {0}-{1}:{2}\n".format( id_start, id_end, id_step ) )
+            self.drmaa.run_array_job( run_cmd,
+                                      cmd_options = cmd_options,
+                                      id_start = id_start,
+                                      id_end = id_end,
+                                      id_step = id_step )
+        else:
+            self.log.info( "normal job\n" )
+            self.drmaa.run_job( run_cmd,
+                                cmd_options = cmd_options )
+
+        return_value = self.drmaa.wait_jobs()
+
+        return return_value
+
+        
+
+    def __runtask_by_qsub( self, run_cmd, cmd_options ):
         """
         Submit a job by qsub.
 
         """
         self.log.info( 'qsub ' )
-        self.log.info( "command = {cmd}".format(cmd = run_cmd) )
-        self.log.info( "memory  = {mem}".format(mem = memory) )
-        self.log.info( "job     = {job}\n".format(job = job_queue) )
-
-        if job_queue == 'mjob':
-            job_queue = ''
+        self.log.info( "command     = {cmd}".format(cmd = run_cmd) )
+        self.log.info( "cmd_options = {cmd_options}\n".format(cmd_options = cmd_options) )
 
         p_return_code = 0
         while True:
 
             cmd_tmp = self.qsub_cmd.format(
-                                s_vmem  = memory,
-                                mem_req = memory[:-1],
-                                job_queue = job_queue,
+                                cmd_options = cmd_options,
                                 cmd     = run_cmd )
 
             std_out = None
@@ -148,6 +191,12 @@ class RunTask:
                 p_return_code = process.returncode
 
                 for return_str in std_out.split( '\n' )[1:]:
+                    #
+                    # -sync  y  causes  qsub to wait for the job to complete before exiting.  If the job completes 
+                    # successfully, qsub's exit code will be that of the completed job.  If the job fails to complete
+                    # suc cessfully,  qsub  will  print  out a error message indicating why the job failed
+                    # and will have an exit code of 1.
+                    # If qsub is interrupted, e.g. with CTRL-C, before the job completes, the job will be canceled.
                     #
                     # Special case:
                     #   Job was qdel-ed by user.
@@ -179,12 +228,7 @@ class RunTask:
             self.log.info( "STDOUT: {stdout}".format( stdout = std_out ) )
             self.log.info( "STDERR: {stderr}\n".format( stderr = std_err ) )
 
-            memory = str( int( memory[0:-1] ) * 2 ) + memory[-1:]
-
-            if ( p_return_code == 0 or
-                 not self.resubmit or
-                 int( memory[0:-1] ) > self.max_mem
-               ):
+            if ( p_return_code == 0 or not self.resubmit ):
                 break
 
         return p_return_code

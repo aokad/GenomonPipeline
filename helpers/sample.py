@@ -185,7 +185,7 @@ class Sample():
             # B) Single-end fastq files
             #
             elif file_type == 'single_fastq':
-                filename_list = self.filename_list( Geno.dir( 'file_name' ) )
+                filename_list = self.filename_list( Geno.job.get( 'file_name' ) )
 
                 if 0 == len( filename_list ):
                     log.error( "{function} failed.".format( function = whoami() ) )
@@ -199,7 +199,7 @@ class Sample():
             # C) bam files
             #
             elif file_type == 'bam':
-                filename_list = self.filename_list( Geno.dir( 'file_name' ) )
+                filename_list = self.filename_list( Geno.job.get( 'file_name' ) )
 
                 if 0 == len( filename_list ):
                     log.error( "{function} failed.".format( function = whoami() ) )
@@ -250,3 +250,4 @@ class Sample():
             fastq_file_list = fastq_file_list + sorted( glob( Geno.dir[ 'data' ] + '/' + fastq_file ) )
 
         return fastq_file_list
+

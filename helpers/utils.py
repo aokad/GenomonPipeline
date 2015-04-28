@@ -120,6 +120,8 @@ def replace_reserved_string( dir_tmp, cwd, Geno ):
         dir_replace = Geno.job.get( 'sample_name' )
     elif dir_tmp == 'sample_date_sample_name':
         dir_replace = str( Geno.job.get( 'sample_date' ) ) + '_' + Geno.job.get( 'sample_name' )
+    elif dir_tmp == 'sample_name_sample_date':
+        dir_replace = str( Geno.job.get( 'sample_name' ) ) + '_' + Geno.job.get( 'sample_date' )
     elif dir_tmp == 'analysis_date':
         dir_replace = str( Geno.job.get( 'analysis_date' ) )
         if dir_replace == 'today' :

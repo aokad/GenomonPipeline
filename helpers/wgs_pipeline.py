@@ -307,9 +307,8 @@ def extract_fastq( input_file_list, file_ext ):
     # Run
     #
     return_code = Geno.RT.run_arrayjob(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
     Geno.status.save_status( 'extract_fastq', input_file1, return_code )
@@ -377,8 +376,8 @@ def bam2fastq(
         # Run
         #
         return_code = Geno.RT.runtask(
-                        Geno.job.get( 'job_queue' )[ function_name ],
-                        Geno.job.get( 'memory' )[ function_name ],
+                        shell_script_full_path,
+                        Geno.job.get( 'cmd_options' )[ function_name ],
                         shell_script_full_path )
 
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -475,9 +474,8 @@ def split_fastq(
         # Run
         #
         return_code = Geno.RT.run_arrayjob(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -579,9 +577,8 @@ def cutadapt(
         # Run
         #
         return_code = Geno.RT.run_arrayjob(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = 2 )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -693,9 +690,8 @@ def bwa_mem(
         # Run
         #
         return_code = Geno.RT.run_arrayjob(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -778,9 +774,8 @@ def merge_bam(
         # Run
         #
         return_code = Geno.RT.runtask(
-                            Geno.job.get( 'job_queue' )[ 'merge_bam' ],
-                            Geno.job.get( 'memory' )[ 'merge_bam' ],
-                            shell_script_full_path )
+                            shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
@@ -856,7 +851,8 @@ def markduplicates(
             #
             # Use Picard MarkDuplicates for samtools merge result
             #
-            tmp_memory = int( Geno.job.get( 'memory' )[ 'markduplicates' ][:-1] )
+            tmp_options = Geno.job.get( 'cmd_options' )[ 'markduplicates' ]
+            tmp_memory = int( tmp_options[ tmp_options.find( 's_vmem=' ) + len('s_vmem=') : tmp_options.find('G') ] )
 
             if tmp_memory > 3:
                 java_memory = str( tmp_memory - 2 ) + 'G'
@@ -880,10 +876,8 @@ def markduplicates(
         # Run
         #
         return_code = Geno.RT.runtask(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
-                            shell_script_full_path )
-
+                            shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
@@ -956,9 +950,8 @@ def fisher_mutation_call(
         # Run
         #
         return_code = Geno.RT.run_arrayjob(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
                             shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -981,10 +974,8 @@ def fisher_mutation_call(
         # Run
         #
         return_code = Geno.RT.runtask(
-                            Geno.job.get( 'job_queue' )[ function_name ],
-                            Geno.job.get( 'memory' )[ function_name ],
-                            shell_script_full_path )
-
+                            shell_script_full_path,
+                            Geno.job.get( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( 'merge_fisher_result', input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
