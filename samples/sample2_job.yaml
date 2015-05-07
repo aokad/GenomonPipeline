@@ -1,16 +1,10 @@
 #
 # Genomon Project information
 #
-project:                test
+project_root:           ~/tmp
 sample_name:            SRR330441
 sample_date:            20150409
 analysis_date:          today
-
-
-#
-# Data directory
-#
-project_root:               ~/tmp
 
 #
 # Input files
@@ -51,13 +45,8 @@ split_fastq_line_number:    1000000
 #
 # Analysis parameters
 #
-rg_id:              SRR330441           #@RG ID:
-sample_desc:        exome_at_SRA        #@RG SM:
-platform:           Illumina            #@RG PL:
-library:            Test                #@RG LB:
-platform_unit:      flowcell-barcode    #@RG PU:
-seq_center:         HGC                 #@RG CN:
-pred_med_insert:    500                 #@RG PI:
+bwa_read_group: '@RG\tID:SRR330441\tSM:exome_at_SRA\tPL:Illumina\tLB:Test\tPU:flowcell-barcode\tCN:HGC\tPI:500'
+
 adaptor:
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN

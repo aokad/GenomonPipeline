@@ -81,8 +81,9 @@ class JobManage:
         self.job_template = {}
         self.jobids = []
 
-        self.session = drmaa.Session()
-        self.session.initialize()
+        if not hasattr( self, 'session' ):
+            self.session = drmaa.Session()
+            self.session.initialize()
 
         jt = self.session.createJobTemplate()
         jt.remoteCommand = '/bin/bash ' + command

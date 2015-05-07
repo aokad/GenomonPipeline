@@ -64,7 +64,11 @@ class RunTask:
     def run_arrayjob( self, run_cmd, cmd_options, id_start = 1, id_end = 1, id_step = 1 ):
         return_code = 0
         if self.run_mode == 'MPI':
-            pass
+            return_code = self.__runtask_by_mpi(
+                                run_cmd,
+                                id_start = id_start,
+                                id_end = id_end,
+                                id_step = id_step )
         elif self.run_mode == 'DRMAA':
             return_code = self.__runtask_by_drmaa(
                                 run_cmd,
@@ -104,12 +108,30 @@ class RunTask:
             comm_tmp.Disconnect()
             id += 1
 
-    def __runtask_by_mpi( self, run_cmd, cmd_options ):
+    def __runtask_by_mpi( self,
+                          run_cmd,
+                          id_start = 1,
+                          id_end = 1,
+                          id_step = 1 ):
+        """
+        Submit a job by MPI.
+
+        """
+        self.log.info( 'DRMAA ' )
+        self.log.info( "command         = {cmd}".format(cmd = run_cmd) )
 
         return_code = 0
 
         try:
-            self.comm.append( self.MPI.COMM_SELF.Spawn( sys.executable, args=['mpi_worker.py', run_cmd ], maxprocs=1 ) )
+
+            if id_start < id_end:
+                self.log.info( "bulk job\n" )
+                for id in range( id_start, id_end, id_step ):
+                    run_cmd = "SGE_TASK_ID={0}\n".format( id ) + run_cmd
+                    self.comm.append( self.MPI.COMM_SELF.Spawn( sys.executable, args=['mpi_worker.py', run_cmd ], maxprocs=1 ) )
+            else:
+                self.log.info( "normal job\n" )
+                self.comm.append( self.MPI.COMM_SELF.Spawn( sys.executable, args=['mpi_worker.py', run_cmd ], maxprocs=1 ) )
 
         except OSError as e:
             self.log.error( "RunTask.runtaskby_qsub failed." )

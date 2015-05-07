@@ -113,7 +113,7 @@ def replace_reserved_string( dir_tmp, cwd, Geno ):
     #
     dir_replace = None
     if dir_tmp == 'project_directory':
-        dir_replace = Geno.job.get( 'project' )
+        pass
     elif dir_tmp == 'sample_date':
         dir_replace = str( Geno.job.get( 'sample_date' ) )
     elif dir_tmp == 'sample_name':
@@ -147,8 +147,10 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
     """
     if isinstance( dir_tree, dict ):
         for dir_tmp in dir_tree.keys():
+            cwd_tmp = cwd
             dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
-            cwd_tmp = cwd + '/' + dir_replace
+            if dir_replace:
+                 cwd_tmp += '/' + dir_replace
             if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
                 return cwd_tmp
             if ( isinstance( dir_tree[ dir_tmp ], dict ) or
@@ -162,11 +164,15 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
         n = 0
         for dir_tmp in dir_tree:
             if isinstance( dir_tmp, str):
+                cwd_tmp = cwd
                 dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
-                cwd_tmp = cwd + '/' + dir_replace
+                if dir_replace:
+                    cwd_tmp += '/' + dir_replace
             elif isinstance( dir_tmp, dict):
+                cwd_tmp = cwd
                 dir_replace = replace_reserved_string( dir_tmp.keys()[ 0 ] , cwd, Geno )
-                cwd_tmp = cwd + '/' + dir_replace
+                if dir_replace:
+                    cwd_tmp += '/' + dir_replace
 
             if ( ( isinstance( dir_tmp, str) and dir_tmp == dir_name ) or
                  ( isinstance( dir_tmp, dict) and dir_tmp.keys()[0] == dir_name ) ):
@@ -180,8 +186,10 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
             n = n + 1
     else:
         if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
+            cwd_tmp = cwd
             dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
-            cwd_tmp = cwd + '/' + dir_replace
+            if dir_replace != '':
+                cwd_tmp += '/' + dir_replace
             return cwd_tmp
 
     return None

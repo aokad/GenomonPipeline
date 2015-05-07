@@ -2,16 +2,13 @@
 # Genomon Project information
 #
 # Mandatory definitions
-#   project:        project name
+#   project_root
 #   sample_name
 #   sample_name:    sample name
 #   sample_date:    the date in which sequece was performed.
 #   analysis_date:  either 'today' or a specific date
 #
-#   project name directory is going to be created at project_root specified below.
-#       {project_root}/{project}/data, results
-#
-project:                test
+project_root:               ~/tmp
 sample_name:            chr1_data
 sample_date:            20150330
 analysis_date:          today
@@ -19,14 +16,9 @@ analysis_date:          today
 #
 # Data directory
 #
-# Mandatory definitions
-#   project_root
-#
 # Optional
 #   project_dir_tree:   if not specified, the default directory tree is going to be created.
 #
-project_root:               ~/tmp
-
 project_dir_tree:
     project_directory:
         data:
@@ -145,23 +137,7 @@ split_fastq_line_number:    10000000
 #   <examle>
 # @RG   ID:110701_SN590_0094_AC02UYABXX SM:TCGA-05-4418-10A-01D-1203-02 LB:Homo_sapiens_assembly19  PL:Illumina_HiSeq2000   CN:Harvard_GCC_02 PI: 200
 #
-#   The following words are available.
-#
-#   rg_id           for @RG ID
-#   sample_desc     for @RG SM
-#   platform        for @RG PL
-#   platform_unit   for @RG PU
-#   library         for @RG LB
-#   seq_center      for @RG CN
-#   pred_med_insert for @RG PI
-#
-rg_id:              CRC                 #@RG ID:
-sample_desc:        test_sample         #@RG SM:
-platform:           Illumina            #@RG PL:
-library:            Test                #@RG LB:
-platform_unit:      flowcell-barcode    #@RG PU:
-seq_center:         HGC                 #@RG CN:
-pred_med_insert:    500                 #@RG PI:
+bwa_read_group: '@RG\tID:CRC\tSM:test_sample\tPL:Illumina\tLB:Test\tPU:flowcell-barcode\tCN:HGC\tPI:500'
 
 # cutadapt
 adaptor:

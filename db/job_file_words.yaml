@@ -1,5 +1,4 @@
 mandatory:
-        - project
         - sample_name
         - sample_date
         - analysis_date
@@ -10,8 +9,6 @@ mandatory:
         - file_name
 
         - tasks
-        - job_queue
-        - memory
         - qsub_cmd
 
 optional:
@@ -27,14 +24,7 @@ parameters:
         - split_fastq_line_number:  split_fastq
 
         # bwa mem @RG
-        - rg_id:                    bwa_mem 
-        - sample_desc:              bwa_mem 
-        - platform:                 bwa_mem 
-        - library:                  bwa_mem 
-        - platform_unit:            bwa_mem 
-        - seq_center:               bwa_mem 
-        - pred_med_insert:          bwa_mem 
-
+        - bwa_read_group:           bwa_mem 
         # bwa mem
         - min_score:                bwa_mem
 

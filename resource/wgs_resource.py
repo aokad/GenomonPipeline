@@ -217,7 +217,7 @@ BAM_WITHOUT_SUFFIX=`echo {bam} | sed 's/\.bam//'`
 {bwa} mem \
     -t 2 \
     -T {min_score} \
-    -R '@RG\tID:{rg_id}\tSM:{sample_desc}\tLB:{library}\tPL:{platform}\tPU:{platform_unit}\tCN:{seq_center}\tPI:{pred_med_insert}' \
+    -R '{read_group}' \
     {ref_fa} \
     {fastq1} \
     {fastq2} | \
@@ -336,6 +336,9 @@ OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
         index=1 \
         > {output_bam_file}
 
+# older version of pysam does not take care of PP in @PG
+#samtools view -H {output_bam_file} | sed 's/PP:[^ 	]\+//' | samtools reheader - {output_bam_file}
+
 """
 
 markduplicates = \
@@ -396,6 +399,9 @@ OUT_BAM_PREFIX=`echo {output_bam} | sed 's/\.[^\.]\+$//'`
     md5=1\
     {input_bam_files} \
     O={output_bam}
+
+# older version of pysam does not take care of PP in @PG
+#samtools view -H {output_bam} | sed 's/PP:[^ 	]\+//' | samtools reheader - {output_bam}
 
 """
 

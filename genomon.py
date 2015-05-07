@@ -348,9 +348,9 @@ def main():
         # Initalize RunTask object
         #
         native_param = None
-        if Geno.options.mpi:
+        if Geno.options.mpi and not Geno.options.drmaa:
             run_mode = 'MPI'
-        elif Geno.options.drmaa:
+        elif Geno.options.drmaa and not Geno.options.mpi:
             run_mode = 'DRMAA'
             native_param = Geno.job.get( 'drmaa_native' )
         else:
