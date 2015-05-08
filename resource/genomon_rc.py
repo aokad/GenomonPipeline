@@ -71,7 +71,7 @@ job_config_default ={
         { 'adaptor': [ 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN', 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' ] },
     'bwa_mem':
         { 'min_score': 20,
-          'bwa_read_group': '@RG\tID:Unknown\tSM:Unknown\tLB:Unknown\tPL:Unknown\tPU:Unknown\tCN:unknown'} ,
+          'bwa_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'} ,
     'fisher_mutation_call':
         { 'max_indel': 2,
           'max_distance': 5,
