@@ -1,10 +1,11 @@
+######################################################################
 #
 # Genomon Project information
 #
 # Mandatory definitions
 #   project_root:   All the data and results are stored under this directory.
-#   sample_name:    sample name
-#   sample_date:    the date in which sequece was performed.
+#   sample_name:    sample name, sample_name directory is going to be created at project_root.
+#   sample_date:    the date on which sequece was performed.
 #   analysis_date:  either 'today' or a specific date
 #
 #
@@ -13,6 +14,7 @@ sample_name:            small
 sample_date:            20150409
 analysis_date:          today
 
+######################################################################
 #
 # Data directory
 #
@@ -34,6 +36,8 @@ project_dir_tree:
                         - fastq
                         - bam
                         - mutation
+
+######################################################################
 #
 # Input files
 #
@@ -68,7 +72,6 @@ project_dir_tree:
 #                   disease_subdir: s_B2N
 #
 #
-
 input_file_dir:             /home/w3varann/samples/small
 input_file_type:            paired_fastq
 file_name:                  d_100_{pair_id}.fastq.bz2
@@ -76,11 +79,12 @@ file_ext:                   .fastq.bz2
 pair_id:
                             - 1
                             - 2
-fastq_filter:               False # True or False
+fastq_filter:               False # True or False. Default: False.
 
 directory_permission:       owner   # owner, group, all
 #bed_files:                  None # for Panel
 
+######################################################################
 #
 # Analysis setting
 #
@@ -93,26 +97,18 @@ tasks:
                         - markduplicates
                         - fisher_mutation_call
 
-#
-# Split fastq file into multiple files with line number specified below.
-#
-split_fastq_line_number:    20
-
-# tasks type
-#                    WGS:
-#                        - bamtofastq
-#                        - split_fastq
-#                        - cutadapt
-#                        - bwa_mem
-#                        - merge_bam
-#                        - markduplicates
-#                        - fisher_mutation_call
-
+######################################################################
 #
 # Analysis parameters
 #
 #   If not defined, default values are going to be used in the pipeline.
 #
+parameters:
+# parameters for split fastq
+    split_fastq:
+        split_fastq_line_number:    20
+        fastq_filter:               False # True or False. Default: False.
+
 
 #
 # SAM file header @RG
@@ -137,28 +133,38 @@ split_fastq_line_number:    20
 #   SM  Sample. Use pool name where a pool is being sequenced.
 #
 #   <examle>
-# @RG\tID:110701_SN590_0094_AC02UYABXX\tSM:TCGA-05-4418-10A-01D-1203-02\tLB:Homo_sapiens_assembly19\tPL:Illumina_HiSeq2000\tCN:Harvard_GCC_02\tPI:200
+# @RG   ID:110701_SN590_0094_AC02UYABXX SM:TCGA-05-4418-10A-01D-1203-02 LB:Homo_sapiens_assembly19  PL:Illumina_HiSeq2000   CN:Harvard_GCC_02 PI: 200
 #
-bwa_read_group:     '@RG\tID:small\tSM:test_sample\tPL:Illumina\tLB:Test\tPU:flowcell-barcode\tCN:HGC\tPI:500'
+#
+# bwa mem
+    bwa_mem:
+        bwa_read_group:     '@RG\tID:Small\tSM:test_sample\tLB:Test\tPL:Illumina\tPU:flowcell-barcode\tCN:HGC\tPI:500'
+        min_score:          20 # used for -T option of bwa mem
 
 # cutadapt
-adaptor:
+    cutadapt:
+        adaptor:
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
                         - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
-# bwa mem
-min_score:              20
 
 # Fisher's exact test mutation call
-min_depth:              9
-max_indel:              2
-max_distance:           5
-base_quality:           15
-map_quality:            30
-mismatch_rate:          0.07
+    fisher_mutation_call:
+        min_depth:              9
+        max_indel:              2
+        max_distance:           5
+        base_quality:           15
+        map_quality:            30
+        mismatch_rate:          0.07
+
+######################################################################
+#
+# Job submission settings
+#
 
 #
 #   HGC Shirokane super computer specific parameters
 #
+#   For Shirokane2
 cmd_options:
                     bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1'
                     split_fastq:            '-l ljob,s_vmem=1G,mem_req=1'
@@ -167,6 +173,14 @@ cmd_options:
                     merge_bam:              '-l ljob,s_vmem=1G,mem_req=1'
                     markduplicates:         '-l ljob,s_vmem=8G,mem_req=8'
                     fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1'
+#   For Shirokane3
+#                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
+#                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
+#                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1G'
+#                    bwa_mem:                '-l ljob,s_vmem=6G,mem_req=6G'
+#                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1G'
+#                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
+#                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
 
 #
 # qsub command format
