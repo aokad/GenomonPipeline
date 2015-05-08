@@ -257,7 +257,7 @@ BAM_WITHOUT_SUFFIX=`echo {bam} | sed 's/\.bam//'`
 {bwa} mem \
     -t 2 \
     -T {min_score} \
-    -R '@RG\tID:{rg_id}\tSM:{sample_desc}\tLB:{library}\tPL:{platform}\tPU:{platform_unit}\tCN:{seq_center}\tPI:{pred_med_insert}' \
+    -R '{read_group}' \
     {ref_fa} \
     {fastq1} \
     {fastq2} | \
