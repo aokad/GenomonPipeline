@@ -64,11 +64,9 @@ def check_file_exists_for_split_fastq(
                                 outsuffix = output_suffix,
                                 input = input_file1 )
 
-def check_file_exists_for_merge_bam(
-    input_file1,
-    input_file2,
-    output_file1,
-    output_file2,
+def check_file_exists_for_merge(
+    input_file_list,
+    output_file
     ):
 
     """
@@ -76,17 +74,12 @@ def check_file_exists_for_merge_bam(
 
     """
 
-    ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
-    if not os.path.exists( output_file1 ):
-        return True, "Missing file {outputfile} for {input_prefix}*{input_suffix}.".format(
-                            outputfile = output_file1,
-                            input_prefix = input_prefix,
-                            input_suffix = input_suffix )
+    if not os.path.exists( output_file ):
+        return True, "Missing file {outputfile} for input file.".format(
+                            outputfile = output_file )
     else:
-        return False, "File {outputfile} exists for {input_prefix}*{input_suffix}.".format(
-                            outputfile = output_file1,
-                            input_prefix = input_prefix,
-                            input_suffix = input_suffix )
+        return False, "File {outputfile} exists for input file.".format(
+                            outputfile = output_file )
 
 def check_file_exists_for_bwa_mem(
         input_file1,
@@ -166,6 +159,30 @@ def check_file_exists_for_input_output(
         else:
             return False, "File {output} exits for {input}.".format( output = output_file1, input = input_file1 )
 
+def check_file_exists_for_input2_output(
+        input_file1,
+        input_file2,
+        output_file
+    ):
+
+    """
+    Checks if output file exists
+
+    """
+
+    if not os.path.exists( output_file ):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output_file,
+                            inputfile = input_file1 )
+
+    else:
+        in_time = os.path.getmtime( input_file1 )
+        out_time = os.path.getmtime( output_file )
+        if in_time > out_time:
+            return True, "{output} is older than {input}.".format( output = output_file, input = input_file1 )
+        else:
+            return False, "File {output} exits for {input}.".format( output = output_file, input = input_file1 )
+
 
 #####################################################################
 #
@@ -237,8 +254,14 @@ def generate_params_for_merge_bam():
     """
     
     Sample.make_param( 'merge_bam', '.bam', 'bam', 1, 1 )
+    input_file_list = []
     for param in Sample.param( 'merge_bam' ):
-        yield param
+        input_file_list.append( param[ 0 ] )
+
+    dir_name = os.path.dirname( input_file_list[ 0 ] )
+    return_list = [ input_file_list, dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam' ]
+    yield return_list
+        
 
 #
 # For STAGE 6 markduplicates
@@ -249,9 +272,14 @@ def generate_params_for_markduplicates ():
 
     """
     
-    Sample.make_param( 'markduplicates', '_markdup.bam', 'bam', 1, 1 )
-    for param in Sample.param( 'markduplicates' ):
-        yield param
+    Sample.make_param( 'markduplicates', '.bam', 'bam', 1, 1 )
+    input_file_list = []
+    for param in Sample.param( 'merge_bam' ):
+        input_file_list.append( param[ 0 ] )
+
+    dir_name = os.path.dirname( input_file_list[ 0 ] )
+    return_list = [ input_file_list, dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam' ]
+    yield return_list
 
 #
 # For STAGE 7 fisher_mutation_call
@@ -263,8 +291,18 @@ def generate_params_for_fisher_mutation_call():
     """
     
     Sample.make_param( 'fisher_mutation_call', '.txt', 'mutation', 2, 1 )
-    for param in Sample.param( 'fisher_mutation_call' ):
-        yield param
+    dir_name = os.path.dirname( Sample.param( 'fisher_mutation_call' )[ 0 ][ 0 ] )
+
+    if 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS' ]:
+        input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam'
+    elif 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ]:
+        input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam'
+
+    dir_name = os.path.dirname( Sample.param( 'fisher_mutation_call' )[ 0 ][ 2 ] )
+    return_list = [ input_bam,
+                    'None',
+                    dir_name + '/' + Geno.job.get( 'sample_name' ) + '.txt' ]
+    yield return_list
 
 
 #
@@ -715,10 +753,8 @@ def bwa_mem(
 # Stage 5: merge_bam
 #
 def merge_bam(
-    input_file1,
-    input_file2,
-    output_file1,
-    output_file2,
+    input_file_list,
+    output_file,
     use_biobambam
     ):
     """
@@ -733,24 +769,29 @@ def merge_bam(
         #
         # Make data for array job 
         #
-        ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
+        input_files = ''
+        for input_file in input_file_list:
+            ( input_prefix, input_suffix ) = os.path.splitext( input_file )
 
-        #
-        # Make shell script
-        #
+            #
+            # Make shell script
+            #
+            if use_biobambam:
+                input_file_name = "{input_prefix}*_bamsorted{input_suffix}".format(
+                                            input_prefix = input_prefix,
+                                            input_suffix = input_suffix )
+                bam_merge_resource = wgs_res.biobambam_merge_bam
+                for file_name in glob( input_file_name ):
+                    input_files += "I={file_name} ".format( file_name = file_name )
+
+            else:
+                input_files += "{input_prefix}*_sorted{input_suffix} ".format(
+                                            input_prefix = input_prefix,
+                                            input_suffix = input_suffix )
+
         if use_biobambam:
-            input_file_name = "{input_prefix}*_bamsorted{input_suffix}".format(
-                                        input_prefix = input_prefix,
-                                        input_suffix = input_suffix )
             bam_merge_resource = wgs_res.biobambam_merge_bam
-            input_files = ''
-            for file_name in glob( input_file_name ):
-                input_files += "I={file_name} ".format( file_name = file_name )
-
         else:
-            input_files = "{input_prefix}*_sorted{input_suffix}".format(
-                                        input_prefix = input_prefix,
-                                        input_suffix = input_suffix )
             bam_merge_resource = wgs_res.samtools_merge_bam
 
         shell_script_full_path = make_script_file_name( function_name, Geno )
@@ -758,7 +799,7 @@ def merge_bam(
         shell_script_file.write( bam_merge_resource.format(
                                         log = Geno.dir[ 'log' ],
                                         input_bam_files = input_files,
-                                        output_bam_file = output_file1,
+                                        output_bam_file = output_file,
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                         biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
                                         ) )
@@ -770,7 +811,7 @@ def merge_bam(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( function_name, input_file1, return_code )
+        Geno.status.save_status( function_name, input_file, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
@@ -797,10 +838,8 @@ def merge_bam(
 # Stage 6: markduplicates
 #
 def markduplicates(
-    input_file1,
-    input_file2,
-    output_file1,
-    output_file2,
+    input_file_list,
+    output_file,
     use_biobambam
     ):
     """
@@ -822,20 +861,21 @@ def markduplicates(
             #
             # Make shell script for array job
             #
-            ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
-            input_file_list =  glob( "{input_prefix}*_bamsorted{input_suffix}".format(
-                                        input_prefix = input_prefix,
-                                        input_suffix = input_suffix ) )
-            input_files =''
-            for infile in input_file_list:
-                input_files += "I={file} ".format( file = infile )
+            for input_file in input_file_list:
+                ( input_prefix, input_suffix ) = os.path.splitext( input_file )
+                input_file_list =  glob( "{input_prefix}*_bamsorted{input_suffix}".format(
+                                            input_prefix = input_prefix,
+                                            input_suffix = input_suffix ) )
+                input_files =''
+                for infile in input_file_list:
+                    input_files += "I={file} ".format( file = infile )
 
             shell_script_full_path = make_script_file_name( function_name, Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.biobambam_markduplicates.format(
                                             log = Geno.dir[ 'log' ],
                                             input_bam_files = input_files,
-                                            output_bam = output_file1,
+                                            output_bam = output_file,
                                             biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
                                         )
                                     )
@@ -853,12 +893,13 @@ def markduplicates(
             else:
                 java_memory = '1G'
 
+            input_file = output_file.replace( 'markdup', 'merged' )
             shell_script_full_path = make_script_file_name( function_name, Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.markduplicates.format(
                                             log = Geno.dir[ 'log' ],
-                                            input_bam = input_file1,
-                                            output_bam = output_file1,
+                                            input_bam = input_file,
+                                            output_bam = output_file,
                                             memory = java_memory,
                                             samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                             picard = Geno.conf.get( 'SOFTWARE', 'picard' )
@@ -872,7 +913,7 @@ def markduplicates(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( function_name, input_file1, return_code )
+        Geno.status.save_status( function_name, input_file_list[ 0 ], return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
@@ -902,10 +943,9 @@ def markduplicates(
 # Stage 7: fisher_mutation_call
 #
 def fisher_mutation_call(
-    input_file1,
-    input_file2,
-    output_file1,
-    output_file2
+    control_input_file,
+    disease_input_file,
+    output_file,
     ):
     """
        Mutaion calling
@@ -924,9 +964,9 @@ def fisher_mutation_call(
         shell_script_file.write( wgs_res.fisher_mutation_call.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
-                                        control_input_bam = input_file1,
-                                        disease_input_bam = 'None',
-                                        output_txt = output_file1,
+                                        control_input_bam = control_input_file,
+                                        disease_input_bam = disease_input_file,
+                                        output_txt = output_file,
                                         max_indel = Geno.job.get_param( 'fisher_mutation_call', 'max_indel' ),
                                         max_distance = Geno.job.get_param( 'fisher_mutation_call', 'max_distance' ),
                                         base_quality = Geno.job.get_param( 'fisher_mutation_call', 'base_quality' ),
@@ -948,7 +988,7 @@ def fisher_mutation_call(
                             Geno.job.get( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
-        Geno.status.save_status( function_name, input_file1, return_code )
+        Geno.status.save_status( function_name, control_input_file, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
@@ -961,7 +1001,7 @@ def fisher_mutation_call(
         shell_script_file.write( wgs_res.merge_fisher_result.format(
                                         log = Geno.dir[ 'log' ],
                                         script_dir = Geno.dir[ 'script' ],
-                                        output_txt = output_file1 ) )
+                                        output_txt = output_file ) )
         shell_script_file.close()
 
         #
@@ -970,7 +1010,7 @@ def fisher_mutation_call(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( 'merge_fisher_result', input_file1, return_code )
+        Geno.status.save_status( 'merge_fisher_result', input_file_list[ 0 ], return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
             raise
@@ -1075,16 +1115,14 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 @follows( stage_4 )
 @active_if( 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_merge_bam )
-@check_if_uptodate( check_file_exists_for_merge_bam )
-def stage_5( input_file1, input_file2, output_file1, output_file2 ):
+@check_if_uptodate( check_file_exists_for_merge)
+def stage_5( input_file_list, output_file ):
     if ( Geno.job.get( 'use_biobambam' ) and
          'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS'] ):
         return_value = True
     else:
-        return_value = merge_bam( input_file1,
-                                  input_file2,
-                                  output_file1,
-                                  output_file2,
+        return_value = merge_bam( input_file_list,
+                                  output_file,
                                   Geno.job.get( 'use_biobambam' ) )
 
     if not return_value:
@@ -1100,12 +1138,10 @@ def stage_5( input_file1, input_file2, output_file1, output_file2 ):
 @follows( stage_5 )
 @active_if( 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_markduplicates )
-@check_if_uptodate( check_file_exists_for_markduplicates )
-def stage_6( input_file1, input_file2, output_file1, output_file2 ):
-    return_value =  markduplicates( input_file1,
-                                    input_file2,
-                                    output_file1,
-                                    output_file2, 
+@check_if_uptodate( check_file_exists_for_merge )
+def stage_6( input_file_list, output_file ):
+    return_value =  markduplicates( input_file_list,
+                                    output_file,
                                     Geno.job.get( 'use_biobambam' ) )
 
     if not return_value:
@@ -1116,14 +1152,14 @@ def stage_6( input_file1, input_file2, output_file1, output_file2 ):
 #   STAGE 7 fisher_mutation_call
 #
 #   in:     bam
-#   out:    vcf
+#   out:    txt
 #
 @follows( stage_6 )
 @active_if ( 'fisher_mutation_call' in Geno.job.get( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_fisher_mutation_call )
-@check_if_uptodate( check_file_exists_for_input_output )
-def stage_7(  input_file1, input_file2, output_file1, output_file2 ):
-    return_value = fisher_mutation_call(  input_file1, input_file2, output_file1, output_file2 )
+@check_if_uptodate( check_file_exists_for_input2_output )
+def stage_7(  input_file1, input_file2, output_file ):
+    return_value = fisher_mutation_call(  input_file1, input_file2, output_file )
     if not return_value:
         raise
 
