@@ -64,22 +64,21 @@ script_files = ( 'shell/utility.sh',
 # Job configuration file default values
 #
 job_config_default ={
-    'max_indel': 2,
-    'max_distance': 5,
-    'map_quality': 30,
-    'base_quality': 15,
-    'mismatch_rate': 0.07,
-    'min_score': 20,
-    'min_depth': 9,
-    'rg_id': 'Unknown',
-    'sample_desc': 'Unknown',
-    'platform': 'Unknown',
-    'platform_unit': 'Unknown',
-    'library': 'Unknown',
-    'seq_center': 'Unknown',
-    'pred_med_insert': '500',
-    'fastq_filter': False,
-    'split_fastq_line_number': 160000000,
+    'split_fastq':
+        { 'fastq_filter': False,
+          'split_fastq_line_number': 160000000 },
+    'cutadapt':
+        { 'adaptor': [ 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN', 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' ] },
+    'bwa_mem':
+        { 'min_score': 20,
+          'bwa_read_group': '@RG\tID:Unknown\tSM:Unknown\tLB:Unknown\tPL:Unknown\tPU:Unknown\tCN:unknown'} ,
+    'fisher_mutation_call':
+        { 'max_indel': 2,
+          'max_distance': 5,
+          'map_quality': 30,
+          'base_quality': 15,
+          'mismatch_rate': 0.07,
+          'min_depth': 9 },
     'use_biobambam': False
 }
 

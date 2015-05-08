@@ -46,6 +46,20 @@ class genomon_job:
             self.__log.error( "genomon_job.open_job: unexpected error:", sys.exc_info()[0] )
             self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
+    def get_param( self, task, item ):
+        param_dict = self.__job.get( 'parameters' )
+        return_value = None
+        if param_dict:
+            if task in param_dict:
+                if item in param_dict[ task ]:
+                    return_value = param_dict[ task ][ item ]
+
+        if None == return_value:
+            return_value = self.__default[ task ][ item ]
+
+        return return_value
+
+
     def get( self, item ):
         if self.__job != None:
             return_item = self.__job.get( item )
