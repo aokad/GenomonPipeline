@@ -156,9 +156,9 @@ class RunTask:
     def __runtask_by_drmaa( self,
                             run_cmd,
                             cmd_options,
-                            id_start = 1,
-                            id_end = 1,
-                            id_step = 1 ):
+                            id_start = 0,
+                            id_end = 0,
+                            id_step = 0 ):
         """
         Submit a job by DRMAA.
 
@@ -167,7 +167,7 @@ class RunTask:
         self.log.info( "command         = {cmd}".format(cmd = run_cmd) )
         self.log.info( "command options = {cmd_options}".format(cmd_options = cmd_options) )
 
-        if id_start < id_end:
+        if id_step != 0:
             self.log.info( "bulk job: {0}-{1}:{2}\n".format( id_start, id_end, id_step ) )
             self.drmaa.run_array_job( run_cmd,
                                       cmd_options = cmd_options,
