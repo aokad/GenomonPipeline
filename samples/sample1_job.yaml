@@ -74,7 +74,7 @@ project_dir_tree:
 #
 input_file_dir:             /home/w3varann/samples/small
 input_file_type:            paired_fastq
-file_name:                  d_100_{pair_id}.fastq.bz2
+file_name:                  'd_100_{pair_id}.fastq.bz2'
 file_ext:                   .fastq.bz2
 pair_id:
                             - 1

@@ -51,7 +51,7 @@ analysis_date:          today
 #
 input_file_dir:             /home/w3varann/samples/SRR330441
 input_file_type:            paired_fastq # paired_fastq,  single_fastq, bam
-file_name:                  SRR330441_{pair_id}.fastq.gz
+file_name:                  'SRR330441_{pair_id}.fastq.gz'
 file_ext:                   .fastq.gz
 pair_id:
                             - 1
