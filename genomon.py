@@ -288,6 +288,7 @@ def cleanup_intermediates():
 #
 def main():
     global log
+    global log_mutex
     global Geno
 
     try:
