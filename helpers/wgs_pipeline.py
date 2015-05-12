@@ -102,10 +102,8 @@ def check_file_exists_for_bwa_mem(
         return False, "File {output} exits for {input}.".format( output = output_file1, input = input_file1 )
 
 def check_file_exists_for_markduplicates(
-        input_file1,
-        input_file2,
-        output_file1,
-        output_file2
+        input_file_list,
+        output_file
     ):
 
     """
@@ -254,13 +252,16 @@ def generate_params_for_merge_bam():
     """
     
     Sample.make_param( 'merge_bam', '.bam', 'bam', 1, 1 )
-    input_file_list = []
+    input_file_list = {}
     for param in Sample.param( 'merge_bam' ):
-        input_file_list.append( param[ 0 ] )
+        dir_name = os.path.dirname( param[ 0 ] )
+        if not ( dir_name in input_file_list ):
+            input_file_list[ dir_name ] = []
+        input_file_list[ dir_name ].append( param[ 0 ] )
 
-    dir_name = os.path.dirname( input_file_list[ 0 ] )
-    return_list = [ input_file_list, dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam' ]
-    yield return_list
+    for dir_name in input_file_list.keys():
+        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam' ]
+        yield return_list
         
 
 #
@@ -273,13 +274,16 @@ def generate_params_for_markduplicates ():
     """
     
     Sample.make_param( 'markduplicates', '.bam', 'bam', 1, 1 )
-    input_file_list = []
-    for param in Sample.param( 'merge_bam' ):
-        input_file_list.append( param[ 0 ] )
+    input_file_list = {}
+    for param in Sample.param( 'markduplicates' ):
+        dir_name = os.path.dirname( param[ 0 ] )
+        if not ( dir_name in input_file_list ):
+            input_file_list[ dir_name ] = []
+        input_file_list[ dir_name ].append( param[ 0 ] )
 
-    dir_name = os.path.dirname( input_file_list[ 0 ] )
-    return_list = [ input_file_list, dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam' ]
-    yield return_list
+    for dir_name in input_file_list.keys():
+        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam' ]
+        yield return_list
 
 #
 # For STAGE 7 fisher_mutation_call
@@ -291,18 +295,23 @@ def generate_params_for_fisher_mutation_call():
     """
     
     Sample.make_param( 'fisher_mutation_call', '.txt', 'mutation', 2, 1 )
-    dir_name = os.path.dirname( Sample.param( 'fisher_mutation_call' )[ 0 ][ 0 ] )
+    input_file_list = {}
+    for param in Sample.param( 'fisher_mutation_call' ):
+        dir_name = os.path.dirname( param[ 0 ] )
+        if not ( dir_name in input_file_list ):
+            if 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS' ]:
+                input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam'
+            elif 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ]:
+                input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam'
+            else:
+                input_bam =  param[ 0 ]
 
-    if 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS' ]:
-        input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam'
-    elif 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ]:
-        input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam'
-
-    dir_name = os.path.dirname( Sample.param( 'fisher_mutation_call' )[ 0 ][ 2 ] )
-    return_list = [ input_bam,
-                    'None',
-                    dir_name + '/' + Geno.job.get( 'sample_name' ) + '.txt' ]
-    yield return_list
+            input_file_list[ dir_name ] = input_bam
+            mutation_dir_name = os.path.dirname( param[ 2 ] )
+            return_list = [ input_bam,
+                            'None',
+                            mutation_dir_name + '/' + Geno.job.get( 'sample_name' ) + '.txt' ]
+            yield return_list
 
 
 #
@@ -351,7 +360,8 @@ def extract_fastq( input_file_list, file_ext ):
                             id_end = id )
     Geno.status.save_status( 'extract_fastq', input_file1, return_code )
     if return_code != 0:
-        log.error( "{function}: runtask failed",format( function = 'extract_fastq' ) )
+        with log_mutex:
+            log.error( "{function}: runtask failed",format( function = 'extract_fastq' ) )
         raise
 
 
@@ -375,13 +385,15 @@ def bam2fastq(
     """
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make sure files exist.
         #
         if not os.path.isfile( input_file ):
-            log.error( "file: {file} does not exist.".format( file=input_file ) )
+            with log_mutex:
+                log.error( "file: {file} does not exist.".format( file=input_file ) )
             raise
 
         #
@@ -421,19 +433,23 @@ def bam2fastq(
         Geno.status.save_status( function_name, input_file1, return_code )
 
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format(num = errno, error = strerror, function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format(num = errno, error = strerror, function = whoami() ) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except:
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
         return_value = False
 
     else:
@@ -462,13 +478,15 @@ def split_fastq(
     """
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make sure files exist.
         #
         if not os.path.isfile( input_file1 ):
-            log.error( "file: {file} does not exist.".format( file=input_file1 ) )
+            with log_mutex:
+                log.error( "file: {file} does not exist.".format( file=input_file1 ) )
             raise
 
         #
@@ -518,20 +536,24 @@ def split_fastq(
                             id_end = id )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format(num = errno, error = strerror, function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format(num = errno, error = strerror, function = whoami() ) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except:
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
         return_value = False
 
     else:
@@ -564,7 +586,8 @@ def cutadapt(
 
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         file_ext = os.path.splitext( input_file1 )[ 1 ]
         if file_ext == '.bz2':
@@ -574,7 +597,8 @@ def cutadapt(
         # Make data for array job
         #
         if not os.path.isfile( input_file ):
-            log.error( "file: {file} does not exist.".format( file=input_file ) )
+            with log_mutex:
+                log.error( "file: {file} does not exist.".format( file=input_file ) )
             raise
 
         output_file1 = make_sample_file_name( output_file1, "{dir}/{base}_" ) + '_cutadapt.fastq'
@@ -621,20 +645,24 @@ def cutadapt(
                             id_end = 2 )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except:
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
         return_value = False
 
     else:
@@ -659,7 +687,8 @@ def bwa_mem(
 
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         file_ext = os.path.splitext( input_file1 )[ 1 ]
 
@@ -728,20 +757,24 @@ def bwa_mem(
                             id_end = id )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
             
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except:
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
         return_value = False
 
     else:
@@ -764,7 +797,8 @@ def merge_bam(
 
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make data for array job 
@@ -813,20 +847,24 @@ def merge_bam(
                             Geno.job.get( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( function_name, input_file, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except:
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
         return_value = False
 
     else:
@@ -849,7 +887,8 @@ def markduplicates(
 
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make shell script
@@ -887,13 +926,13 @@ def markduplicates(
             #
             tmp_options = Geno.job.get( 'cmd_options' )[ 'markduplicates' ]
             tmp_memory = int( tmp_options[ tmp_options.find( 's_vmem=' ) + len('s_vmem=') : tmp_options.find('G') ] )
+            input_file = output_file.replace( 'markdup', 'merged' )
 
             if tmp_memory > 3:
                 java_memory = str( tmp_memory - 2 ) + 'G'
             else:
                 java_memory = '1G'
 
-            input_file = output_file.replace( 'markdup', 'merged' )
             shell_script_full_path = make_script_file_name( function_name, Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.markduplicates.format(
@@ -915,16 +954,19 @@ def markduplicates(
                             Geno.job.get( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( function_name, input_file_list[ 0 ], return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except Exception as e:
@@ -954,7 +996,8 @@ def fisher_mutation_call(
 
     try:
         function_name = whoami()
-        log.info( "#{function}".format( function = function_name ) )
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
 
         #
         # Make shell script
@@ -990,7 +1033,8 @@ def fisher_mutation_call(
                             id_end = wgs_res.interval_num )
         Geno.status.save_status( function_name, control_input_file, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
         #
@@ -1010,24 +1054,28 @@ def fisher_mutation_call(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( 'merge_fisher_result', input_file_list[ 0 ], return_code )
+        Geno.status.save_status( 'merge_fisher_result', control_input_file, return_code )
         if return_code != 0:
-            log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
             raise
 
     except IOError as (errno, strerror):
-        log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
         return_value = False
 
     except ValueError:
-        log.error( "{function}: ValueError".format( function = whoami() ) )
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
-        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -1170,6 +1218,7 @@ def stage_7(  input_file1, input_file2, output_file ):
 #
 @follows( stage_7 )
 def last_function():
-    log.info( "Genomon pipline has finished successflly!" )
+    with log_mutex:
+        log.info( "Genomon pipline has finished successflly!" )
     return True
 
