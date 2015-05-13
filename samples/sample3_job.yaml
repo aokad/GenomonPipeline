@@ -73,7 +73,7 @@ project_dir_tree:
 #                   disease_subdir: s_B2N
 #
 #
-input_file_dir:             /home/w3varann/samples/small
+input_file_dir:             /home/w3varann/samples/chr1_test
 input_file_type:            paired_fastq
 file_name:                  'chr1_*{pair_id}.fastq'
 control_subdir:             ref
