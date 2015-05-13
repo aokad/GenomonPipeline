@@ -51,7 +51,7 @@ project_dir_tree:
 #   file_ext    we assume that input file extion is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
 #
-#   pair_id     if file_name includes pair_id, need to specify )
+#   pair_id     if file_name includes pair_id, need to specify
 #
 #   sample_subdir   if the input_file_dir includes sub-directories containting data files,
 #                   you can specify.
@@ -88,7 +88,7 @@ directory_permission:       owner   # owner, group, all
 #
 # Analysis setting
 #
-use_biobambam:      False    # True or False. False is set by default.
+use_biobambam:      False    # True or False. False is set by default, if not specified
 tasks:
                     WGS:
                         - split_fastq
