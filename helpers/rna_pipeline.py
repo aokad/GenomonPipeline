@@ -79,7 +79,7 @@ def stage_1(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -157,7 +157,7 @@ def stage_2(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -234,7 +234,7 @@ def stage_3(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )

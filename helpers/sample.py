@@ -85,9 +85,9 @@ class Sample():
             self.__param.append( [] )
 
             for infile1, infile2, outfile1, outfile2 in self.previous():
-                file_ext = Geno.job.get( 'file_ext' )
+                file_ext = Geno.job.get_job( 'file_ext' )
                 if self.__current_sample_id == 1 and file_ext:
-                    file_type = Geno.job.get( 'input_file_type' )
+                    file_type = Geno.job.get_job( 'input_file_type' )
                     if file_type in ( 'paired_fastq', 'single_fastq'):
                         replace_ext = '.fastq'
                     if file_type in ( 'bam'):
@@ -153,14 +153,14 @@ class Sample():
         
         """
 
-        file_type = Geno.job.get( 'input_file_type' )
+        file_type = Geno.job.get_job( 'input_file_type' )
 
         try:
             #
             # A) Paired-end fastq files
             #
             if file_type == 'paired_fastq':
-                pair_id_list = Geno.job.get( 'pair_id' )
+                pair_id_list = Geno.job.get_job( 'pair_id' )
 
                 glob_file_list = []
                 for pair_id in pair_id_list:
@@ -206,10 +206,10 @@ class Sample():
         #
         # Get resoruce from job yaml file
         #
-        filename_format_tmp = Geno.job.get( 'file_name' )
-        sample_subdir  = Geno.job.get( 'sample_subdir' )
-        control_subdir = Geno.job.get( 'control_subdir' )
-        disease_subdir = Geno.job.get( 'disease_subdir' )
+        filename_format_tmp = Geno.job.get_job( 'file_name' )
+        sample_subdir  = Geno.job.get_job( 'sample_subdir' )
+        control_subdir = Geno.job.get_job( 'control_subdir' )
+        disease_subdir = Geno.job.get_job( 'disease_subdir' )
 
         if not filename_format_tmp:
             return input_file_list

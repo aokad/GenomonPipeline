@@ -62,8 +62,13 @@ def make_script_file_name( function_name, Geno ):
                                     min=now.minute,
                                     msecond=now.microsecond )
 
+    if not Geno.options.abpath:
+        script_dir = Geno.dir[ 'project_root' ] + '/' + Geno.dir[ 'script' ]
+    else:
+        script_dir = Geno.dir[ 'script' ]
+
     shell_script_full_path = "{script}/{file}.sh".format(
-                                    script = Geno.dir[ 'script' ],
+                                    script = script_dir,
                                     file = shell_script_name )
 
     return shell_script_full_path
@@ -115,15 +120,15 @@ def replace_reserved_string( dir_tmp, cwd, Geno ):
     if dir_tmp == 'project_directory':
         pass
     elif dir_tmp == 'sample_date':
-        dir_replace = str( Geno.job.get( 'sample_date' ) )
+        dir_replace = str( Geno.job.get_job( 'sample_date' ) )
     elif dir_tmp == 'sample_name':
-        dir_replace = Geno.job.get( 'sample_name' )
+        dir_replace = Geno.job.get_job( 'sample_name' )
     elif dir_tmp == 'sample_date_sample_name':
-        dir_replace = str( Geno.job.get( 'sample_date' ) ) + '_' + Geno.job.get( 'sample_name' )
+        dir_replace = str( Geno.job.get_job( 'sample_date' ) ) + '_' + Geno.job.get_job( 'sample_name' )
     elif dir_tmp == 'sample_name_sample_date':
-        dir_replace = str( Geno.job.get( 'sample_name' ) ) + '_' + Geno.job.get( 'sample_date' )
+        dir_replace = str( Geno.job.get_job( 'sample_name' ) ) + '_' + Geno.job.get_job( 'sample_date' )
     elif dir_tmp == 'analysis_date':
-        dir_replace = str( Geno.job.get( 'analysis_date' ) )
+        dir_replace = str( Geno.job.get_job( 'analysis_date' ) )
         if dir_replace == 'today' :
             dir_replace = res.date_format.format( 
                         year = Geno.now.year, 
@@ -197,7 +202,7 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
 def make_input_target( subdir, dir_tree, cwd, Geno ):
     if subdir:
         subdir_list = glob( "{dir}/{subdir}".format(
-                                dir = Geno.job.get( 'input_file_dir' ),
+                                dir = Geno.job.get_job( 'input_file_dir' ),
                                 subdir = subdir ) )
 
     for target_dir in res.end_dir_list:

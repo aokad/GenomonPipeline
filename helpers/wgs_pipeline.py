@@ -111,7 +111,7 @@ def check_file_exists_for_markduplicates(
 
     """
 
-    if Geno.job.get( 'use_biobambam' ):
+    if Geno.job.get_job( 'use_biobambam' ):
         if not os.path.exists( output_file1 ):
             return True, "Missing file {outputfile} for {inputfile}.".format(
                                 outputfile = output_file1,
@@ -260,7 +260,7 @@ def generate_params_for_merge_bam():
         input_file_list[ dir_name ].append( param[ 0 ] )
 
     for dir_name in input_file_list.keys():
-        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam' ]
+        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam' ]
         yield return_list
         
 
@@ -282,7 +282,7 @@ def generate_params_for_markduplicates ():
         input_file_list[ dir_name ].append( param[ 0 ] )
 
     for dir_name in input_file_list.keys():
-        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam' ]
+        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam' ]
         yield return_list
 
 #
@@ -299,10 +299,10 @@ def generate_params_for_fisher_mutation_call():
     for param in Sample.param( 'fisher_mutation_call' ):
         dir_name = os.path.dirname( param[ 0 ] )
         if not ( dir_name in input_file_list ):
-            if 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS' ]:
-                input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_markdup.bam'
-            elif 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ]:
-                input_bam =  dir_name + '/' + Geno.job.get( 'sample_name' ) + '_merged.bam'
+            if 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
+                input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam'
+            elif 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
+                input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam'
             else:
                 input_bam =  param[ 0 ]
 
@@ -310,7 +310,7 @@ def generate_params_for_fisher_mutation_call():
             mutation_dir_name = os.path.dirname( param[ 2 ] )
             return_list = [ input_bam,
                             'None',
-                            mutation_dir_name + '/' + Geno.job.get( 'sample_name' ) + '.txt' ]
+                            mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt' ]
             yield return_list
 
 
@@ -355,7 +355,7 @@ def extract_fastq( input_file_list, file_ext ):
     #
     return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
     Geno.status.save_status( 'extract_fastq', input_file1, return_code )
@@ -402,7 +402,7 @@ def bam2fastq(
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
 
-        file_type = Geno.job.get( 'input_file_type' )
+        file_type = Geno.job.get_job( 'input_file_type' )
         if 'paired_bam' == file_type:
             shell_script_file.write( wgs_res.bamtofastq_p.format(
                                             log = Geno.dir[ 'log' ],
@@ -427,7 +427,7 @@ def bam2fastq(
         #
         return_code = Geno.RT.runtask(
                         shell_script_full_path,
-                        Geno.job.get( 'cmd_options' )[ function_name ],
+                        Geno.job.get_job( 'cmd_options' )[ function_name ],
                         shell_script_full_path )
 
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -531,7 +531,7 @@ def split_fastq(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -640,7 +640,7 @@ def cutadapt(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = 2 )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -752,7 +752,7 @@ def bwa_mem(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
         Geno.status.save_status( function_name, input_file1, return_code )
@@ -844,7 +844,7 @@ def merge_bam(
         #
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ] )
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( function_name, input_file, return_code )
         if return_code != 0:
             with log_mutex:
@@ -924,7 +924,7 @@ def markduplicates(
             #
             # Use Picard MarkDuplicates for samtools merge result
             #
-            tmp_options = Geno.job.get( 'cmd_options' )[ 'markduplicates' ]
+            tmp_options = Geno.job.get_job( 'cmd_options' )[ 'markduplicates' ]
             tmp_memory = int( tmp_options[ tmp_options.find( 's_vmem=' ) + len('s_vmem=') : tmp_options.find('G') ] )
             input_file = output_file.replace( 'markdup', 'merged' )
 
@@ -951,7 +951,7 @@ def markduplicates(
         #
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ] )
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( function_name, input_file_list[ 0 ], return_code )
         if return_code != 0:
             with log_mutex:
@@ -1028,7 +1028,7 @@ def fisher_mutation_call(
         #
         return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ],
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
         Geno.status.save_status( function_name, control_input_file, return_code )
@@ -1053,7 +1053,7 @@ def fisher_mutation_call(
         #
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
-                            Geno.job.get( 'cmd_options' )[ function_name ] )
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
         Geno.status.save_status( 'merge_fisher_result', control_input_file, return_code )
         if return_code != 0:
             with log_mutex:
@@ -1095,7 +1095,7 @@ Sample = Sample()
 #   in:     bam
 #   out:    fastq
 #
-@active_if( 'bam2fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if( 'bam2fastq' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @parallel( generate_params_for_bam2fastq )
 @check_if_uptodate( check_file_exists_for_input_output )
 def stage_1( input_file, output_file ):
@@ -1110,7 +1110,7 @@ def stage_1( input_file, output_file ):
 #   out:    fastq * X
 #
 @follows( stage_1 )
-@active_if( 'split_fastq' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if( 'split_fastq' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_split_fastq )
 @check_if_uptodate( check_file_exists_for_split_fastq )
 def stage_2( input_file1, input_file2, output_file1, output_file2 ):
@@ -1125,7 +1125,7 @@ def stage_2( input_file1, input_file2, output_file1, output_file2 ):
 #   out:    fastq
 #
 @follows( stage_2 )
-@active_if( 'cutadapt' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if( 'cutadapt' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_cutadapt )
 @check_if_uptodate( check_file_exists_for_input_output )
 def stage_3( input_file1, input_file2, output_file1, output_file2 ):
@@ -1141,7 +1141,7 @@ def stage_3( input_file1, input_file2, output_file1, output_file2 ):
 #   out:    bam
 #
 @follows( stage_3 )
-@active_if( 'bwa_mem' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if( 'bwa_mem' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_bwa_mem )
 @check_if_uptodate( check_file_exists_for_bwa_mem )
 def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
@@ -1149,7 +1149,7 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
                             input_file2,
                             output_file1,
                             output_file2, 
-                            Geno.job.get( 'use_biobambam' ) )
+                            Geno.job.get_job( 'use_biobambam' ) )
     if not return_value:
         raise
 
@@ -1161,17 +1161,17 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 #   out:    bam
 #
 @follows( stage_4 )
-@active_if( 'merge_bam' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if( 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_merge_bam )
 @check_if_uptodate( check_file_exists_for_merge)
 def stage_5( input_file_list, output_file ):
-    if ( Geno.job.get( 'use_biobambam' ) and
-         'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS'] ):
+    if ( Geno.job.get_job( 'use_biobambam' ) and
+         'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
         return_value = True
     else:
         return_value = merge_bam( input_file_list,
                                   output_file,
-                                  Geno.job.get( 'use_biobambam' ) )
+                                  Geno.job.get_job( 'use_biobambam' ) )
 
     if not return_value:
         raise
@@ -1184,13 +1184,13 @@ def stage_5( input_file_list, output_file ):
 #   out:    bam
 #
 @follows( stage_5 )
-@active_if( 'markduplicates' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if( 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_markduplicates )
 @check_if_uptodate( check_file_exists_for_merge )
 def stage_6( input_file_list, output_file ):
     return_value =  markduplicates( input_file_list,
                                     output_file,
-                                    Geno.job.get( 'use_biobambam' ) )
+                                    Geno.job.get_job( 'use_biobambam' ) )
 
     if not return_value:
         raise
@@ -1203,7 +1203,7 @@ def stage_6( input_file_list, output_file ):
 #   out:    txt
 #
 @follows( stage_6 )
-@active_if ( 'fisher_mutation_call' in Geno.job.get( 'tasks' )[ 'WGS' ] )
+@active_if ( 'fisher_mutation_call' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_fisher_mutation_call )
 @check_if_uptodate( check_file_exists_for_input2_output )
 def stage_7(  input_file1, input_file2, output_file ):
