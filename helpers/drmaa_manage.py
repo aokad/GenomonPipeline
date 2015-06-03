@@ -105,6 +105,9 @@ class JobManage:
                        log_dir = None,
                        cmd_options = '' ):
         try:
+            if not log_dir:
+                log_dir = self.log_dir
+
             jt = self.init_job_template( 
                                     command,
                                     args = [],
@@ -125,6 +128,8 @@ class JobManage:
 
     def run_job( self, command, array_param = None, args = [],  log_dir = None, cmd_options = '' ):
         try:
+            if not log_dir:
+                log_dir = self.log_dir
 
             jt = self.init_job_template(
                                     command,
