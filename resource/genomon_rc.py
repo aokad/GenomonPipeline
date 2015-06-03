@@ -89,7 +89,7 @@ job_config_default ={
           'mismatch_rate': 0.07,
           'min_depth': 9 },
     'use_biobambam': False,
-    'bwa_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'
+    'bam_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'
 }
 
 #
