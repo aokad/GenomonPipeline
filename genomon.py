@@ -58,8 +58,9 @@ def construct_arguments( ):
 
     ge_arg = parser.add_argument_group( 'genomon', 'Genomon options' );
 
-    ge_arg.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",    type = str )
-    ge_arg.add_argument( '-f', "--job_file",     help = "Genomon pipeline job file",              type = str )
+    ge_arg.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",      type = str )
+    ge_arg.add_argument( '-f', "--job_file",     help = "Genomon pipeline job configuration file",  type = str )
+    ge_arg.add_argument( '-p', "--param_file",   help = "Genomon pipeline analysis parameter file", type = str )
 
     ge_arg.add_argument( '-m', "--mpi",          help = "Use MPI job submission",       action ='store_true',
                                                                                         default = False )
@@ -99,7 +100,7 @@ def make_directories():
 
     error_message = ''
     try:
-        project_root = os.path.expanduser( Geno.job.get( 'project_root' ))
+        project_root = os.path.expanduser( Geno.job.get_job( 'project_root' ))
         Geno.dir[ 'project_root' ] = project_root
         if not os.path.exists( project_root ):
             log.error( "Dir: {dir} not found.".format( dir = project_root ) ) 
@@ -109,11 +110,11 @@ def make_directories():
         #
         # get directory tree, directory permission
         #
-        dir_tree  = Geno.job.get( 'project_dir_tree' )
+        dir_tree  = Geno.job.get_job( 'project_dir_tree' )
         if not dir_tree:
             dir_tree  = yaml.load( res.dir_tree_resource  )
 
-        dir_permit  = Geno.job.get( 'directory_permission' )
+        dir_permit  = Geno.job.get_job( 'directory_permission' )
         if dir_permit and dir_permit == 'group':
             Geno.dir_mode = 0775
         elif dir_permit and dir_permit == 'all':
@@ -128,13 +129,13 @@ def make_directories():
             os.chdir( cwd )
             cwd = '.'
 
-        sample_subdir = Geno.job.get( 'sample_subdir' )
+        sample_subdir = Geno.job.get_job( 'sample_subdir' )
         if sample_subdir:
             make_input_target( sample_subdir, dir_tree, cwd, Geno )
-        control_subdir = Geno.job.get( 'control_subdir' )
+        control_subdir = Geno.job.get_job( 'control_subdir' )
         if control_subdir:
             make_input_target( control_subdir, dir_tree, cwd, Geno )
-        disease_subdir = Geno.job.get( 'disease_subdir' )
+        disease_subdir = Geno.job.get_job( 'disease_subdir' )
         if disease_subdir:
             make_input_target( disease_subdir, dir_tree, cwd, Geno)
         else:
@@ -148,16 +149,16 @@ def make_directories():
         #
         make_dir( "{data}/{sample_date}".format(
                                 data = get_dir( dir_tree, cwd, 'data', Geno ),
-                                sample_date = Geno.job.get( 'sample_date' )
+                                sample_date = Geno.job.get_job( 'sample_date' )
                                 ),
                   Geno )
         Geno.dir[ 'data' ] = "{data}/{sample_date}/{sample_name}". format(
                                 data = get_dir( dir_tree, cwd, 'data', Geno ),
-                                sample_date = Geno.job.get( 'sample_date' ),
-                                sample_name = Geno.job.get( 'sample_name' ) )
+                                sample_date = Geno.job.get_job( 'sample_date' ),
+                                sample_name = Geno.job.get_job( 'sample_name' ) )
         if ( not os.path.exists( Geno.dir[ 'data' ] ) and
-             Geno.job.get( 'input_file_dir' ) != Geno.dir[ 'data' ] ):
-                os.symlink( Geno.job.get( 'input_file_dir' ), Geno.dir[ 'data' ] )
+             Geno.job.get_job( 'input_file_dir' ) != Geno.dir[ 'data' ] ):
+                os.symlink( Geno.job.get_job( 'input_file_dir' ), Geno.dir[ 'data' ] )
 
     except IOError, (errno, strerror):
         log.error( "make_directories failed." )
@@ -330,7 +331,9 @@ def main():
         # Parse system and job config file
         #
         Geno.conf = ge_cfg( config_file = Geno.options.config_file, log = log )
-        Geno.job = ge_job( Geno.options.job_file, log = log )
+        Geno.job = ge_job( job_file = Geno.options.job_file,
+                           param_file = Geno.options.param_file,
+                           log = log )
 
         #
         # Prepare directory tree for pipeline to run.
@@ -354,7 +357,7 @@ def main():
             run_mode = 'MPI'
         elif Geno.options.drmaa and not Geno.options.mpi:
             run_mode = 'DRMAA'
-            native_param = Geno.job.get( 'drmaa_native' )
+            native_param = Geno.job.get_job( 'drmaa_native' )
         else:
             run_mode = 'qsub'
 
@@ -364,7 +367,7 @@ def main():
                            work_dir = Geno.dir[ 'cwd' ],
                            log = log,
                            ncpus = Geno.options.jobs,
-                           qsub_cmd = Geno.job.get( 'qsub_cmd' ) )
+                           qsub_cmd = Geno.job.get_job( 'qsub_cmd' ) )
 
         #
         # Print information
@@ -376,7 +379,7 @@ def main():
         # Run the defined pipeline
         # Figure out what analysis to run from job configuration file
         #
-        job_tasks = Geno.job.get( 'tasks' )
+        job_tasks = Geno.job.get_job( 'tasks' )
         run_flag = False
 
         if 'WGS' in job_tasks:

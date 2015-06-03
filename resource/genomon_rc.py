@@ -26,7 +26,8 @@ project_directory:
         sample_date:
             sample_name
     results:
-        analysis_date:
+        - all_summary
+        - analysis_date:
             sample_date_sample_name:
                 - config
                 - script:
@@ -39,13 +40,15 @@ project_directory:
                     - cnv
                     - fusion
                     - sv
+                    - summary
 """
 
-end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv' )
-subdir_list = ( 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv' )
+end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv', 'summary', 'all_summary' )
+subdir_list = ( 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv', 'summary', 'all_summary' )
 data_ext_list = { 'fastq':      'fastq',
                   'bam':        'bam',
-                  'annotation': 'txt'
+                  'annotation': 'txt',
+                  'summary':    'txt'
 }
 
 #
@@ -57,7 +60,13 @@ script_files = ( 'shell/utility.sh',
                  'shell/interval_list.sh',
                  'perl/fastqNPadding.pl',
                  'python/bamfilter.py',
-                 'python/fisher.py'
+                 'python/fisher.py',
+                 'python/coverage.py',
+                 'python/bedparse.py',
+                 'python/genomesize.py',
+                 'python/merge_cov.py',
+                 'python/mkxls.py',
+                 'python/xl2tsv.py'
         )
 
 #
@@ -70,8 +79,7 @@ job_config_default ={
     'cutadapt':
         { 'adaptor': [ 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN', 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' ] },
     'bwa_mem':
-        { 'min_score': 20,
-          'bwa_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'} ,
+        { 'min_score': 20 },
     'fisher_mutation_call':
         { 'max_indel': 2,
           'max_distance': 5,
@@ -79,7 +87,8 @@ job_config_default ={
           'base_quality': 15,
           'mismatch_rate': 0.07,
           'min_depth': 9 },
-    'use_biobambam': False
+    'use_biobambam': False,
+    'bwa_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'
 }
 
 #

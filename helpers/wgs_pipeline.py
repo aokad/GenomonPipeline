@@ -264,6 +264,7 @@ def generate_params_for_merge_bam():
         yield return_list
         
 
+
 #
 # For STAGE 6 markduplicates
 #
@@ -286,7 +287,36 @@ def generate_params_for_markduplicates ():
         yield return_list
 
 #
-# For STAGE 7 fisher_mutation_call
+# For STAGE 7 bam_stats
+#
+def generate_params_for_bam_stats ():
+    """
+    Generate parameter list for bam_stats
+
+    """
+    
+    Sample.make_param( 'bam_stats', '.txt', 'summary', 1, 1 )
+    input_file_list = {}
+    for param in Sample.param( 'bam_stats' ):
+        dir_name = os.path.dirname( param[ 0 ] )
+        if not ( dir_name in input_file_list ):
+            if 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
+                input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam'
+            elif 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
+                input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam'
+            else:
+                input_bam =  param[ 0 ]
+
+            input_file_list[ dir_name ] = input_bam
+            summary_dir_name = os.path.dirname( param[ 2 ] )
+            return_list = [ input_bam,
+                            'None',
+                            summary_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt' ]
+            yield return_list
+
+
+#
+# For STAGE 8 fisher_mutation_call
 #
 def generate_params_for_fisher_mutation_call():
     """
@@ -731,14 +761,18 @@ def bwa_mem(
             bwa_mem_resource = wgs_res.bwa_mem_biobambam
         else:
             bwa_mem_resource = wgs_res.bwa_mem
+
+        env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
+                                        libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
         shell_script_file.write( bwa_mem_resource.format(
                                         log = Geno.dir[ 'log' ],
                                         array_data = str1 + str2 + str3,
                                         fastq1 = "${FILE1[$SGE_TASK_ID]}",
                                         fastq2 = "${FILE2[$SGE_TASK_ID]}",
                                         bam = "${FILE3[$SGE_TASK_ID]}",
-                                        read_group = Geno.job.get_param( 'bwa_mem', 'bwa_read_group' ),
+                                        read_group = Geno.job.get_job(  'bam_read_group' ),
                                         min_score = Geno.job.get_param( 'bwa_mem', 'min_score' ),
+                                        env_variables = env_variable_str,
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
@@ -828,12 +862,16 @@ def merge_bam(
         else:
             bam_merge_resource = wgs_res.samtools_merge_bam
 
+        env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
+                                libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
+
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( bam_merge_resource.format(
                                         log = Geno.dir[ 'log' ],
                                         input_bam_files = input_files,
                                         output_bam_file = output_file,
+                                        env_variables = env_variable_str,
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                         biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
                                         ) )
@@ -909,12 +947,16 @@ def markduplicates(
                 for infile in input_file_list:
                     input_files += "I={file} ".format( file = infile )
 
+            env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
+                                    libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
+
             shell_script_full_path = make_script_file_name( function_name, Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.biobambam_markduplicates.format(
                                             log = Geno.dir[ 'log' ],
                                             input_bam_files = input_files,
                                             output_bam = output_file,
+                                            env_variables = env_variable_str,
                                             biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
                                         )
                                     )
@@ -982,7 +1024,127 @@ def markduplicates(
     return return_value
 
 #
-# Stage 7: fisher_mutation_call
+# Stage 7: bam_stats
+#
+def bam_stats(
+    control_input_file,
+    disease_input_file,
+    output_file,
+    ):
+    """
+       BAM file statistics calculation
+
+    """
+
+    try:
+        function_name = whoami()
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
+
+        #
+        # Make shell script
+        #
+        bam_file_list = []
+        if control_input_file != 'None':
+            bam_file_list.append( control_input_file )
+        if disease_input_file != 'None':
+            bam_file_list.append( disease_input_file )
+
+        if Geno.conf.get( 'REFERENCE', 'chr_str_in_fa' ) == 'True':
+            chr_str_flag = '--chr_str'
+        else:
+            chr_str_flag = ''
+
+        for bam_file in bam_file_list:
+            #
+            # Calculate bam file statistics
+            #
+            shell_script_name = function_name + '_calc'
+            shell_script_full_path = make_script_file_name( shell_script_name , Geno )
+            shell_script_file = open( shell_script_full_path, 'w' )
+            shell_script_file.write( wgs_res.bam_stats_calc.format(
+                                            log = Geno.dir[ 'log' ],
+                                            bam_file = bam_file,
+                                            output_txt = output_file,
+                                            coverage = Geno.job.get_param( 'bam_stats', 'coverage' ),
+                                            bed_file = Geno.job.get_param( 'bam_stats', 'bed_file' ),
+                                            ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
+                                            genome_size = Geno.conf.get( 'REFERENCE', 'genome_size' ),
+                                            pcap = Geno.conf.get( 'SOFTWARE', 'PCAP' ),
+                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
+                                            python = Geno.conf.get( 'SOFTWARE', 'python' ),
+                                            chr_str_in_fa = chr_str_flag,
+                                            script_dir = Geno.dir[ 'script' ]
+                                        )
+                                    )
+            shell_script_file.close()
+
+            calc_return_code = Geno.RT.run_arrayjob(
+                                shell_script_full_path,
+                                Geno.job.get_job( 'cmd_options' )[ function_name ],
+                                id_start = 1,
+                                id_end = 14 )
+            Geno.status.save_status( shell_script_name, bam_file, calc_return_code )
+
+            #
+            # Merge results
+            #
+            shell_script_name = function_name + '_merge'
+            shell_script_full_path = make_script_file_name( shell_script_name, Geno )
+            shell_script_file = open( shell_script_full_path, 'w' )
+            shell_script_file.write( wgs_res.bam_stats_merge.format(
+                                            log = Geno.dir[ 'log' ],
+                                            bam_file = bam_file,
+                                            output_txt = output_file,
+                                            python = Geno.conf.get( 'SOFTWARE', 'python' ),
+                                            script_dir = Geno.dir[ 'script' ]
+                                        )
+                                    )
+            shell_script_file.close()
+
+            merge_return_code = Geno.RT.run_arrayjob(
+                                shell_script_full_path,
+                                Geno.job.get_job( 'cmd_options' )[ function_name ])
+            Geno.status.save_status( shell_script_name, bam_file, merge_return_code )
+
+            #
+            # Check return code
+            #
+            #  This is a calculation of statistics. Do not raise error even if it fails.
+            if calc_return_code != 0:
+                with log_mutex:
+                    log.error( "{function}: runtask failed".format( function = function_name + '_calc' ) )
+                # raise
+            if merge_return_code != 0:
+                with log_mutex:
+                    log.error( "{function}: runtask failed".format( function = function_name + '_merge' ) )
+                # raise
+
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        return_value = False
+
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        return_value = False
+
+    else:
+        return_value = True
+
+    return return_value
+
+#
+# Stage 8: fisher_mutation_call
 #
 def fisher_mutation_call(
     control_input_file,
@@ -1197,16 +1359,32 @@ def stage_6( input_file_list, output_file ):
 
 #####################################################################
 #
-#   STAGE 7 fisher_mutation_call
+#   STAGE 7 bam statistics
 #
 #   in:     bam
 #   out:    txt
 #
 @follows( stage_6 )
+@active_if ( 'bam_stats' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_bam_stats )
+@check_if_uptodate( check_file_exists_for_input2_output )
+def stage_7(  input_file1, input_file2, output_file ):
+    return_value = bam_stats(  input_file1, input_file2, output_file )
+    if not return_value:
+        raise
+
+#####################################################################
+#
+#   STAGE 8 fisher_mutation_call
+#
+#   in:     bam
+#   out:    txt
+#
+@follows( stage_7 )
 @active_if ( 'fisher_mutation_call' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_fisher_mutation_call )
 @check_if_uptodate( check_file_exists_for_input2_output )
-def stage_7(  input_file1, input_file2, output_file ):
+def stage_8(  input_file1, input_file2, output_file ):
     return_value = fisher_mutation_call(  input_file1, input_file2, output_file )
     if not return_value:
         raise
@@ -1216,7 +1394,7 @@ def stage_7(  input_file1, input_file2, output_file ):
 #
 #   LAST STAGE 
 #
-@follows( stage_7 )
+@follows( stage_8 )
 def last_function():
     with log_mutex:
         log.info( "Genomon pipline has finished successflly!" )

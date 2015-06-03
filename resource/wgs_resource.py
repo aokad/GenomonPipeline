@@ -214,6 +214,15 @@ echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 UNSORTED_BAM=`echo {bam} | sed 's/\.bam/_unsorted.bam/'`
 BAM_WITHOUT_SUFFIX=`echo {bam} | sed 's/\.bam//'`
 
+if [ ! -e {ref_fa}.fai ]
+then
+    {samtools} faidx {ref_fa}
+    if [ $1 -ne 0 ]
+    then
+        exit $1
+    fi
+fi
+
 {bwa} mem \
     -t 2 \
     -T {min_score} \
@@ -244,6 +253,8 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+
+{env_variables}
 
 echo SGE_TASK_ID:$SGE_TASK_ID
 echo SGE_TASK_FIRST:$SGE_TASK_FIRST
@@ -299,10 +310,16 @@ set -xv
 
 OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
 
-{samtools} merge \
-    "$OUTPUT_BAM_PREFIX".bam \
-    {input_bam_files};
+NUM_FILES=`ls -1 {input_bam_files} | wc -l `
 
+if [ $NUM_FILES  -ge 2 ]
+then
+    {samtools} merge \
+        "$OUTPUT_BAM_PREFIX".bam \
+        {input_bam_files};
+else
+    cp {input_bam_files} ${{OUTPUT_BAM_PREFIX}}.bam
+fi
 {samtools} index {output_bam_file};
 
 """
@@ -324,6 +341,8 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+
+{env_variables}
 
 OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
 
@@ -387,6 +406,8 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
+{env_variables}
+
 OUT_BAM_PREFIX=`echo {output_bam} | sed 's/\.[^\.]\+$//'`
 
 {biobambam}/bammarkduplicates  \
@@ -402,6 +423,103 @@ OUT_BAM_PREFIX=`echo {output_bam} | sed 's/\.[^\.]\+$//'`
 
 # older version of pysam does not take care of PP in @PG
 #samtools view -H {output_bam} | sed 's/PP:[^ 	]\+//' | samtools reheader - {output_bam}
+
+"""
+bam_stats_calc = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+# -t 1-13:1
+echo SGE_TASK_ID:$SGE_TASK_ID
+echo SGE_TASK_FIRST:$SGE_TASK_FIRST
+echo SGE_TASK_LAST:$SGE_TASK_LAST
+echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
+
+if [ "$SGE_TASK_ID" = "1" ]
+then
+    {pcap}/bin/bam_stats.pl \
+            --threads 4 \
+            -i {bam_file} \
+            -o {output_txt}.$SGE_TASK_ID
+
+elif [ "$SGE_TASK_ID" = "2" ]
+then
+    {samtools} depth {bam_file} |\
+    awk '{{sum+=$3; sumsq+=$3*$3}} END {{ print "Average:\t",sum/NR; print "Stdev:\t",sqrt(sumsq/NR - (sum/NR)**2)}}' \
+         > {output_txt}.$SGE_TASK_ID
+elif [ "$SGE_TASK_ID" = "3" ]
+then
+    #
+    # metrics files are generated only by biobambam bammarkduplicates
+    #
+    MET_FILE=`echo {bam_file} | sed 's/\.bam/.metrics/'`
+    if [ -e $MET_FILE ]
+    then
+        grep -A1 LIBRARY $MET_FILE > {output_txt}.$SGE_TASK_ID
+    fi
+elif [ "$SGE_TASK_ID" = "4" ]
+then
+    echo "samtools_flagstat" > {output_txt}.$SGE_TASK_ID
+    {samtools} flagstat {bam_file} >> {output_txt}.$SGE_TASK_ID
+else
+    #SGE_TASK_ID = 5~14
+    {python} {script_dir}/coverage.py \
+            -i {bam_file} \
+            -t {output_txt}.$SGE_TASK_ID.tmp \
+            -f {ref_fa} \
+            -g {genome_size} \
+            -e {bed_file} \
+            -b 1000 \
+            -n 1000 \
+            {chr_str_in_fa} \
+            -c {coverage} \
+            -s {samtools} \
+            > {output_txt}.tmp.$SGE_TASK_ID
+fi
+"""
+
+
+bam_stats_merge = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+OUT_TSV=`echo {output_txt} | sed 's/\.txt/.tsv/'`
+OUT_XLS=`echo {output_txt} | sed 's/\.txt/.xls/'`
+
+sed -e '$!{{h;d;}}' -e x {output_txt}.tmp.5 > {output_txt}.5-1
+for TMP_FILE in `ls {output_txt}.tmp.*`
+do
+    tail -n1 $TMP_FILE >> {output_txt}.5-1
+done
+
+{python} {script_dir}/merge_cov.py -i {output_txt}.5-1 -o {output_txt}.5
+cat {output_txt}.1 {output_txt}.2 {output_txt}.3 {output_txt}.4 {output_txt}.5 > {output_txt}
+{python} {script_dir}/mkxls.py -i {output_txt} -x $OUT_XLS
+{python} {script_dir}/xl2tsv.py -t $OUT_TSV -x $OUT_XLS
 
 """
 

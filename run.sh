@@ -12,9 +12,9 @@ date            # print date
 set -xv
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/package/python2.7/current/lib
 export PYTHONPATH=$PYTHONPATH:/home/w3varann/.local/lib/python2.7/site-packages
-/usr/local/package/python2.7/2.7.2/bin/python $2 ./genomon.py \
-           --config_file /home/eigos/Data/Genomon/db/genomon.cfg \
+/usr/local/package/python2.7/2.7.2/bin/python $3 /home/eigos/Data/Genomon/genomon.py \
+           --config_file /home/eigos/Data/GenomonProj/test/genomon.cfg \
            --job_file $1 \
-           --jobs 8 \
-           --verbose 10 \
-           --abpath
+           --param_file $2 \
+           --jobs 10 \
+           --verbose 10

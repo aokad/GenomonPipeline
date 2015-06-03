@@ -16,6 +16,7 @@ from runtask import RunTask
 #
 from __main__ import *
 from resource import genomon_rc as res
+from resource import rna_resource as rna_res
 from utils import *
 from sample import Sample
 
@@ -61,7 +62,7 @@ def stage_1(
         #
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.fisher_mutation_call.format(
+        shell_script_file.write( rna_res.fisher_mutation_call.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         input_fastq = input_file,
@@ -81,7 +82,7 @@ def stage_1(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
-                            id_end = wgs_res.interval_num )
+                            id_end = rna_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
@@ -139,7 +140,7 @@ def stage_2(
         #
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.fisher_mutation_call.format(
+        shell_script_file.write( rna_res.fisher_mutation_call.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         input_fastq = input_file,
@@ -159,7 +160,7 @@ def stage_2(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
-                            id_end = wgs_res.interval_num )
+                            id_end = rna_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
@@ -216,7 +217,7 @@ def stage_3(
         #
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.fisher_mutation_call.format(
+        shell_script_file.write( rna_res.fisher_mutation_call.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         input_fastq = input_file,
@@ -236,7 +237,7 @@ def stage_3(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
-                            id_end = wgs_res.interval_num )
+                            id_end = rna_res.interval_num )
         Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
