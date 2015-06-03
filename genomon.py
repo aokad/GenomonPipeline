@@ -183,46 +183,34 @@ def copy_config_files():
 
     config_dir = Geno.dir[ 'config' ]
 
-    src = Geno.options.config_file
-    basename = os.path.splitext( os.path.basename( src ) )[ 0 ]
-    ext = os.path.splitext( os.path.basename( src ) )[ 1 ]
-    config_backup = res.file_timestamp_format.format(
-                                        name=basename,
+    #
+    # Backup system configuration file
+    #
+    header = 'genomon'
+    timestamp = res.timestamp_format.format(
                                         year=Geno.now.year,
                                         month=Geno.now.month,
                                         day=Geno.now.day,
                                         hour=Geno.now.hour,
                                         min=Geno.now.minute,
                                         msecond=Geno.now.microsecond )
-    dest = "{dir}/{basename}{ext}".format( dir = config_dir,
-                                            basename = config_backup,
-                                            ext = ext )
-    if not os.path.isabs( src ):
-        src = Geno.dir[ 'cwd' ] + '/' + src
-    shutil.copyfile( src, dest )
+    for src, ext in ( ( Geno.options.config_file, '.cfg' ),
+                      ( Geno.options.job_file, '_job.yaml' ),
+                      ( Geno.options.param_file, '_param.yaml' ) ):
 
-    src = Geno.options.job_file
-    basename = os.path.splitext( os.path.basename( src ) )[ 0 ]
-    ext = os.path.splitext( os.path.basename( src ) )[ 1 ]
-    dest = "{dir}/{basename}{ext}".format( dir = config_dir,
-                                            basename = config_backup,
-                                            ext = ext )
-    if not os.path.isabs( src ):
-        src = Geno.dir[ 'cwd' ] + '/' + src
+        dest = "{dir}/{basename}_{timestamp}{ext}".format(
+                                dir = config_dir,
+                                basename = header,
+                                timestamp = timestamp,
+                                ext = ext )
+        if not os.path.isabs( src ):
+            src = Geno.dir[ 'cwd' ] + '/' + src
+        shutil.copyfile( src, dest )
 
-    shutil.copyfile( src, dest )
-
-    Geno.status = ge_status( "{dir}/{basename}".format(
-                                    dir = config_dir,
-                                    basename = config_backup ),
-                             "{year}{month}{day}-{hour}:{min}:{msecond}".format(
-                                        year=Geno.now.year,
-                                        month=Geno.now.month,
-                                        day=Geno.now.day,
-                                        hour=Geno.now.hour,
-                                        min=Geno.now.minute,
-                                        msecond=Geno.now.microsecond )
-                            )
+    #
+    # Initialize status object
+    #
+    Geno.status = ge_status( config_dir, header, timestamp)
 
 ########################################
 def copy_script_files():
@@ -361,10 +349,15 @@ def main():
         else:
             run_mode = 'qsub'
 
+        if not Geno.options.abpath:
+            drmaa_log_dir = Geno.dir[ 'project_root' ] + '/' + Geno.dir[ 'log' ]
+        else:
+            drmaa_log_dir = Geno.dir[ 'log' ]
+
         Geno.RT = RunTask( run_mode = run_mode,
                            drmaa_native = native_param,
-                           log_dir = Geno.dir[ 'log' ],
-                           work_dir = Geno.dir[ 'cwd' ],
+                           log_dir = drmaa_log_dir,
+                           work_dir = Geno.dir[ 'project_root' ],
                            log = log,
                            ncpus = Geno.options.jobs,
                            qsub_cmd = Geno.job.get_job( 'qsub_cmd' ) )
