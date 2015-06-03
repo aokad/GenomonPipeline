@@ -514,6 +514,7 @@ sed -e '$!{{h;d;}}' -e x {output_txt}.tmp.5 > {output_txt}.5-1
 for TMP_FILE in `ls {output_txt}.tmp.*`
 do
     tail -n1 $TMP_FILE >> {output_txt}.5-1
+    rm $TMP_FILE
 done
 
 {python} {script_dir}/merge_cov.py -i {output_txt}.5-1 -o {output_txt}.5
