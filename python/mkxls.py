@@ -107,6 +107,7 @@ if __name__ == "__main__":
 
         elif f_type == 'flagstat' and line_split[ 0 ] != 'non-N_total_depth':
             match_ratio = None
+            type_string = None
             if -1 != line_split[ 0 ].find( 'in total (QC-passed reads + QC-failed reads)' ):
                 type_string = 'total'
             elif -1 != line_split[ 0 ].find( 'secondary' ):
@@ -134,18 +135,23 @@ if __name__ == "__main__":
                 match_ratio = ratio_target.search( line )
             elif -1 != line_split[ 0 ].find( 'with mate mapped to a different chr' ):
                 type_string = 'mate_mapped_to_a_diff_chr'
-            elif line_split[ 0 ].find( 'with mate mapped to a different chr (mapq>=5)' ):
+            elif -1 != line_split[ 0 ].find( 'with mate mapped to a different chr (mapq>=5)' ):
                 type_string = 'mate_mapped_to_a_diff_chr_mapq_5'
 
-            match = number_target.search( line )
-            tsv_header.append( 'flagstat_{type}_QC-passed_reads'.format( type = type_string ) )
-            tsv_values.append( match.group( 1 ) )
-            tsv_header.append( 'flagstat_{type}_QC-failed_reads'.format( type = type_string ) )
-            tsv_values.append( match.group( 2 ) )
+            if type_string:
+                tsv_header.append( 'flagstat_{type}_QC-passed_reads'.format( type = type_string ) )
+                tsv_header.append( 'flagstat_{type}_QC-failed_reads'.format( type = type_string ) )
+                match = number_target.search( line )
+                if match:
+                    tsv_values.append( match.group( 1 ) )
+                    tsv_values.append( match.group( 2 ) )
+                else:
+                    tsv_values.append( 0 )
+                    tsv_values.append( 0 )
 
-            if match_ratio:
-                tsv_header.append( 'flagstat_{type}_ratio'.format( type = type_string ) )
-                tsv_values.append( match_ratio.group( 1 ) )
+                if match_ratio:
+                    tsv_header.append( 'flagstat_{type}_ratio'.format( type = type_string ) )
+                    tsv_values.append( match_ratio.group( 1 ) )
 
         elif line_split[ 0 ] == 'non-N_total_depth':
             f_type = 'coverage_data'
