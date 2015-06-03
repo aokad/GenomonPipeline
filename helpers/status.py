@@ -1,6 +1,7 @@
 #  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
 #  @since 2015
 
+import re
 from __main__ import *
 from resource.genomon_rc import job_config_default as default_values
 
@@ -12,18 +13,21 @@ class genomon_status:
     #
     # Interface
     #
-    def __init__( self, status_file, datetime ):
+    def __init__( self, config_dir, header, timestamp ):
 
-        if status_file == None or datetime == None:
+        if config_dir == None or header == None or timestamp == None:
             raise
 
-        self.__file_name = status_file
-        self.__datetime = status_file
+        self.__config_dir = config_dir
+        self.__header = header
+        self.__timestamp = timestamp
 
     def save_status( self, function, input, return_code ):
         input_tmp = os.path.basename( input ).split( '.' )[0]
-        file_obj = open( "{fileprefix}_{function}_{inputfile}_r{returncode}".format(
-                                        fileprefix = self.__file_name,
+        file_obj = open( "{dir}/{header}_{timestamp}_{function}_{inputfile}_r{returncode}".format(
+                                        dir = self.__config_dir,
+                                        header = self.__header,
+                                        timestamp = self.__timestamp,
                                         function = function,
                                         inputfile = input_tmp,
                                         returncode = return_code ),
@@ -31,9 +35,36 @@ class genomon_status:
         file_obj.write( str( return_code ) )
         file_obj.close()
 
-    def task_failed( self ):
-        for file_name in glob( self.__file_name + '*' ):
-            if file_name[:-1] != '0':
-                return file_name
-        return '0'
+    def check_exit_status( self, function, input ):
 
+        #
+        # file name example
+        # genomon_20150602_1626_491694_bam_stats_merge_ATL_data_markdup_r0
+        #
+        input_tmp = os.path.basename( input ).split( '.' )[0]
+        file_name = "{dir}/{header}_*_{function}_{inputfile}_r*".format(
+                                        dir = self.__config_dir,
+                                        header = self.__header,
+                                        function = function,
+                                        inputfile = input_tmp )
+        file_name_reg = "{header}_.+_{function}_{inputfile}_r([0-9]+)$".format(
+                                        header = self.__header,
+                                        function = function,
+                                        inputfile = input_tmp )
+
+        pattern = re.compile( file_name_reg )
+        for file in glob( file_name ):
+            match = pattern.search( file )
+            if match:
+                match_list = match.groups()
+                if len( match_list ) == 1:
+                    return_code = int( match_list[ 0 ] )
+            else:
+                return_code = 1
+
+            if  return_code == 0:
+                break
+        else:
+            return_code = 1
+
+        return return_code

@@ -25,6 +25,10 @@ from sample import Sample
 #
 # Subroutines
 #
+def get_status_of_this_process( process_name, output_file ):
+    exit_status = Geno.status.check_exit_status( process_name, output_file )
+
+    return exit_status
 
 #####################################################################
 #
@@ -53,7 +57,9 @@ def check_file_exists_for_split_fastq(
     else:
         in_time = os.path.getmtime( input_file1 )
         out_time = os.path.getmtime( outfile_list[ 0 ] )
-        if in_time > out_time:
+
+        exit_status = get_status_of_this_process( 'split_fastq', output_file1 )
+        if exit_status != 0 and in_time > out_time:
             return True, "{outprefix}*{outsuffix} is older than {input}.".format(
                                 outprefix = output_prefix,
                                 outsuffix = output_suffix,
@@ -64,7 +70,33 @@ def check_file_exists_for_split_fastq(
                                 outsuffix = output_suffix,
                                 input = input_file1 )
 
+
+def check_file_exists_for_merge_bam(
+    input_file_list,
+    output_file
+    ):
+    if ( Geno.job.get_job( 'use_biobambam' ) and
+         'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
+        return_code = True
+    else:
+        return_code = check_file_exists_for_merge(
+            'merge_bam',
+            input_file_list,
+            output_file )
+
+    return return_code
+
+def check_file_exists_for_markduplicates(
+    input_file_list,
+    output_file
+    ):
+    return check_file_exists_for_merge(
+        'markduplicates',
+        input_file_list,
+        output_file )
+
 def check_file_exists_for_merge(
+    process_name,
     input_file_list,
     output_file
     ):
@@ -74,7 +106,9 @@ def check_file_exists_for_merge(
 
     """
 
-    if not os.path.exists( output_file ):
+    exit_status = get_status_of_this_process( process_name, output_file )
+
+    if not os.path.exists( output_file ) or exit_status != 0:
         return True, "Missing file {outputfile} for input file.".format(
                             outputfile = output_file )
     else:
@@ -93,8 +127,9 @@ def check_file_exists_for_bwa_mem(
 
     """
 
+    exit_status = get_status_of_this_process( 'bwa_mem', output_file1 )
     ( output_prefix, output_suffix ) = os.path.splitext( output_file1 )
-    if not glob( "{prefix}*{suffix}".format( prefix = output_prefix, suffix = output_suffix ) ):
+    if exit_status != 0 or not glob( "{prefix}*{suffix}".format( prefix = output_prefix, suffix = output_suffix ) ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = output_file1,
                             inputfile = input_file1 )
@@ -112,7 +147,8 @@ def check_file_exists_for_markduplicates(
     """
 
     if Geno.job.get_job( 'use_biobambam' ):
-        if not os.path.exists( output_file1 ):
+        exit_status = get_status_of_this_process( 'markduplicates', output_file1 )
+        if exit_status != 0 or not os.path.exists( output_file1 ):
             return True, "Missing file {outputfile} for {inputfile}.".format(
                                 outputfile = output_file1,
                                 inputfile = input_file1 )
@@ -129,10 +165,11 @@ def check_file_exists_for_markduplicates(
             else:
                 return False, "Input files do not exist."
     else:
-        return check_file_exists_for_input_output( input_file1, input_file2, output_file1, output_file2 )
+        return check_file_exists_for_input_output( 'markduplicates', input_file1, input_file2, output_file1, output_file2 )
 
 
 def check_file_exists_for_input_output(
+        process_name,
         input_file1,
         input_file2,
         output_file1,
@@ -144,7 +181,8 @@ def check_file_exists_for_input_output(
 
     """
 
-    if not os.path.exists( output_file1 ):
+    exit_status = get_status_of_this_process( process_name, output_file1 )
+    if exit_status != 0 or not os.path.exists( output_file1 ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = output_file1,
                             inputfile = input_file1 )
@@ -167,8 +205,14 @@ def check_file_exists_for_input2_output(
     Checks if output file exists
 
     """
+    task_list = Geno.job.get_job( 'tasks' )[ 'WGS' ]
+    list_index = task_list.index( 'split_fastq' )
+    exit_status = 0
+    if list_index > 0:
+        previous_task = task_list[ list_index - 1 ]
+        exit_status = Geno.status.check_exit_status( previous_task, control_input_file, return_code )
 
-    if not os.path.exists( output_file ):
+    if exit_status != 0 or not os.path.exists( output_file ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = output_file,
                             inputfile = input_file1 )
@@ -388,11 +432,12 @@ def extract_fastq( input_file_list, file_ext ):
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
-    Geno.status.save_status( 'extract_fastq', input_file1, return_code )
     if return_code != 0:
         with log_mutex:
             log.error( "{function}: runtask failed",format( function = 'extract_fastq' ) )
         raise
+
+    Geno.status.save_status( 'extract_fastq', input_file_list[ 0 ], return_code )
 
 
 #####################################################################
@@ -460,12 +505,12 @@ def bam2fastq(
                         Geno.job.get_job( 'cmd_options' )[ function_name ],
                         shell_script_full_path )
 
-        Geno.status.save_status( function_name, input_file1, return_code )
-
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
+
+        Geno.status.save_status( function_name, output_file1, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -564,12 +609,12 @@ def split_fastq(
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
-        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
+        Geno.status.save_status( function_name, output_file1, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -673,12 +718,12 @@ def cutadapt(
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = 2 )
-        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
+        Geno.status.save_status( function_name, output_file1, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -789,12 +834,12 @@ def bwa_mem(
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
-        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
             
+        Geno.status.save_status( function_name, output_file1, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -883,12 +928,12 @@ def merge_bam(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( function_name, input_file, return_code )
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
+        Geno.status.save_status( function_name, output_file, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -994,12 +1039,12 @@ def markduplicates(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( function_name, input_file_list[ 0 ], return_code )
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
+        Geno.status.save_status( function_name, output_file, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1084,7 +1129,6 @@ def bam_stats(
                                 Geno.job.get_job( 'cmd_options' )[ function_name ],
                                 id_start = 1,
                                 id_end = 14 )
-            Geno.status.save_status( shell_script_name, bam_file, calc_return_code )
 
             #
             # Merge results
@@ -1105,7 +1149,6 @@ def bam_stats(
             merge_return_code = Geno.RT.run_arrayjob(
                                 shell_script_full_path,
                                 Geno.job.get_job( 'cmd_options' )[ function_name ])
-            Geno.status.save_status( shell_script_name, bam_file, merge_return_code )
 
             #
             # Check return code
@@ -1119,6 +1162,8 @@ def bam_stats(
                 with log_mutex:
                     log.error( "{function}: runtask failed".format( function = function_name + '_merge' ) )
                 # raise
+
+            Geno.status.save_status( shell_script_name, output_file, calc_return_code + merge_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1193,7 +1238,7 @@ def fisher_mutation_call(
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = wgs_res.interval_num )
-        Geno.status.save_status( function_name, control_input_file, return_code )
+
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
@@ -1216,11 +1261,13 @@ def fisher_mutation_call(
         return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
-        Geno.status.save_status( 'merge_fisher_result', control_input_file, return_code )
+
         if return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
             raise
+
+        Geno.status.save_status( function_name, output_file, return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1245,6 +1292,32 @@ def fisher_mutation_call(
 
     return return_value
 
+def check_file_exists_for_bam2fastq(
+        input_file1,
+        input_file2,
+        output_file1,
+        output_file2
+        ):
+    return check_file_exits_for_input_output(
+                'bam2fastq',
+                input_file1,
+                input_file2,
+                output_file1,
+                output_file2)
+
+def check_file_exists_for_cutadapt(
+        input_file1,
+        input_file2,
+        output_file1,
+        output_file2
+        ):
+    return check_file_exits_for_input_output(
+                'cutadapt',
+                input_file1,
+                input_file2,
+                output_file1,
+                output_file2)
+
 #####################################################################
 #
 #   STAGE 0 data preparation
@@ -1259,7 +1332,7 @@ Sample = Sample()
 #
 @active_if( 'bam2fastq' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @parallel( generate_params_for_bam2fastq )
-@check_if_uptodate( check_file_exists_for_input_output )
+@check_if_uptodate( check_file_exists_for_bam2fastq )
 def stage_1( input_file, output_file ):
     return_value =  bam2fastq( input_file, output_file )
     if not return_value:
@@ -1289,7 +1362,7 @@ def stage_2( input_file1, input_file2, output_file1, output_file2 ):
 @follows( stage_2 )
 @active_if( 'cutadapt' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_cutadapt )
-@check_if_uptodate( check_file_exists_for_input_output )
+@check_if_uptodate( check_file_exists_for_cutadapt )
 def stage_3( input_file1, input_file2, output_file1, output_file2 ):
     return_value = cutadapt( input_file1, input_file2, output_file1, output_file2 )
     if not return_value:
@@ -1325,7 +1398,7 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 @follows( stage_4 )
 @active_if( 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_merge_bam )
-@check_if_uptodate( check_file_exists_for_merge)
+@check_if_uptodate( check_file_exists_for_merge_bam)
 def stage_5( input_file_list, output_file ):
     if ( Geno.job.get_job( 'use_biobambam' ) and
          'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
@@ -1348,7 +1421,7 @@ def stage_5( input_file_list, output_file ):
 @follows( stage_5 )
 @active_if( 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_markduplicates )
-@check_if_uptodate( check_file_exists_for_merge )
+@check_if_uptodate( check_file_exists_for_markduplicates )
 def stage_6( input_file_list, output_file ):
     return_value =  markduplicates( input_file_list,
                                     output_file,
