@@ -20,11 +20,13 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
+PATH=$PATH:{bowtie_path}
+
 {tophat2} -p 8 \
           -o {output_file} \
-          -G {gtf_file} \
-         {bowtie2_dataabes} \
-         {fastq_file}          
+          -G {ref_gtf} \
+         {bowtie2_database} \
+         {input_fastq}          
 """
 
 
@@ -45,9 +47,9 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-cufflinks -p 8 \
+{cufflinks} -p 8 \
           -o {output_dir} \
-          -G {gtf_file} \
+          -G {ref_gtf} \
           {bam_file}
 """
 

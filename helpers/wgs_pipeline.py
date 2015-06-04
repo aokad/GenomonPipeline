@@ -502,8 +502,7 @@ def bam2fastq(
         #
         return_code = Geno.RT.runtask(
                         shell_script_full_path,
-                        Geno.job.get_job( 'cmd_options' )[ function_name ],
-                        shell_script_full_path )
+                        Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
         if return_code != 0:
             with log_mutex:

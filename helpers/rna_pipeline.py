@@ -39,16 +39,17 @@ for infile1, infile2, outfile1, outfil2 in Sample.param( 'tophat2' ):
 
 #####################################################################
 #
-#   STAGE 1 fastq to bam by topha2
+#   STAGE 1 fastq to bam by tophat2
 #
+@active_if ( 'tophat2' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
 @parallel( starting_file_list )
 @check_if_uptodate( check_file_exists )
-def stage_1(
+def tophat2(
         input_file,
         output_file,
         ):
     """
-        Stage 1
+        Stage 1: tophat2
 
     """
     return_code = True
@@ -57,20 +58,23 @@ def stage_1(
         function_name = whoami()
         log.info( "#{function}".format( function = function_name ) )
 
+        bowtie_bin = Geno.conf.get( 'SOFTWARE', 'bowtie2' )
+        bowtie_path = os.path.split( bowtie_bin )[0]
+
         #
         # Make shell script
         #
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( rna_res.fisher_mutation_call.format(
+        shell_script_file.write( rna_res.tophat2.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         input_fastq = input_file,
-                                        output_bam = output_file,
-                                        ref_gtf = Geno.conf.get( 'REFERENCE', 'gtf' ),
-                                        bowtie2_db = Geno.conf.get( 'REFERENCE', 'bowtie2' ),
-                                        tophat2 = Geno.conf.get( 'SOFTWARE', 'tophat2' ),
-                                        script_dir = Geno.dir[ 'script' ]
+                                        output_file = output_file,
+                                        ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
+                                        bowtie2_database = Geno.conf.get( 'REFERENCE', 'bowtie2_db' ),
+                                        bowtie_path = bowtie_path,
+                                        tophat2 = Geno.conf.get( 'SOFTWARE', 'tophat2' )
                                     )
                                 )
         shell_script_file.close()
@@ -78,15 +82,15 @@ def stage_1(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob(
+        return_code = Geno.RT.runtask(
                             shell_script_full_path,
-                            Geno.job.get_job( 'cmd_options' )[ function_name ],
-                            id_start = 1,
-                            id_end = rna_res.interval_num )
-        Geno.status.save_status( function_name, input_file1, return_code )
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
+
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
+
+        Geno.status.save_status( function_name, input_file, return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -118,10 +122,11 @@ def stage_1(
 #
 #   STAGE 2
 #
-@transform( stage_1, suffix( "2.txt" ), "3.txt" )
-@follows( stage_1 )
+@follows( tophat2 )
+@active_if ( 'cufflinks' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
+@transform( tophat2, suffix( "2.txt" ), "3.txt" )
 @check_if_uptodate( check_file_exists )
-def stage_2(
+def cufflinks(
         input_file,
         output_file
         ):
@@ -140,15 +145,12 @@ def stage_2(
         #
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( rna_res.fisher_mutation_call.format(
+        shell_script_file.write( rna_res.cufflinks.format(
                                         log = Geno.dir[ 'log' ],
-                                        ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
-                                        input_fastq = input_file,
-                                        output_bam = output_file,
+                                        bam_file = input_file,
+                                        output_dir = output_dir,
                                         ref_gtf = Geno.conf.get( 'REFERENCE', 'gtf' ),
-                                        bowtie2_db = Geno.conf.get( 'REFERENCE', 'bowtie2' ),
-                                        tophat2 = Geno.conf.get( 'SOFTWARE', 'tophat2' ),
-                                        script_dir = Geno.dir[ 'script' ]
+                                        cufflinks = Geno.conf.get( 'SOFTWARE', 'cufflinks' )
                                     )
                                 )
         shell_script_file.close()
@@ -161,10 +163,12 @@ def stage_2(
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = rna_res.interval_num )
-        Geno.status.save_status( function_name, input_file1, return_code )
+
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
+
+        Geno.status.save_status( function_name, input_file, return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -195,10 +199,11 @@ def stage_2(
 #
 #   STAGE 3
 #
-@transform( stage_2, suffix( "3.txt" ), "4.txt" )
-@follows( stage_2 )
+@follows( cufflinks )
+@active_if ( 'cummeRbund' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
+@transform( cufflinks, suffix( "3.txt" ), "4.txt" )
 @check_if_uptodate( check_file_exists )
-def stage_3(
+def cummeRbund(
         input_file,
         output_file
         ):
@@ -238,11 +243,11 @@ def stage_3(
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = rna_res.interval_num )
-        Geno.status.save_status( function_name, input_file1, return_code )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
+        Geno.status.save_status( function_name, input_file, return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -275,7 +280,7 @@ def stage_3(
 #   LAST STAGE 
 #
 
-@follows( stage_3 )
+@follows( cummeRbund )
 def last_function():
     log.info( "Genomon pipline has finished successflly!" )
     return True
