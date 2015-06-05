@@ -38,18 +38,47 @@ project_directory:
                     - bam
                     - annotation
                     - mutation
+                    - cufflinks
+                    - cummeRbund
                     - cnv
                     - fusion
                     - sv
                     - summary
 """
 
-end_dir_list = ( 'config', 'script', 'log', 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv', 'summary', 'all_summary' )
-subdir_list = ( 'fastq', 'bam', 'annotation', 'mutation', 'cnv', 'fusion', 'sv', 'summary', 'all_summary' )
-data_ext_list = { 'fastq':      'fastq',
-                  'bam':        'bam',
-                  'annotation': 'txt',
-                  'summary':    'txt'
+end_dir_list = ( 'config',
+                 'script',
+                 'log',
+                 'fastq',
+                 'bam',
+                 'annotation',
+                 'mutation',
+                 'cufflinks',
+                 'cummeRbund',
+                 'cnv',
+                 'fusion',
+                 'sv',
+                 'summary',
+                 'all_summary'
+                 )
+
+subdir_list = ( 'fastq',
+                'bam',
+                'annotation',
+                'mutation',
+                'cnv',
+                'fusion',
+                'sv',
+                'cufflinks',
+                'cummeRbund',
+                'summary',
+                'all_summary' )
+
+data_ext_list = { 'fastq':          'fastq',
+                  'bam':            'bam',
+                  'annotation':     'txt',
+                  'summary':        'txt',
+                  'all_summary':    'txt'
 }
 
 #
@@ -67,7 +96,9 @@ script_files = ( 'shell/utility.sh',
                  'python/genomesize.py',
                  'python/merge_cov.py',
                  'python/mkxls.py',
-                 'python/xl2tsv.py'
+                 'python/xl2tsv.py',
+                 'R/cummeRbund.R',
+                 'R/report.R'
         )
 
 #

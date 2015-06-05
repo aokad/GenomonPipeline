@@ -20,33 +20,63 @@ from resource import rna_resource as rna_res
 from utils import *
 from sample import Sample
 
+#####################################################################
+#
 def check_file_exists(input_file, output_file):
     if not os.path.exists(output_file):
         return True, "Missing file %s" % output_file
     else:
         return False, "File %s exists" % output_file
 
+def check_file_exists_for_tophat2( input_file, output_dir ):
+    return check_file_exists( input_file,
+                              output_dir + '/accepted_hits.bam' )
+
+
+def check_file_exists_for_cufflinks( input_file, output_dir ):
+    return check_file_exists( input_file,
+                              output_dir + '/genes.fpkm_tracking' )
+
+def check_file_exists_for_cummeRbund( input_file, output_dir ):
+    return check_file_exists( input_file,
+                              output_dir )
+
+#####################################################################
+#
+def generate_params_for_tophat2( ):
+    global Sample
+    Sample.make_param( 'tophat2', '', 'bam', 1, 1 )
+    for infile1, infile2, outfile1, outfil2 in Sample.param( 'tophat2' ):
+        yield ( infile1, outfile1 )
+
+def generate_params_for_cufflinks( ):
+    global Sample
+    Sample.make_param( 'cufflinks', '', 'cufflinks', 1, 1 )
+    for infile1, infile2, outdir1, outdir2 in Sample.param( 'cufflinks' ):
+        yield ( infile1, outdir1 )
+
+def generate_params_for_cummeRbund( ):
+    global Sample
+    Sample.make_param( 'cummeRbund', '', 'cummeRbund', 1, 1 )
+    for infile1, infile2, outdir1, outdir2 in Sample.param( 'cummeRbund' ):
+        yield ( infile1, outdir1 )
+
 #####################################################################
 #
 #   STAGE 0 data preparation
 #
 Sample = Sample()
-Sample.make_param( 'tophat2', '.bam', 'bam', 1, 1 )
-starting_file_list = []
-for infile1, infile2, outfile1, outfil2 in Sample.param( 'tophat2' ):
-    starting_file_list.append( ( infile1, outfile1 ) )
-
 
 #####################################################################
 #
 #   STAGE 1 fastq to bam by tophat2
 #
 @active_if ( 'tophat2' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@parallel( starting_file_list )
-@check_if_uptodate( check_file_exists )
+@files ( generate_params_for_tophat2 )
+@check_if_uptodate( check_file_exists_for_tophat2 )
 def tophat2(
         input_file,
-        output_file,
+        output_dir,
         ):
     """
         Stage 1: tophat2
@@ -70,7 +100,7 @@ def tophat2(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         input_fastq = input_file,
-                                        output_file = output_file,
+                                        output_dir = output_dir,
                                         ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         bowtie2_database = Geno.conf.get( 'REFERENCE', 'bowtie2_db' ),
                                         bowtie_path = bowtie_path,
@@ -124,11 +154,11 @@ def tophat2(
 #
 @follows( tophat2 )
 @active_if ( 'cufflinks' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@transform( tophat2, suffix( "2.txt" ), "3.txt" )
-@check_if_uptodate( check_file_exists )
+@files ( generate_params_for_cufflinks )
+@check_if_uptodate( check_file_exists_for_cufflinks )
 def cufflinks(
         input_file,
-        output_file
+        output_dir
         ):
     """
         Stage 2
@@ -147,9 +177,9 @@ def cufflinks(
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( rna_res.cufflinks.format(
                                         log = Geno.dir[ 'log' ],
-                                        bam_file = input_file,
+                                        bam_file = input_file + '/accepted_hits.bam',
                                         output_dir = output_dir,
-                                        ref_gtf = Geno.conf.get( 'REFERENCE', 'gtf' ),
+                                        ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         cufflinks = Geno.conf.get( 'SOFTWARE', 'cufflinks' )
                                     )
                                 )
@@ -158,11 +188,9 @@ def cufflinks(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob(
+        return_code = Geno.RT.runtask(
                             shell_script_full_path,
-                            Geno.job.get_job( 'cmd_options' )[ function_name ],
-                            id_start = 1,
-                            id_end = rna_res.interval_num )
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
@@ -201,11 +229,11 @@ def cufflinks(
 #
 @follows( cufflinks )
 @active_if ( 'cummeRbund' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@transform( cufflinks, suffix( "3.txt" ), "4.txt" )
-@check_if_uptodate( check_file_exists )
+@files ( generate_params_for_cummeRbund )
+@check_if_uptodate( check_file_exists_for_cummeRbund )
 def cummeRbund(
-        input_file,
-        output_file
+        input_dir,
+        output_dir
         ):
     """
         Stage 3
@@ -220,16 +248,15 @@ def cummeRbund(
         #
         # Make shell script
         #
+        sample_name = os.path.basename( input_dir )
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( rna_res.fisher_mutation_call.format(
+        shell_script_file.write( rna_res.cummeRbund.format(
                                         log = Geno.dir[ 'log' ],
-                                        ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
-                                        input_fastq = input_file,
-                                        output_bam = output_file,
-                                        ref_gtf = Geno.conf.get( 'REFERENCE', 'gtf' ),
-                                        bowtie2_db = Geno.conf.get( 'REFERENCE', 'bowtie2' ),
-                                        tophat2 = Geno.conf.get( 'SOFTWARE', 'tophat2' ),
+                                        sample_name = sample_name,
+                                        input_dir = input_dir,
+                                        output_dir = output_dir,
+                                        R = Geno.conf.get( 'SOFTWARE', 'R' ),
                                         script_dir = Geno.dir[ 'script' ]
                                     )
                                 )
@@ -238,11 +265,9 @@ def cummeRbund(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob(
+        return_code = Geno.RT.runtask(
                             shell_script_full_path,
-                            Geno.job.get_job( 'cmd_options' )[ function_name ],
-                            id_start = 1,
-                            id_end = rna_res.interval_num )
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
         if return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise

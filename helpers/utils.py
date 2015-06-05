@@ -86,7 +86,7 @@ def make_sample_file_name( filename,
     """
     tmp_name = os.path.splitext( os.path.basename( filename ) )
     basename = tmp_name[ 0 ]
-    if not ext:
+    if ext == None:
         ext = tmp_name[ 1 ]
     if not dir:
         dir = os.path.dirname( filename )
