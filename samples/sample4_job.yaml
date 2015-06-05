@@ -36,6 +36,8 @@ project_dir_tree:
                     - log
                     - fastq
                     - bam
+                    - cufflinks
+                    - cummeRbund
                     - summary
 #
 # Input files
@@ -94,9 +96,9 @@ tasks:
 #   HGC Shirokane super computer specific parameters
 #
 cmd_options:
-            tophat2:              '-l ljob,s_vmem=2G,mem_req=2G'
-            cufflinks:            '-l ljob,s_vmem=2G,mem_req=2G'
-            cummeRbund:           '-l ljob,s_vmem=2G,mem_req=2G'
+            tophat2:              '-l ljob,s_vmem=4G,mem_req=4G'
+            cufflinks:            '-l ljob,s_vmem=4G,mem_req=4G'
+            cummeRbund:           '-l ljob,s_vmem=4G,mem_req=4G'
 
 
 #
