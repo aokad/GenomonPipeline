@@ -10,7 +10,7 @@
 #   project name directory is going to be created at project_root specified below.
 #       {project_root}/{project}/data, results
 #
-project_root:           /home/eigos/Data/GenomonProj/genomon
+project_root:           ~/tmp
 sample_name:            small_rna
 sample_date:            20150409
 analysis_date:          today
@@ -37,6 +37,7 @@ project_dir_tree:
                     - fastq
                     - bam
                     - cufflinks
+                    - cuffdiff
                     - cummeRbund
                     - summary
 #
@@ -61,23 +62,25 @@ project_dir_tree:
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
-#   control_subdir
-#   disease_subdir
-#                   if you want to perform mutation call with control and disease samples,
-#                   you can specify control sample in 'control' and tumor sample in 'disease'.
-#                   Wild cards are NOT allowed.
-#
-#                   <example>
-#                   control_subdir: s_B1N
-#                   disease_subdir: s_B2N
 #
 #
 
-input_file_dir:             /home/eigos/Data/GenomonProj/input/small
+input_file_dir:             /home/w3varann/samples/DiseaseVsControl
 input_file_type:            single_fastq
-file_name:                  d_100_*.fastq.bz2
-file_ext:                   .fastq.bz2
+file_name:                  R1.fastq
 fastq_filter:               False # True or False
+sample_subdir:              s_B*
+control_disease_pairs:
+#           Normal:     Disease
+    s_B1N:              s_B1T
+    "s_B2Na,s_B2Nb":    s_B2T
+    s_B3N:              "s_B3Ta,s_B3Tb"
+    Normal:  # Normal only
+                        - s_B4N
+                        - s_B5N
+    Disease: # Disease only
+                        - s_B6T
+                        - s_B7T
 
 directory_permission:       owner   # owner, group, all
 #bed_files:                  None # for Panel
@@ -90,6 +93,7 @@ tasks:
                     RNA:
                         - tophat2
                         - cufflinks
+                        - cuffdiff
                         - cummeRbund
 
 #
@@ -98,6 +102,7 @@ tasks:
 cmd_options:
             tophat2:              '-l ljob,s_vmem=4G,mem_req=4G'
             cufflinks:            '-l ljob,s_vmem=4G,mem_req=4G'
+            cuffdiff:             '-l ljob,s_vmem=4G,mem_req=4G'
             cummeRbund:           '-l ljob,s_vmem=4G,mem_req=4G'
 
 
