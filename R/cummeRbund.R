@@ -26,10 +26,10 @@ disp
 dev.off()
 
 #    Error in exists(name, envir = env, mode = mode) :argument "env" is missing, with no default
-#png(filename=paste( output_dir, paste( sample_name, "dens.png", sep="_"), sep="/" ) )
-#dens<-csDensity(genes(cuff))
-#dens
-#dev.off()
+png(filename=paste( output_dir, paste( sample_name, "dens.png", sep="_"), sep="/" ) )
+dens<-csDensity(genes(cuff))
+dens
+dev.off()
 
 png(filename=paste( output_dir, paste( sample_name, "box.png", sep="_"), sep="/" ) )
 b<-csBoxplot(genes(cuff))

@@ -62,6 +62,17 @@ project_dir_tree:
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
+#   control_disease_pairs:  
+#   #           Normal:     Disease
+#               s_B1N:              s_B1T
+#               "s_B2Na, s_B2Nb":   s_B2T
+#               s_B3N:              "s_B3Ta, s_B3Tb"
+#               Normal:  # Normal only
+#                                   - s_B4N
+#                                   - s_B5N
+#               Disease: # Disease only
+#                                   - s_B6T
+#                                   - s_B7T
 #
 #
 
@@ -83,7 +94,6 @@ control_disease_pairs:
                         - s_B7T
 
 directory_permission:       owner   # owner, group, all
-#bed_files:                  None # for Panel
 
 #
 # Analysis setting
