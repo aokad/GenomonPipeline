@@ -32,6 +32,7 @@ Install R modules.
   cummeRbund
 ```
 Finally,
+
 1. Download Genomon-master.zip and extract it.
 2. Copy Genomon-master/test/run.sh to your working directory.
 3. Edit the run.sh and change the path to genomon.py and genomon.cfg in Genomon-master.
