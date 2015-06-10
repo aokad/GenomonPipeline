@@ -132,12 +132,6 @@ def make_directories():
         sample_subdir = Geno.job.get_job( 'sample_subdir' )
         if sample_subdir:
             make_input_target( sample_subdir, dir_tree, cwd, Geno )
-        control_subdir = Geno.job.get_job( 'control_subdir' )
-        if control_subdir:
-            make_input_target( control_subdir, dir_tree, cwd, Geno )
-        disease_subdir = Geno.job.get_job( 'disease_subdir' )
-        if disease_subdir:
-            make_input_target( disease_subdir, dir_tree, cwd, Geno)
         else:
             make_input_target( '', dir_tree, cwd, Geno)
 

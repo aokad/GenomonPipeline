@@ -25,27 +25,28 @@ disp<-dispersionPlot(genes(cuff))
 disp
 dev.off()
 
-png(filename=paste( output_dir, paste( sample_name, "dens.png", sep="_"), sep="/" ) )
-dens<-csDensity(genes(cuff))
-dens
-dev.off()
+#    Error in exists(name, envir = env, mode = mode) :argument "env" is missing, with no default
+#png(filename=paste( output_dir, paste( sample_name, "dens.png", sep="_"), sep="/" ) )
+#dens<-csDensity(genes(cuff))
+#dens
+#dev.off()
 
-png(filename=paste( output_dir, paste( sample_name, "box", sep="_"), sep="/" ) )
+png(filename=paste( output_dir, paste( sample_name, "box.png", sep="_"), sep="/" ) )
 b<-csBoxplot(genes(cuff))
 b
 dev.off()
 
-png(filename=paste( output_dir, paste( sample_name, "sm", sep="_"), sep="/" ) )
+png(filename=paste( output_dir, paste( sample_name, "sm.png", sep="_"), sep="/" ) )
 sm<-csScatterMatrix(genes(cuff))
 sm
 dev.off()
 
-png(filename=paste( output_dir, paste( sample_name, "dend", sep="_"), sep="/" ) )
+png(filename=paste( output_dir, paste( sample_name, "dend.png", sep="_"), sep="/" ) )
 dend<-csDendro(genes(cuff))
 dend
 dev.off()
 
-png(filename=paste( output_dir, paste( sample_name, "volcano", sep="_"), sep="/" ) )
+png(filename=paste( output_dir, paste( sample_name, "volcano.png", sep="_"), sep="/" ) )
 v<-csVolcanoMatrix(genes(cuff))
 v
 dev.off()

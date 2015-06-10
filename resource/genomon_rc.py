@@ -39,6 +39,7 @@ project_directory:
                     - annotation
                     - mutation
                     - cufflinks
+                    - cuffdiff
                     - cummeRbund
                     - cnv
                     - fusion
@@ -54,6 +55,7 @@ end_dir_list = ( 'config',
                  'annotation',
                  'mutation',
                  'cufflinks',
+                 'cuffdiff',
                  'cummeRbund',
                  'cnv',
                  'fusion',
@@ -70,6 +72,7 @@ subdir_list = ( 'fastq',
                 'fusion',
                 'sv',
                 'cufflinks',
+                'cuffdiff',
                 'cummeRbund',
                 'summary',
                 'all_summary' )

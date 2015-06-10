@@ -142,13 +142,15 @@ def Job_file_check( pp, job_yaml, keywords ):
 
     #
     # 3), 4), 5), 6), 7), 8)
+    pair_id_list = None
     if 'pair_id' in job_yaml:
         pair_id_list = job_yaml[ 'pair_id' ]
+    elif job_yaml[ 'input_file_type' ] == 'pair_fastq':
+        print( "'pair_id' is not defined, though 'input_file_type' equals 'pair_fastq'."  )
+        f_error |= 0x04
 
-    if ( 'sample_subdir' in job_yaml and
-         'control_subdir' in job_yaml and
-         'disease_subdir' in job_yaml  ):
-        print( "There are sample_subdir along with control_subdir and disease_subdir" )
+    if ( 'sample_subdir' in job_yaml ):
+        print( "There are sample_subdir."  )
         f_error |= 0x04
 
 
@@ -158,7 +160,7 @@ def Job_file_check( pp, job_yaml, keywords ):
         file_name_list = [ job_yaml[ 'file_name' ] ]
 
     for file_name_str in file_name_list: 
-        if pair_id_list and -1 == file_name_str.find( 'pair_id' ):
+        if pair_id_list != None and -1 == file_name_str.find( 'pair_id' ):
             print( "'file_name:' does not contain '{pair_id}'." )
             f_error |= 0x04
 
@@ -169,7 +171,7 @@ def Job_file_check( pp, job_yaml, keywords ):
         dir_list = []
         if 'input_file_dir' in job_yaml:
             if 'sample_subdir' in job_yaml:
-                if pair_id_list:
+                if pair_id_list != None:
                     for pair_id in pair_id_list:
                         dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
                                          job_yaml[ 'sample_subdir' ] + '/' +
@@ -180,7 +182,7 @@ def Job_file_check( pp, job_yaml, keywords ):
                                      file_name_str )
 
             elif 'control_subdir' in job_yaml and 'disease_subdir' in job_yaml:
-                if pair_id_list:
+                if pair_id_list != None:
                     for pair_id in pair_id_list:
                         dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
                                          job_yaml[ 'control_subdir' ] + '/' +
@@ -189,7 +191,7 @@ def Job_file_check( pp, job_yaml, keywords ):
                     dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
                                      job_yaml[ 'control_subdir' ] + '/' +
                                      file_name_str )
-                if pair_id_list:
+                if pair_id_list != None:
                     for pair_id in pair_id_list:
                         dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
                                          job_yaml[ 'disease_subdir' ] + '/' +
@@ -208,7 +210,7 @@ def Job_file_check( pp, job_yaml, keywords ):
                 f_error |= 0x04
 
             else:
-                if pair_id_list:
+                if pair_id_list != None:
                     for pair_id in pair_id_list:
                         dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
                                          file_name_str.format( pair_id = pair_id ) )

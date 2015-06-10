@@ -48,7 +48,7 @@ project_dir_tree:
 #   file_name
 #
 # Optional
-#   file_ext    we assume that input file extion is either '.fastq' or '.bam',
+#   file_ext    we assume that input file extension is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
 #
 #   pair_id     if file_name includes pair_id, need to specify )

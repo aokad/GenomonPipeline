@@ -146,8 +146,7 @@ class Sample():
         pair_id
 
         sample_subdir:
-        control_subdir:
-        disease_subdir
+        control_disease_pairs:
 
         bed_file
         
@@ -208,8 +207,6 @@ class Sample():
         #
         filename_format_tmp = Geno.job.get_job( 'file_name' )
         sample_subdir  = Geno.job.get_job( 'sample_subdir' )
-        control_subdir = Geno.job.get_job( 'control_subdir' )
-        disease_subdir = Geno.job.get_job( 'disease_subdir' )
 
         if not filename_format_tmp:
             return input_file_list
@@ -240,15 +237,6 @@ class Sample():
                 input_type_list.append( "{subdir}/{filename}".format(
                                             subdir = sample_subdir,
                                             filename = filename_format ) )
-            elif control_subdir and disease_subdir:
-                self.__f_subdir = True
-                input_type_list.append( "{subdir}/{filename}".format(
-                                            subdir = control_subdir,
-                                            filename = filename_format ) )
-                input_type_list.append( "{subdir}/{filename}".format(
-                                            subdir = disease_subdir,
-                                            filename = filename_format ) )
-
             else:
                 self.__f_subdir = False
                 input_type_list.append( filename_format )
