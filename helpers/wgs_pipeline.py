@@ -136,38 +136,6 @@ def check_file_exists_for_bwa_mem(
     else:
         return False, "File {output} exits for {input}.".format( output = output_file1, input = input_file1 )
 
-def check_file_exists_for_markduplicates(
-        input_file_list,
-        output_file
-    ):
-
-    """
-    Checks if output file exists for bwa_mem
-
-    """
-
-    if Geno.job.get_job( 'use_biobambam' ):
-        exit_status = get_status_of_this_process( 'markduplicates', output_file1 )
-        if exit_status != 0 or not os.path.exists( output_file1 ):
-            return True, "Missing file {outputfile} for {inputfile}.".format(
-                                outputfile = output_file1,
-                                inputfile = input_file1 )
-        else:
-            ( input_prefix, input_suffix ) = os.path.splitext( input_file1 )
-            input_file_list = glob( "{prefix}*_bamsorted{suffix}".format( prefix = input_prefix, suffix = input_suffix ) )
-            if len( input_file_list ) > 0:
-                in_time = os.path.getmtime( input_file_list[ 0 ] )
-                out_time = os.path.getmtime( output_file1 )
-                if in_time > out_time:
-                    return True, "{output} is older than {input}.".format( output = output_file1, input = input_file1 )
-                else:
-                    return False, "File {output} exits for {input}.".format( output = output_file1, input = input_file1 )
-            else:
-                return False, "Input files do not exist."
-    else:
-        return check_file_exists_for_input_output( 'markduplicates', input_file1, input_file2, output_file1, output_file2 )
-
-
 def check_file_exists_for_input_output(
         process_name,
         input_file1,
@@ -1297,7 +1265,7 @@ def check_file_exists_for_bam2fastq(
         output_file1,
         output_file2
         ):
-    return check_file_exits_for_input_output(
+    return check_file_exists_for_input_output(
                 'bam2fastq',
                 input_file1,
                 input_file2,
@@ -1310,7 +1278,7 @@ def check_file_exists_for_cutadapt(
         output_file1,
         output_file2
         ):
-    return check_file_exits_for_input_output(
+    return check_file_exists_for_input_output(
                 'cutadapt',
                 input_file1,
                 input_file2,
