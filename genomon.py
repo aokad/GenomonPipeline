@@ -74,7 +74,7 @@ def construct_arguments( ):
 ########################################
 def printheader( myself, options ):
     """
-    Print infomration about this run
+    Print information about this run
 
     """
     Geno.now = datetime.now()
