@@ -77,7 +77,7 @@ def check_file_exists_for_merge_bam(
     ):
     if ( Geno.job.get_job( 'use_biobambam' ) and
          'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
-        return_code = True
+        return_code = False, "BioBambam does not need merge."
     else:
         return_code = check_file_exists_for_merge(
             'merge_bam',
