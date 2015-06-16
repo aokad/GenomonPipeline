@@ -122,11 +122,11 @@ def replace_reserved_string( dir_tmp, cwd, Geno ):
     elif dir_tmp == 'sample_date':
         dir_replace = str( Geno.job.get_job( 'sample_date' ) )
     elif dir_tmp == 'sample_name':
-        dir_replace = Geno.job.get_job( 'sample_name' )
+        dir_replace = str(Geno.job.get_job( 'sample_name' ))
     elif dir_tmp == 'sample_date_sample_name':
-        dir_replace = str( Geno.job.get_job( 'sample_date' ) ) + '_' + Geno.job.get_job( 'sample_name' )
+        dir_replace = str( Geno.job.get_job( 'sample_date' ) ) + '_' + str(Geno.job.get_job( 'sample_name' ))
     elif dir_tmp == 'sample_name_sample_date':
-        dir_replace = str( Geno.job.get_job( 'sample_name' ) ) + '_' + Geno.job.get_job( 'sample_date' )
+        dir_replace = str( Geno.job.get_job( 'sample_name' ) ) + '_' + str(Geno.job.get_job( 'sample_date' ))
     elif dir_tmp == 'analysis_date':
         dir_replace = str( Geno.job.get_job( 'analysis_date' ) )
         if dir_replace == 'today' :
