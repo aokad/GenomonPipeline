@@ -246,3 +246,6 @@ class Sample():
 
         return input_file_list
 
+    def subdir_exists( self ):
+        return self.__f_subdir
+
