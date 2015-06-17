@@ -25,8 +25,18 @@ from sample import Sample
 #
 # Subroutines
 #
+def save_status_of_this_process( process_name, output_file, return_code ):
+
+    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
+    Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
+
 def get_status_of_this_process( process_name, output_file ):
-    exit_status = Geno.status.check_exit_status( process_name, output_file )
+
+    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
+    exit_status = Geno.status.check_exit_status(
+                    process_name,
+                    output_file,
+                    use_subdir = use_subdir ) 
 
     return exit_status
 
@@ -405,8 +415,6 @@ def extract_fastq( input_file_list, file_ext ):
             log.error( "{function}: runtask failed",format( function = 'extract_fastq' ) )
         raise
 
-    Geno.status.save_status( 'extract_fastq', input_file_list[ 0 ], return_code )
-
 
 #####################################################################
 #
@@ -468,16 +476,16 @@ def bam2fastq(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                         shell_script_full_path,
                         Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_file1, return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -571,17 +579,17 @@ def split_fastq(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob(
+        runtask_return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_file1, return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -680,17 +688,17 @@ def cutadapt(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob(
+        runtask_return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = 2 )
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_file1, return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -796,17 +804,17 @@ def bwa_mem(
         #
         # Run
         #
-        return_code = Geno.RT.run_arrayjob(
+        runtask_return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = id )
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
             
-        Geno.status.save_status( function_name, output_file1, return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -892,15 +900,15 @@ def merge_bam(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_file, return_code )
+        save_status_of_this_process( function_name, os.path.split( output_file )[ 0 ], runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1003,15 +1011,15 @@ def markduplicates(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_file, return_code )
+        save_status_of_this_process( function_name, os.path.split( output_file )[ 0 ], runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1130,7 +1138,7 @@ def bam_stats(
                     log.error( "{function}: runtask failed".format( function = function_name + '_merge' ) )
                 # raise
 
-            Geno.status.save_status( shell_script_name, output_file, calc_return_code + merge_return_code )
+            save_status_of_this_process( shell_script_name, output_file, calc_return_code + merge_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1225,16 +1233,16 @@ def fisher_mutation_call(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
-        if return_code != 0:
+        if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
             raise
 
-        Geno.status.save_status( function_name, output_file, return_code )
+        save_status_of_this_process( function_name, output_file, runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:

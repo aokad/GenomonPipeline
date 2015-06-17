@@ -22,8 +22,13 @@ class genomon_status:
         self.__header = header
         self.__timestamp = timestamp
 
-    def save_status( self, function, input, return_code ):
-        input_tmp = os.path.basename( input ).split( '.' )[0]
+    def save_status( self, function, input, return_code, use_subdir = False):
+
+        input_tmp = os.path.basename( input ).split( '.' )[ 0 ]
+        if use_subdir:
+            subdir = os.path.basename( os.path.split( input )[ 0 ] )
+            input_tmp = subdir + '_' + input_tmp
+
         file_obj = open( "{dir}/{header}_{timestamp}_{function}_{inputfile}_r{returncode}".format(
                                         dir = self.__config_dir,
                                         header = self.__header,
@@ -35,13 +40,17 @@ class genomon_status:
         file_obj.write( str( return_code ) )
         file_obj.close()
 
-    def check_exit_status( self, function, input ):
+    def check_exit_status( self, function, input, use_subdir = False ):
 
         #
         # file name example
         # genomon_20150602_1626_491694_bam_stats_merge_ATL_data_markdup_r0
         #
-        input_tmp = os.path.basename( input ).split( '.' )[0]
+        input_tmp = os.path.basename( input ).split( '.' )[ 0 ]
+        if use_subdir:
+            subdir = os.path.basename( os.path.split( input )[ 0 ] )
+            input_tmp = subdir + '_' + input_tmp
+
         file_name = "{dir}/{header}_*_{function}_{inputfile}_r*".format(
                                         dir = self.__config_dir,
                                         header = self.__header,

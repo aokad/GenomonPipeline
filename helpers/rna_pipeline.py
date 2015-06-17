@@ -20,32 +20,54 @@ from resource import rna_resource as rna_res
 from utils import *
 from sample import Sample
 
+def save_status_of_this_process( process_name, output_file, return_code ):
+
+    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
+    Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
+
+def get_status_of_this_process( process_name, output_file ):
+
+    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
+    exit_status = Geno.status.check_exit_status(
+                                process_name,
+                                output_file,
+                                use_subdir = use_subdir )
+
+    return exit_status
+
 #####################################################################
 #
-def check_file_exists(input_file, output_file):
+# Check file exits.
+#
+def check_file_exists( function_name, input_file, output_dir, output_file):
     if not os.path.exists(output_file):
         return True, "Missing file %s" % output_file
     else:
+        exit_status = get_status_of_this_process( function_name, output_dir )
         in_time = os.path.getmtime( input_file )
         out_time = os.path.getmtime( output_file )
-        if in_time > out_time:
+        if exit_status != 0 or in_time > out_time:
             return True, "Missing file %s" % output_file
         else:
             return False, "File %s exists" % output_file
 
 def check_file_exists_for_tophat2( input_file, output_dir ):
-    return check_file_exists( input_file,
+    return check_file_exists( 'tophat2',
+                              input_file,
+                              output_dir,
                               output_dir + '/accepted_hits.bam' )
 
 def check_file_exists_for_cufflinks( input_file, output_dir ):
-    return check_file_exists( input_file,
+    return check_file_exists( 'cufflinks',
+                              input_file,
+                              output_dir,
                               output_dir + '/genes.fpkm_tracking' )
 
 def check_file_exists_for_cuffdiff( input_file_list1, input_file_list2, output_dir1, output_dir2 ):
     for input_file in input_file_list1 + input_file_list2:
         
-        output_file = output_dir1 + '/gene_exp.diff'
-        if check_file_exists( input_file, output_file )[ 0 ]:
+        output_file = output_dir2 + '/gene_exp.diff'
+        if check_file_exists( 'cuffdiff', input_file, output_dir2, output_file ):
             return True, "Missing file %s" % output_file
 
     return False, "File %s exists" % output_file
@@ -53,18 +75,25 @@ def check_file_exists_for_cuffdiff( input_file_list1, input_file_list2, output_d
 def check_file_exists_for_cummeRbund( input_dir, output_dir ):
     input_file = input_dir + '/gene_exp.diff'
     output_file = output_dir + '/' + os.path.split( output_dir )[ 1 ] + '_disp.png'
-    return check_file_exists( input_file,
+    return check_file_exists( 'cummeRbund',
+                              input_file,
+                              output_dir,
                               output_file )
 
 #####################################################################
 #
-#control_disease_pairs:
+# generate parameters
+#
+# control_disease_pairs:
 #   #Normal:     Disease
 #   s_B1N:              s_B1T
-#   "s_B2Na, s_B2Nb":   s_B2T
+#   "s_B2Na, s_B2Nb":   s_B2T       --> merge s_B2Na + s_B2Nb
+#   s_B2Na:             s_B2T
+#   s_B2Nb:             s_B2T       --> compare 3 files separately.
+#   s_B3N: " s_B3Ta,s_B3Tb "        --> merge s_B3Ta + s_B3Tb
 #   s_B3N:
 #                       - s_B3Ta
-#                       - s_B3Tb
+#                       - s_B3Tb    --> compare 3 files separately.
 #   Normal:  # Normal only
 #                       - s_B4N
 #                       - s_B5N
@@ -89,14 +118,14 @@ def generate_params_for_cuffdiff( ):
     Sample.make_param( 'cuffdiff', '', 'cuffdiff', 1, 1 )
 
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
-    if ctrl_dis_pairs == None:
+    if not Sample.subdir_exists() or ctrl_dis_pairs == None:
         raise
 
     list_id = 0
     data_dict = {}
     param_list = Sample.param( 'cuffdiff' )
     for infile1, infile2, outdir1, outdir2 in param_list:
-        tmp_dir = os.path.basename( os.path.split( infile2 )[0])
+        tmp_dir = os.path.basename( os.path.split( infile2 )[0] )
         data_dict[ tmp_dir ] = list_id
         list_id += 1
 
@@ -114,15 +143,19 @@ def generate_params_for_cuffdiff( ):
                     disease_dir_list.append( param_list[ data_dict[ disease ] ][ 0 ] )
             normal_outdir = param_list[ data_dict[ normal_list[ 0 ] ] ][ 3 ]
             disease_outdir = param_list[ data_dict[ disease_list[ 0 ] ] ][ 3 ]
-            yield( normal_dir_list, disease_dir_list, normal_outdir, disease_outdir )
+            yield( normal_dir_list,
+                   disease_dir_list,
+                   os.path.split( normal_outdir )[ 0 ],
+                   os.path.split( disease_outdir )[ 0 ] )
 
 
 def generate_params_for_cummeRbund( ):
     global Sample
     Sample.make_param( 'cummeRbund', '', 'cummeRbund', 1, 1 )
 
+    
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
-    if ctrl_dis_pairs == None:
+    if not Sample.subdir_exists() or ctrl_dis_pairs == None:
         raise
 
     list_id = 0
@@ -149,7 +182,7 @@ def generate_params_for_cummeRbund( ):
 
             normal_outdir = os.path.split( param_list[ data_dict[ normal_list[ 0 ] ] ][ 3 ] )[ 0 ]
             disease_outdir = os.path.split( param_list[ data_dict[ disease_list[ 0 ] ] ][ 3 ] )[ 0 ]
-            yield( normal_dir, normal_outdir )
+            yield( disease_dir, disease_outdir )
 
 #####################################################################
 #
@@ -202,15 +235,15 @@ def tophat2(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
-        if return_code != 0:
+        if runtask_return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, input_file, return_code )
+        save_status_of_this_process( function_name, output_dir, runtask_return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -278,15 +311,15 @@ def cufflinks(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
-        if return_code != 0:
+        if runtask_return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, input_file, return_code )
+        save_status_of_this_process( function_name, output_dir, runtask_return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -401,13 +434,13 @@ def cuffdiff(
 
         shell_script_file.close()
 
-        return_code = Geno.RT.run_arrayjob(
+        runtask_return_code = Geno.RT.run_arrayjob(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ],
                             id_start = 1,
                             id_end = 2 )
 
-        if return_code != 0:
+        if runtask_return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
@@ -424,7 +457,7 @@ def cuffdiff(
                                         env_variables = env_variable_str,
                                         merged_control_bam_file = control_output_dir + '/merged_accepted_hits.bam',
                                         merged_disease_bam_file = disease_output_dir + '/merged_accepted_hits.bam',
-                                        output_dir = control_output_dir,
+                                        output_dir = disease_output_dir,
                                         data_labels = data_labels,
                                         ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         cuffdiff = Geno.conf.get( 'SOFTWARE', 'cuffdiff' )
@@ -432,15 +465,15 @@ def cuffdiff(
                                 )
         shell_script_file.close()
 
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
 
-        if return_code != 0:
+        if runtask_return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, control_output_dir, return_code )
+        save_status_of_this_process( function_name, disease_output_dir, runtask_return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -512,14 +545,14 @@ def cummeRbund(
         #
         # Run
         #
-        return_code = Geno.RT.runtask(
+        runtask_return_code = Geno.RT.runtask(
                             shell_script_full_path,
                             Geno.job.get_job( 'cmd_options' )[ function_name ] )
-        if return_code != 0:
+        if runtask_return_code != 0:
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, input_dir, return_code )
+        save_status_of_this_process( function_name, output_dir, runtask_return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
