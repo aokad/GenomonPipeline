@@ -74,7 +74,7 @@ def construct_arguments( ):
 ########################################
 def printheader( myself, options ):
     """
-    Print information about this run
+    Print infomration about this run
 
     """
     Geno.now = datetime.now()
@@ -375,6 +375,10 @@ def main():
 
         elif 'RNA' in job_tasks:
             from helpers import rna_pipeline as pipeline
+            run_flag = True
+
+        elif 'STAR' in job_tasks:
+            from helpers import star_pipeline as pipeline
             run_flag = True
 
         if not run_flag:
