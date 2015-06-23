@@ -17,7 +17,7 @@ import logging
 #
 # Globals
 #
-f_print = True
+f_print_genomon = True
 
 arg = None
 target = None
@@ -106,8 +106,12 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
         # POS_REF = 2
         # POS_DATA1 = 3
         # POS_DATA2 = 4
-        # POS_FISHER = 5
-        # POS_COUNT = 6
+        # POS_DATA1_FISHER_INS = 5
+        # POS_DATA1_FISHER_DEL = 6
+        # POS_DATA2_FISHER_INS = 7
+        # POS_DATA2_FISHER_DEL = 8
+        # POS_FISHER_SNV = 9
+        # POS_COUNT = 10
         #
         data_pair = [ mp_list[ 0 ],
                       mp_list[ 1 ],
@@ -119,7 +123,7 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
                       0.0,
                       0.0,
                       0.0,
-                      0]
+                      0 ]
 
 
         #
@@ -130,6 +134,12 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
         else:
             comparison = False
 
+        #
+        # position id,
+        # mpileup output 4th row(number of read covering the site),
+        # 5th row(read bases),
+        # 6th row(base quality)
+        #
         if comparison:
             input_list = [ ( POS_DATA1, mp_list[ 3 ], mp_list[ 4 ], mp_list[ 5 ] ),
                            ( POS_DATA2, mp_list[ 6 ], mp_list[ 7 ], mp_list[ 8 ] ) ]
@@ -243,8 +253,15 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
                             bases = key.split( '\t' )[ 3 ]
                             data_pair[ data_id ][ 'indel' ][ type ][ bases ][ '1' ] = indel[ type ][ key ][ '1' ]
                             data_pair[ data_id ][ 'indel' ][ type ][ bases ][ '-1' ] = indel[ type ][ key ][ '-1' ]
+                            indel_number = \
                             data_pair[ data_id ][ 'indel' ][ type ][ bases ][ '0' ] = ( indel[ type ][ key ][ '-1' ] +
                                                                                         indel[ type ][ key ][ '1' ] )
+                            data_pair[ data_id ][ 'indel' ][ type ][ bases ][ '0.1' ] = \
+                                scipy.special.btdtri( indel_number + 1, float( depth ) - indel_number + 1, 0.1 )
+                            data_pair[ data_id ][ 'indel' ][ type ][ bases ][ 'mid' ] = \
+                                ( indel_number + 1 ) / ( float( depth ) + 2 )
+                            data_pair[ data_id ][ 'indel' ][ type ][ bases ][ '0.9' ] = \
+                                scipy.special.btdtri( indel_number + 1, int( depth ) - indel_number + 1, 0.9 )
 
 
                 #
@@ -261,7 +278,7 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
                 # Beta distribution for SNV
                 #
                 data_pair[ data_id ][ '0.1' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.1 )
-                data_pair[ data_id ][ 'mid' ] = ( mis_num + 1 ) / float(ref_num + mis_num + 2 )
+                data_pair[ data_id ][ 'mid' ] = ( mis_num + 1 ) / ( ref_num + mis_num + 2 )
                 data_pair[ data_id ][ '0.9' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.9 )
                 data_pair[ POS_COUNT ] += 1
 
@@ -293,12 +310,19 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth ):
 
 
 ############################################################
-def print_data( data, w, min_depth, mismatch_rate ):
+def print_data( data, w, min_depth, mismatch_rate, posterior_10_quantile ):
 
-    #print data[1]
+    global f_print_genomon
+
     # chr pos ref
-    str_list = [ '\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-',
-                 '\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-' ]
+    if not f_print_genomon:
+        str_list = [ '\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-',
+                     '\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-\t-' ]
+    else:
+        str_list= [ '\t-\t-\t-\t-\t-\t-\t-\t-',
+                    '\t-\t-\t-\t-\t-\t-\t-\t-' ]
+
+    str_indel_dict = AutoVivification()
     str_id = 0
     f_print = False
     f_print_indel = False
@@ -307,7 +331,9 @@ def print_data( data, w, min_depth, mismatch_rate ):
         if not data[ data_id ].has_key( 'bases' ):
             continue
 
+        indel_number = 0
         indel = [ '', '', '', '' ]
+        indel_id_tmp = 0
         for type in data[ data_id ][ 'indel' ].keys():
             if type == '+':
                 indel_id = 0
@@ -315,65 +341,108 @@ def print_data( data, w, min_depth, mismatch_rate ):
                 indel_id = 2
 
             for bases in data[ data_id ][ 'indel' ][ type ].keys():
-                for strand in data[ data_id ][ 'indel' ][ type ][ bases ].keys():
-                    if strand == '-1':
-                        indel_id_tmp = indel_id + 1
-                    elif strand == '1':
-                        indel_id_tmp = indel_id
-                    elif strand == '0':
-                        continue
-
-                    if data[ data_id ][ 'indel' ][ type ][ bases ][ strand ] > 0:
+                if data[ data_id ][ 'indel' ][ type ][ bases ][ '0' ] > 0:
+                    indel[ indel_id_tmp ] += "{0}:{1}:{2},".format(
+                        indel_id_tmp,
+                        bases,
+                        data[ data_id ][ 'indel' ][ type ][ bases ][ '0' ] )
+                    indel_id_tmp += 1
+                        
+                    if data[ data_id ][ 'indel' ][ type ][ bases ][ '0.1' ]  > posterior_10_quantile:
                         f_print_indel = True
-                        indel[ indel_id_tmp ] += "{0}:{1},".format(
-                                bases,
-                                data[ data_id ][ 'indel' ][ type ][ bases ][ strand ] )
+                        str_indel_dict[ type ][ bases ] = '\t{0}\t{1}\t{2}\t{3},{4}\t{5}\t{6}\t{7}\t{8}\t{9}\n'.format(
+                                    bases if type == '-' else '-',
+                                    '-' if type == '-' else bases,
+                                    data[ data_id ][ 'depth' ],
+                                    data[ data_id ][ 'depth' ],
+                                    data[ data_id ][ 'indel' ][ type ][ bases ][ '0' ],
+                                    data[ data_id ][ 'indel' ][ type ][ bases ][ '0' ] / float( data[ data_id ][ 'depth' ] ),
+                                    data[ data_id ][ 'indel' ][ type ][ bases ][ '1' ] / float( data[ data_id ][ 'indel' ][ type ][ bases ][ '0' ] ),
+                                    data[ data_id ][ 'indel' ][ type ][ bases ][ '0.1' ],
+                                    data[ data_id ][ 'indel' ][ type ][ bases ][ 'mid' ],
+                                    data[ data_id ][ 'indel' ][ type ][ bases ][ '0.9' ]
+                                    )
 
 
-        # obs depth A a C c G g T t ins  del  A C G T mis s_ratio 0.1 ratio 0.9
-        str_list[ str_id ] = '\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t{17}\t{18}\t{19}\t{20}\t{21}\t{22}'.format(
-                    data[ data_id ][ 'mis_base' ],
-                    data[ data_id ][ 'depth' ],
-                    data[ data_id ][ 'A' ],
-                    data[ data_id ][ 'a' ],
-                    data[ data_id ][ 'C' ],
-                    data[ data_id ][ 'c' ],
-                    data[ data_id ][ 'G' ],
-                    data[ data_id ][ 'g' ],
-                    data[ data_id ][ 'T' ],
-                    data[ data_id ][ 't' ],
-                    indel[ 0 ],
-                    indel[ 1 ],
-                    indel[ 2 ],
-                    indel[ 3 ],
-                    data[ data_id ][ 'total_A' ],
-                    data[ data_id ][ 'total_C' ],
-                    data[ data_id ][ 'total_G' ],
-                    data[ data_id ][ 'total_T' ],
-                    data[ data_id ][ 'mis_rate' ],
-                    data[ data_id ][ 's_ratio' ],
-                    data[ data_id ][ '0.1' ],
-                    data[ data_id ][ 'mid' ],
-                    data[ data_id ][ '0.9' ]
-                    )
-        str_id += 1
+
 
         if (  ( data[ data_id ][ 'depth' ]      >   min_depth       and
                 data[ data_id ][ 'mis_base' ]   !=  'N'             and
                 data[ data_id ][ 'mis_base' ]   !=  None            and
                 data[ data_id ][ 'mis_base' ]   !=  data[ POS_REF ] and
-                data[ data_id ][ 'mis_rate']    >   mismatch_rate       )
-                or
-                f_print_indel
+                data[ data_id ][ 'mis_rate']    >   mismatch_rate   and
+                data[ data_id ][ '0.1']         >   posterior_10_quantile )
            ):
-            f_print = True or f_print
 
+            f_print = True
+            if f_print_genomon:
+                # Genomon output
+                # chr \t start \t end \t ref \t obs \tdepth \t A,C,G,T \t mis \t s_ratio \t 0.1 \t ratio \t 0.9
+                str_list[ str_id ] = '\t{0}\t{1}\t{2},{3},{4},{5}\t{6}\t{7}\t{8}\t{9}\t{10}'.format(
+                            data[ data_id ][ 'mis_base' ],
+                            data[ data_id ][ 'depth' ],
+                            data[ data_id ][ 'total_A' ],
+                            data[ data_id ][ 'total_C' ],
+                            data[ data_id ][ 'total_G' ],
+                            data[ data_id ][ 'total_T' ],
+                            data[ data_id ][ 'mis_rate' ],
+                            data[ data_id ][ 's_ratio' ],
+                            data[ data_id ][ '0.1' ],
+                            data[ data_id ][ 'mid' ],
+                            data[ data_id ][ '0.9' ]
+                            )
+
+            else:
+                # obs depth A a C c G g T t ins  del  A C G T mis s_ratio 0.1 ratio 0.9
+                str_list[ str_id ] = '\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t{17}\t{18}\t{19}\t{20}'.format(
+                            data[ data_id ][ 'mis_base' ],
+                            data[ data_id ][ 'depth' ],
+                            data[ data_id ][ 'A' ],
+                            data[ data_id ][ 'a' ],
+                            data[ data_id ][ 'C' ],
+                            data[ data_id ][ 'c' ],
+                            data[ data_id ][ 'G' ],
+                            data[ data_id ][ 'g' ],
+                            data[ data_id ][ 'T' ],
+                            data[ data_id ][ 't' ],
+                            indel[ 0 ],
+                            indel[ 1 ],
+                            data[ data_id ][ 'total_A' ],
+                            data[ data_id ][ 'total_C' ],
+                            data[ data_id ][ 'total_G' ],
+                            data[ data_id ][ 'total_T' ],
+                            data[ data_id ][ 'mis_rate' ],
+                            data[ data_id ][ 's_ratio' ],
+                            data[ data_id ][ '0.1' ],
+                            data[ data_id ][ 'mid' ],
+                            data[ data_id ][ '0.9' ]
+                            )
+
+        str_id += 1
+
+    outstr = None
     if f_print:
-        outstr = '\t'.join( data[POS_CHR:POS_DATA1] ) + str_list[ 0 ]
+        # chr start end in data, 
+        outstr = data[ POS_CHR ] + '\t' + data[ POS_COORD ] + '\t' + data[ POS_COORD ] + '\t' + data[ POS_REF ] + str_list[ 0 ]
         if data[ POS_COUNT ] == 2:
             outstr +=  str_list[ 1 ] + '\t' + str( data[ POS_FISHER_SNV ] )
         outstr +=  '\n'
 
+    if f_print_indel:
+        if not outstr:
+            outstr = ''
+
+        for type in str_indel_dict.keys():
+            if type == '+':
+                for bases in str_indel_dict[ type ].keys():
+                    outstr += data[ POS_CHR ] + '\t' + data[ POS_COORD ] + '\t' + data[ POS_COORD ] + str_indel_dict[ type ][ bases ]
+            elif type == '-':
+                for bases in str_indel_dict[ type ].keys():
+                    pos = str( int( data[ POS_COORD ] ) + 1 )
+                    outstr += data[ POS_CHR ] + '\t' +  pos + '\t' + pos +  str_indel_dict[ type ][ bases ]
+
+
+    if outstr:
         w.write( outstr )
 
 
@@ -385,12 +454,13 @@ def Pileup_and_count(
         input_mpileup = None,
         ref_fa = None,
         threshold = 15,
-        mismatch_rate = 0.07,
+        mismatch_rate = 0.05,
+        post_10_q = 0.05,
         min_depth = 9
         ):
 
     global arg
-    global f_print
+    global f_print_genomon
     global target
     global remove_chr
     global filter_quals
@@ -401,7 +471,7 @@ def Pileup_and_count(
         # Initalize filter quality values
         #
         filter_quals = ''
-        for qual in range( 33 + threshold, 33 + threshold + 50 ):
+        for qual in range( 33 + threshold - 1, 33 + 50 ):
             filter_quals += str( unichr( qual ) )
 
         #
@@ -414,13 +484,19 @@ def Pileup_and_count(
         #
         # Open output file and write header
         #
-        if f_print:
-            w = open( out_file, 'w' )
-            header_str = "chr\tpos\tref\tobs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\t"
+        w = open( out_file, 'w' )
+
+        #
+        # Print header only for testing.
+        #
+        if not f_print_genomon:
+            header_str = "chr\tpos\tref\tobs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\n"
             if in_bam2:
                 header_str += "obs\tdepth\tA\ta\tC\tc\tG\tg\tT\tt\tins\t\tdel\t\tA\tC\tG\tT\tmis\ts_ratio\t0.1\tratio\t0.9\tfisher\n"
             else:
                 header_str += "\n"
+        else:
+            header_str = "chr\tstart\tend\tref\tobs\tdepth\tA,C,G,T,\tmis\ts_ratio\t0.1\tratio\t0.9\n"
 
             w.write( header_str )
 
@@ -433,27 +509,26 @@ def Pileup_and_count(
             for mpileup in open( arg.input_mpileup, 'rh' ):
                 data = Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth )
                 if data:
-                    print_data( data, w, min_depth, mismatch_rate )
+                    print_data( data, w, min_depth, mismatch_rate, post_10_q )
 
         elif in_bam1 and in_bam2:
             for mpileup in pysam.mpileup( '-BQ', '0', '-d', '10000000', '-f', ref_fa, in_bam1, in_bam2 ):
                 data = Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth )
                 if data:
-                    print_data( data, w, min_depth, mismatch_rate )
+                    print_data( data, w, min_depth, mismatch_rate, post_10_q )
 
         elif in_bam1:
             for mpileup in pysam.mpileup( '-BQ', '0', '-d', '10000000', '-f', ref_fa, in_bam1 ):
                 data = Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth )
                 if data:
-                    print_data( data, w, min_depth, mismatch_rate )
+                    print_data( data, w, min_depth, mismatch_rate, post_10_q )
         else:
             for mpileup in iter( sys.stdin.readline, "" ):
                 data = Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth )
                 if data:
-                    print_data( data, w, min_depth, mismatch_rate )
+                    print_data( data, w, min_depth, mismatch_rate, post_10_q )
 
-        if f_print:
-            w.close()
+        w.close()
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -472,8 +547,9 @@ def construct_arguments():
     parser.add_argument( '-2', '--bam2',                help = '2nd bam file ( disease )',  type = str,     default = None )
     parser.add_argument( '-r', '--ref_fa',              help = 'Reference FASTA',           type = str,     default = None )
     parser.add_argument( '-o', '--output',              help = 'Output text file',          type = str,     default = None )
-    parser.add_argument( '-q', '--base_quality',   help = 'Base quality threshold',    type = int,     default = 15 )
-    parser.add_argument( '-m', '--mismatch_rate',       help = 'Mismatch rate',             type = float,   default = 0.07 )
+    parser.add_argument( '-q', '--base_quality',   help = 'Base quality threshold',         type = int,     default = 15 )
+    parser.add_argument( '-m', '--mismatch_rate',       help = 'Mismatch rate',             type = float,   default = 0.05 )
+    parser.add_argument( '-p', '--post_10_q',       help = '10% posterior quantile',        type = float,   default = 0.05 )
     parser.add_argument( '-d', '--min_depth',           help = 'Mimimum depth',             type = float,   default = 9 )
     parser.add_argument( '-i', '--input_mpileup',       help = 'Input mpileupt file',       type = str,     default = None )
 
@@ -559,6 +635,7 @@ def main():
             ref_fa = arg.ref_fa,
             threshold = arg.base_quality,
             mismatch_rate = arg.mismatch_rate,
+            post_10_q = arg.post_10_q,
             min_depth = arg.min_depth,
           )
 
