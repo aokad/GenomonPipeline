@@ -332,7 +332,7 @@ def main():
             
 
         #
-        # Initalize RunTask object
+        # Initialize RunTask object
         #
         native_param = None
         if Geno.options.mpi and not Geno.options.drmaa:
