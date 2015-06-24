@@ -308,17 +308,15 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
-
 NUM_FILES=`ls -1 {input_bam_files} | wc -l `
 
 if [ $NUM_FILES  -ge 2 ]
 then
     {samtools} merge \
-        "$OUTPUT_BAM_PREFIX".bam \
+        {output_bam_file}\
         {input_bam_files};
 else
-    cp {input_bam_files} ${{OUTPUT_BAM_PREFIX}}.bam
+    cp {input_bam_files} {output_bam_file}
 fi
 {samtools} index {output_bam_file};
 
@@ -344,7 +342,7 @@ set -xv
 
 {env_variables}
 
-OUTPUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
+OUT_BAM_PREFIX=`echo {output_bam_file} | sed 's/\.[^\.]\+$//'`
 
 {biobambam}/bammerge  \
         {input_bam_files} \
@@ -524,6 +522,69 @@ cat {output_txt}.1 {output_txt}.2 {output_txt}.3 {output_txt}.4 {output_txt}.5 >
 
 """
 
+fisher_merge_bams = """
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+# Set SGE
+#
+#$ -S /bin/bash         # set shell in UGE
+#$ -cwd                 # execute at the submitted dir
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+#
+# <parameters>
+# log
+# env_variables
+# array_data
+# merge_bam_flag
+# input_bam_files
+# merge_bam_flag
+# samtools
+# biobambam
+#
+echo SGE_TASK_ID:$SGE_TASK_ID
+echo SGE_TASK_FIRST:$SGE_TASK_FIRST
+echo SGE_TASK_LAST:$SGE_TASK_LAST
+echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
+
+{env_variables}
+
+{array_data}
+
+OUT_BAM_PREFIX=`echo {merged_bam_file} | sed 's/\.[^\.]\+$//'`
+mkdir -p {out_dir}
+if [ "{merge_bam_flag}" = "True" ]
+then
+    if [ "{use_biobambam}" = "True" ]
+    then
+        {biobambam}/bammerge  \
+                        {input_bam_files} \
+                        md5filename="$OUT_BAM_PREFIX".metrics \
+                        tmpfile="$OUT_BAM_PREFIX".tmp \
+                        indexfilename={merged_bam_file}.bai \
+                        md5=1 \
+                        index=1 \
+                        > {merged_bam_file}
+    else
+        {samtools} merge \
+                    {merged_bam_file} \
+                    {input_bam_files};
+        {samtools} index {merged_bam_file};
+    fi
+else
+    INPUT_BAM={input_bam_files}
+    cp {input_bam_files} {merged_bam_file}
+    cp ${{INPUT_BAM}}.bai {merged_bam_file}.bai
+fi
+"""
+
 fisher_mutation_call = \
 """
 #!/bin/bash
@@ -597,13 +658,13 @@ INTERVAL_OUT=`echo {output_txt} | sed "s/\.txt/_${{INTERVAL[$SGE_TASK_ID]}}.txt/
 
 if [ -e "$CONTROL_FILTERED_BAM"  ]
 then
-    SIZE_OF_CONTROL_BAM=`du -hb $CONTROL_FILTERED_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
+    SIZE_OF_CONTROL_BAM=`du -b $CONTROL_FILTERED_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
 else
     SIZE_OF_CONTROL_BAM=0
 fi
 if [ -e "$DISEASE_FILTERED_BAM"  ]
 then
-    SIZE_OF_DISEASE_BAM=`du -hb $DISEASE_FILTERED_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
+    SIZE_OF_DISEASE_BAM=`du -b $DISEASE_FILTERED_BAM | sed 's/\([0-9\.]\+\).\+/\\1/'`
 else
     SIZE_OF_DISEASE_BAM=0
 fi
@@ -621,15 +682,33 @@ then
                --ref_fa {ref_fa} \
                --base_quality {base_quality} \
                --mismatch_rate {mismatch_rate} \
-               --min_depth {min_depth}
+               --min_depth {min_depth}\
+               --compare
+fi
 
-elif [ $SIZE_OF_CONTROL_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
+if [ $SIZE_OF_CONTROL_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
 then
     {samtools} mpileup \
                 -BQ0 \
                 -d 10000000 \
                 -f {ref_fa} \
                 $CONTROL_FILTERED_BAM |\
+    {python} {script_dir}/fisher.py \
+               --output $INTERVAL_OUT \
+               --ref_fa {ref_fa} \
+               --base_quality {base_quality} \
+               --mismatch_rate {mismatch_rate} \
+               --min_depth {min_depth}
+
+fi
+
+if [ $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
+then
+    {samtools} mpileup \
+                -BQ0 \
+                -d 10000000 \
+                -f {ref_fa} \
+                $DISEASE_FILTERED_BAM |\
     {python} {script_dir}/fisher.py \
                --output $INTERVAL_OUT \
                --ref_fa {ref_fa} \
