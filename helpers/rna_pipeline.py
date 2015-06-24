@@ -117,10 +117,17 @@ def generate_params_for_cuffdiff( ):
     global Sample
     Sample.make_param( 'cuffdiff', '', 'cuffdiff', 1, 1 )
 
+    #
+    # Make sure that 'control_disease_pairs' is defined,
+    #            and 'sample_subdir' is defined.
+    #
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
     if not Sample.subdir_exists() or ctrl_dis_pairs == None:
         raise
 
+    #
+    # Get sample_subdir list
+    #
     list_id = 0
     data_dict = {}
     param_list = Sample.param( 'cuffdiff' )
@@ -129,6 +136,9 @@ def generate_params_for_cuffdiff( ):
         data_dict[ tmp_dir ] = list_id
         list_id += 1
 
+    #
+    # Create parameters for comparison
+    #
     for data_type in ctrl_dis_pairs.keys():
         if data_type != 'Normal' and data_type != 'Disease':
             normal_list = data_type.replace( ' ', '' ).split( ',' )
@@ -153,11 +163,17 @@ def generate_params_for_cummeRbund( ):
     global Sample
     Sample.make_param( 'cummeRbund', '', 'cummeRbund', 1, 1 )
 
-    
+    #
+    # Make sure that 'control_disease_pairs' is defined,
+    #            and 'sample_subdir' is defined.
+    #
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
     if not Sample.subdir_exists() or ctrl_dis_pairs == None:
         raise
 
+    #
+    # Get sample_subdir list
+    #
     list_id = 0
     data_dict = {}
     param_list = Sample.param( 'cummeRbund' )
@@ -166,6 +182,9 @@ def generate_params_for_cummeRbund( ):
         data_dict[ tmp_dir ] = list_id
         list_id += 1
 
+    #
+    # Create parameters for comparison
+    #
     for data_type in ctrl_dis_pairs.keys():
         if data_type != 'Normal' and data_type != 'Disease':
             normal_list = data_type.replace( ' ', '' ).split( ',' )
@@ -273,7 +292,7 @@ def tophat2(
 
 #####################################################################
 #
-#   STAGE 2
+#   STAGE 2 estimate RNA expression for each sample by cufflinks
 #
 @follows( tophat2 )
 @active_if( 'cufflinks' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
@@ -348,7 +367,7 @@ def cufflinks(
 
 #####################################################################
 #
-#   STAGE 3
+#   STAGE 3 estimate RNA expression and compare normal vs disease
 #
 @follows( cufflinks )
 @active_if( 'cuffdiff' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
@@ -502,7 +521,7 @@ def cuffdiff(
 
 #####################################################################
 #
-#   STAGE 4
+#   STAGE 4 run cummeRbund and plot data of control vs disease
 #
 @follows( cuffdiff )
 @active_if ( 'cummeRbund' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
