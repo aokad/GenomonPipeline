@@ -56,6 +56,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
     def set_native_param( self, native_param ):
         """
@@ -125,6 +126,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
     def run_job( self, command, array_param = None, args = [],  log_dir = None, cmd_options = '' ):
         try:
@@ -144,6 +146,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
     def delete_job_template( self, jobid = None ):
         try:
@@ -160,7 +163,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            return_code = False
+            raise
 
     def wait_jobs( self ):
 
