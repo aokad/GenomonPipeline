@@ -4,7 +4,6 @@
 # Mandatory definitions
 #   project_root
 #   sample_name
-#   sample_date
 #   analysis_date:  either 'today' or a specific date
 #
 #   project name directory is going to be created at project_root specified below.
@@ -12,7 +11,6 @@
 #
 project_root:           ~/tmp
 sample_name:            small_rna
-sample_date:            20150409
 analysis_date:          today
 
 #
@@ -25,21 +23,20 @@ analysis_date:          today
 project_dir_tree:
     project_directory:
         data:
-            sample_date:
-                sample_name
+            sample_name
         results:
             - all_summary
-            - analysis_date:
-                sample_date_sample_name:
+            - sample_name:
                     - config
                     - script
                     - log
                     - fastq
                     - bam
-                    - cufflinks
-                    - cuffdiff
-                    - cummeRbund
-                    - summary
+                    - analysis_date:
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+                        - summary
 #
 # Input files
 #

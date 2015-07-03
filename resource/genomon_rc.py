@@ -26,24 +26,25 @@ project_directory:
     data:
         sample_name
     results:
-        - all_summary
-        - config
-        - script:
-        - log
-        - out:
-            - fastq
-            - bam
-            - summary
-            - analysis_date:
-                - annotation
-                - mutation
-                - cufflinks
-                - cuffdiff
-                - cummeRbund
-                - cnv
-                - sv
-                - star
-                - star_fusion
+        sample_name:
+            - all_summary
+            - config
+            - script
+            - log
+            - out:
+                - fastq
+                - bam
+                - summary
+                - analysis_date:
+                    - annotation
+                    - mutation
+                    - cufflinks
+                    - cuffdiff
+                    - cummeRbund
+                    - cnv
+                    - sv
+                    - star
+                    - star_fusion
 """
 
 end_dir_list = ( 'config',

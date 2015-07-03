@@ -141,14 +141,9 @@ def make_directories():
         # make symbolic link from the original input_file_dir
         #   if input_file_dir is not the same as data dir
         #
-        make_dir( "{data}/{sample_date}".format(
+        make_dir( "{data}".format( data = get_dir( dir_tree, cwd, 'data', Geno )), Geno )
+        Geno.dir[ 'data' ] = "{data}/{sample_name}".format(
                                 data = get_dir( dir_tree, cwd, 'data', Geno ),
-                                sample_date = Geno.job.get_job( 'sample_date' )
-                                ),
-                  Geno )
-        Geno.dir[ 'data' ] = "{data}/{sample_date}/{sample_name}". format(
-                                data = get_dir( dir_tree, cwd, 'data', Geno ),
-                                sample_date = Geno.job.get_job( 'sample_date' ),
                                 sample_name = Geno.job.get_job( 'sample_name' ) )
         if ( not os.path.exists( Geno.dir[ 'data' ] ) and
              Geno.job.get_job( 'input_file_dir' ) != Geno.dir[ 'data' ] ):

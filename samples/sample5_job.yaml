@@ -11,7 +11,6 @@
 #
 project_root:           ~/tmp
 sample_name:            star_sample
-sample_date:            20150701
 analysis_date:          today
 
 #
