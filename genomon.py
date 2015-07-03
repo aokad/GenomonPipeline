@@ -157,6 +157,7 @@ def make_directories():
     except IOError, (errno, strerror):
         log.error( "make_directories failed." )
         log.error( "IOError {0}]{1}".format( errno, strerror ) )
+        raise
 
 
     except Exception, e:
@@ -165,6 +166,7 @@ def make_directories():
         log.error( "make_directories failed." )
         log.error( "Unexpected error: {1}".format( error_message ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        raise
 
 ########################################
 def copy_config_files():

@@ -24,27 +24,27 @@ dir_tree_resource = \
 """
 project_directory:
     data:
-        sample_date:
-            sample_name
+        sample_name
     results:
         - all_summary
         - analysis_date:
-            sample_date_sample_name:
-                - config
-                - script:
-                - log
-                - out:
-                    - fastq
-                    - bam
+            - config
+            - script:
+            - log
+            - out:
+                - fastq
+                - bam
+                - summary
+                - sample_date:
                     - annotation
                     - mutation
                     - cufflinks
                     - cuffdiff
                     - cummeRbund
                     - cnv
-                    - fusion
                     - sv
-                    - summary
+                    - star
+                    - star_fusion
 """
 
 end_dir_list = ( 'config',
@@ -60,6 +60,8 @@ end_dir_list = ( 'config',
                  'cnv',
                  'fusion',
                  'sv',
+                 'star',
+                 'star_fusion',
                  'summary',
                  'all_summary'
                  )
@@ -74,6 +76,8 @@ subdir_list = ( 'fastq',
                 'cufflinks',
                 'cuffdiff',
                 'cummeRbund',
+                'star',
+                'star_fusion',
                 'summary',
                 'all_summary' )
 
@@ -122,6 +126,8 @@ job_config_default ={
           'base_quality': 15,
           'mismatch_rate': 0.07,
           'min_depth': 9 },
+    'star_genome': 
+        { 'additional_params': '--sjdbOverhang 99' },
     'use_biobambam': False,
     'bam_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'
 }
