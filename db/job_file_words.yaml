@@ -1,6 +1,5 @@
 mandatory:
     - sample_name
-    - sample_date
     - analysis_date
 
     - project_root
@@ -16,8 +15,7 @@ optional:
     - file_ext
     - pair_id
     - sample_subdir
-    - control_subdir
-    - disease_subdir
+    - control_disease_pairs
 
 parameters:
     ##########
