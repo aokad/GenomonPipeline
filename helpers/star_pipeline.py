@@ -88,13 +88,13 @@ def generate_params_for_star_genome( ):
     
 def generate_params_for_star( ):
     global Sample
-    Sample.make_param( 'star', '', 'star', 2, 1 )
+    Sample.make_param( 'star', None, '', 'star', 2, 1 )
     for infile1, infile2, outfile1, outfil2 in Sample.param( 'star' ):
         yield infile1, infile2, outfile1
 
 def generate_params_for_star_fusion( ):
     global Sample
-    Sample.make_param( 'star_fusion', '', 'star_fusion', 1, 1 )
+    Sample.make_param( 'star_fusion', None, '', 'star_fusion', 1, 1 )
     for infile1, infile2, outdir1, outdir2 in Sample.param( 'star_fusion' ):
         yield ( infile1 + '_Chimeric.out.sam',
                 infile1 + '_Chimeric.out.junction',
@@ -155,7 +155,7 @@ def star_genome(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_dir, return_code )
+        save_status_of_this_process( function_name, output_dir, return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -175,8 +175,8 @@ def star_genome(
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{function}: Unexpected error: {error} ".format(
-                    function = whoami()))
+        log.error( "{function}: Unexpected error: {error}.".format(
+                    function = whoami()) , error = sys.exc_info()[0] )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_code = False
 
@@ -208,6 +208,7 @@ def star(
 
         if input_file1[ -3: ] == '.gz' or input_file1[ -4: ] == '.gz2':
 
+
             #
             # Extract file
             #
@@ -224,32 +225,38 @@ def star(
                           "OUT_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
                                         file1 = fastq_file1, file2 = fastq_file2 )
 
-            #
-            # Make shell script
-            #
-            shell_script_full_path = make_script_file_name( function_name + '_decomp', Geno )
-            shell_script_file = open( shell_script_full_path, 'w' )
-            shell_script_file.write( star_res.extract_fastq.format(
-                                            log = Geno.dir[ 'log' ],
-                                            array_data = array_data,
-                                            input_file = "${IN_FILE[$SGE_TASK_ID]}",
-                                            output_file = "${OUT_FILE[$SGE_TASK_ID]}"
+            if ( get_status_of_this_process( function_name + '_decomp', output_prefix ) != 0 or
+                 not os.path.exists( fastq_file1 ) or
+                 ( fastq_file2 != '' and not os.path.exists( fastq_file2 ) ) ):
+                #
+                # Make shell script
+                #
+                shell_script_full_path = make_script_file_name( function_name + '_decomp', Geno )
+                shell_script_file = open( shell_script_full_path, 'w' )
+                shell_script_file.write( star_res.extract_fastq.format(
+                                                log = Geno.dir[ 'log' ],
+                                                array_data = array_data,
+                                                input_file = "${IN_FILE[$SGE_TASK_ID]}",
+                                                output_file = "${OUT_FILE[$SGE_TASK_ID]}"
+                                            )
                                         )
-                                    )
-            shell_script_file.close()
+                shell_script_file.close()
 
-            #
-            # Run
-            #
-            return_code = Geno.RT.run_arrayjob(
-                                shell_script_full_path,
-                                Geno.job.get_job( 'cmd_options' )[ function_name ],
-                                id_start = 1,
-                                id_end = id )
+                #
+                # Run
+                #
+                return_code = Geno.RT.run_arrayjob(
+                                    shell_script_full_path,
+                                    Geno.job.get_job( 'cmd_options' )[ function_name ],
+                                    id_start = 1,
+                                    id_end = id )
 
-            if return_code != 0:
-                log.error( "{function}: runtask failed".format( function = function_name ) )
-                raise
+                if return_code != 0:
+                    log.error( "{function}: runtask failed".format( function = function_name ) )
+                    raise
+
+                save_status_of_this_process( function_name + '_decomp' , output_prefix, return_code )
+
         else:
             fastq_file1 = input_file1
             fastq_file2 = input_file2
@@ -283,7 +290,7 @@ def star(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_prefix, return_code )
+        save_status_of_this_process( function_name, output_prefix, return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -303,7 +310,8 @@ def star(
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{function}: Unexpected error: {error} ".format( function = whoami()))
+        log.error( "{function}: Unexpected error: {error}.".format(
+                    function = whoami()) , error = sys.exc_info()[0] )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_code = False
 
@@ -361,7 +369,7 @@ def star_fusion(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        Geno.status.save_status( function_name, output_prefix, return_code )
+        save_status_of_this_process( function_name, output_prefix, return_code )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -381,8 +389,8 @@ def star_fusion(
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{function}: Unexpected error: {error} ".format(
-                    function = whoami()))
+        log.error( "{function}: Unexpected error: {error}.".format(
+                    function = whoami()) , error = sys.exc_info()[0] )
         return_code = False
 
 

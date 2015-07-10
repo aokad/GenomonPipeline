@@ -44,6 +44,33 @@ def get_status_of_this_process( process_name, output_file ):
 #
 # File update check
 #
+
+def check_file_exists_for_bam2fastq(
+        input_file1,
+        input_file2,
+        output_file1,
+        output_file2
+        ):
+    return check_file_exists_for_input_output(
+                'bam2fastq',
+                input_file1,
+                input_file2,
+                output_file1,
+                output_file2)
+
+def check_file_exists_for_cutadapt(
+        input_file1,
+        input_file2,
+        output_file1,
+        output_file2
+        ):
+    return check_file_exists_for_input_output(
+                'cutadapt',
+                input_file1,
+                input_file2,
+                output_file1,
+                output_file2)
+
 def check_file_exists_for_split_fastq(
     input_file1,
     input_file2,
@@ -176,8 +203,8 @@ def check_file_exists_for_input_output(
 def check_file_exists_for_fisher_mutation_call(
         control_file_list,
         disease_file_list,
-        output_file,
-        control_output_dir
+        control_output_dir,
+        output_file
     ):
     """
     Check if output file exists for fisher_mutation_call
@@ -191,7 +218,7 @@ def check_file_exists_for_fisher_mutation_call(
                             inputfile = control_file_list[ 0 ] )
 
     else:
-        in_time = os.path.getmtime( control_file_list[ 0 ] )
+        in_time = os.path.getmtime( disease_file_list[ 0 ] )
         out_time = os.path.getmtime( output_file )
         if in_time > out_time:
             return True, "{output} is older than {input}.".format( output = output_file, input = control_file_list[ 0 ] )
@@ -226,6 +253,56 @@ def check_file_exists_for_bam_stats(
         else:
             return False, "File {output} exits for {input}.".format( output = out_sum_file, input = input_file1 )
 
+def check_file_exists_for_itd_detection(
+        control_file_list,
+        tumor_file_list,
+        ctrl_output_dir_list,
+        tumor_output_dir_list
+    ):
+    """
+    """
+
+    in_file_list = control_file_list if control_file_list != None else [] + \
+                tumor_file_list if tumor_file_list != None else []
+    out_dir_list = ctrl_output_dir_list if ctrl_output_dir_list != None else [] + \
+                tumor_output_dir_list if tumor_output_dir_list != None else []
+    exit_status = get_status_of_this_process( 'itd_detection', out_dir_list[ 0 ] )
+
+    if exit_status != 0 or not os.path.exists( out_dir_list[ 0 ] ):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = out_dir_list[ 0 ],
+                            inputfile = in_file_list[ 0 ])
+
+    else:
+        in_time = os.path.getmtime( in_file_list[ 0 ] )
+        out_time = os.path.getmtime( out_dir_list[ 0 ] )
+        if in_time > out_time:
+            return True, "{output} is older than {input}.".format( output = out_dir_list[ 0 ],
+                                                                   input = in_file_list[ 0 ] )
+        else:
+            return False, "File {output} exits for {input}.".format( output = out_dir_list[ 0 ],
+                                                                     input = in_file_list[ 0 ] )
+
+def check_file_exists_for_annotation(
+        input_file,
+        output_file
+    ):
+    """
+    """
+    exit_status = get_status_of_this_process( 'annotation', output_file )
+    output_tmp = output_file + '.genome_summary.csv' 
+    if exit_status != 0 or not os.path.exists( output_tmp ):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output_tmp,
+                            inputfile = input_file )
+
+    else:
+        in_time = os.path.getmtime( input_file )
+        out_time = os.path.getmtime( output_tmp )
+        if in_time > out_time:
+            return True, "{output} is older than {input}.".format( output = output_tmp, input = input_file )
+        else:
+            return False, "File {output} exits for {input}.".format( output = output_tmp, input = input_file )
 
 #####################################################################
 #
@@ -241,7 +318,7 @@ def generate_params_for_bam2fastq():
 
     """
 
-    Sample.make_param( 'bam2fastq', '.fastq', 'fastq', 1, 2 )
+    Sample.make_param( 'bam2fastq', None, '.fastq', 'fastq', 1, 2 )
     for param in Sample.param( 'bam2fastq' ):
         yield param
 
@@ -255,7 +332,7 @@ def generate_params_for_split_fastq():
 
     """
     
-    Sample.make_param( 'split_fastq', '.fastq', 'fastq', 2, 2 )
+    Sample.make_param( 'split_fastq', None, '.fastq', 'fastq', 2, 2 )
     for param in Sample.param( 'split_fastq' ):
         yield param
 
@@ -268,7 +345,7 @@ def generate_params_for_cutadapt():
 
     """
     
-    Sample.make_param( 'cutadapt', '_cutadapt.fastq', 'fastq', 2, 2 )
+    Sample.make_param( 'cutadapt', None, '_cutadapt.fastq', 'fastq', 2, 2 )
     for param in Sample.param( 'cutadapt' ):
         yield param
 
@@ -283,7 +360,7 @@ def generate_params_for_bwa_mem():
 
     """
 
-    Sample.make_param( 'bwa_mem', '.bam', 'bam', 2, 1 ) 
+    Sample.make_param( 'bwa_mem', None, '.bam', 'bam', 2, 1 ) 
     for param in Sample.param( 'bwa_mem' ):
         yield param
 
@@ -296,7 +373,7 @@ def generate_params_for_merge_bam():
 
     """
     
-    Sample.make_param( 'merge_bam', '.bam', 'bam', 1, 1 )
+    Sample.make_param( 'merge_bam', None, '.bam', 'bam', 1, 1 )
     input_file_list = {}
     for param in Sample.param( 'merge_bam' ):
         dir_name = os.path.dirname( param[ 0 ] )
@@ -319,7 +396,7 @@ def generate_params_for_markduplicates ():
 
     """
     
-    Sample.make_param( 'markduplicates', '.bam', 'bam', 1, 1 )
+    Sample.make_param( 'markduplicates', None, '.bam', 'bam', 1, 1 )
     input_file_list = {}
     for param in Sample.param( 'markduplicates' ):
         dir_name = os.path.dirname( param[ 0 ] )
@@ -340,7 +417,7 @@ def generate_params_for_bam_stats ():
 
     """
     
-    Sample.make_param( 'bam_stats', '.txt', 'summary', 1, 1 )
+    Sample.make_param( 'bam_stats', None, '.txt', 'summary', 1, 1 )
     input_file_list = {}
     for param in Sample.param( 'bam_stats' ):
         dir_name = os.path.dirname( param[ 0 ] )
@@ -403,7 +480,7 @@ def generate_params_for_fisher_mutation_call():
 
     """
     
-    Sample.make_param( 'fisher_mutation_call', '.txt', 'mutation', 2, 1 )
+    Sample.make_param( 'fisher_mutation_call', None, '.txt', 'mutation', 2, 1 )
 
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
 
@@ -425,9 +502,12 @@ def generate_params_for_fisher_mutation_call():
                 #
                 input_file_list[ dir_name ] = input_bam
                 mutation_dir_name = os.path.dirname( param[ 2 ] )
-                return_list = [ input_bam,
-                                'None',
-                                mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt' ]
+                return_list = [
+                                [ None ],
+                                [ input_bam ],
+                                None ,
+                                mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                              ]
                 yield return_list
 
     #
@@ -508,8 +588,141 @@ def generate_params_for_fisher_mutation_call():
                     #
                     yield( normal_dir_list,
                            disease_merge_list,
-                           disease_outfile,
-                           os.path.split( normal_outfile )[ 0 ] )
+                           os.path.split( normal_outfile )[ 0 ],
+                           disease_outfile )
+
+def generate_params_for_itd_detection( ):
+    """
+        Generate parameters for itd_detection
+
+    """
+    
+    param_return = False
+    task_name_list = ( 'markduplicates', 'merge_bam', 'bwa_mem' )
+    id = 0
+    while( not param_return ):
+        param_return = Sample.make_param( 'itd_detection', task_name_list[ id ], '.txt', 'itd', 1, 1 )
+        id += 1
+
+    ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
+
+    #
+    # No comparison. Run Genomon-ITDetector on each sample.
+    #
+    if ctrl_dis_pairs == None:
+        #
+        # Make parameters
+        #
+        input_file_list = []
+        output_dir_list = []
+        for param in Sample.param( 'itd_detection' ):
+            input_file_list.append( make_bam_filename_for_markdup_result( param[ 0 ] ) )
+            output_dir_list.append( os.path.split( param[ 2 ] )[ 0 ] + '/'+ Geno.job.get_job( 'sample_name' ) )
+
+        return_list = [
+                        None,
+                        input_file_list,
+                        None,
+                        output_dir_list,
+                      ]
+        yield return_list
+
+    #
+    # Comparison. Run Genomon-ITDetector exact test on tumor, nomral pair.
+    #
+    else:
+        #
+        # Get the list of subdirs
+        #
+        list_id = 0
+        data_dict = {}
+        param_list = Sample.param( 'itd_detection' )
+        for infile1, infile2, outdir1, outdir2 in param_list:
+            tmp_dir = os.path.basename( os.path.split( infile2 )[0] )
+            data_dict[ tmp_dir ] = list_id
+            list_id += 1
+
+        #   
+        # Create parameters for comparison
+        #
+        for data_type in ctrl_dis_pairs.keys():
+            #
+            # Normal only and Disease only cases are not going to be processed.
+            #
+            if data_type != 'Normal' and data_type != 'Disease':
+                #
+                # Make list
+                #
+
+                #
+                # Normal
+                # Always merge in the following case.
+                # "s_B2Na, s_B2Nb":     s_B2T
+                #
+                # Does not have to merge.
+                # s_B2Na:   s_B2T
+                # s_B2Nb:   s_B2T
+                #
+                normal_list = data_type.replace( ' ', '' ).split( ',' )
+                normal_dir_list = []
+                normal_outfile = None
+                for normal_sample in normal_list:
+                    if normal_sample in data_dict.keys():
+                        normal_input = make_bam_filename_for_markdup_result(
+                                param_list[ data_dict[ normal_sample ] ][ 0 ] )
+                        normal_dir_list.append( normal_input )
+                        if normal_outfile == None:
+                            mutation_dir_name = os.path.dirname( param_list[ data_dict[ normal_sample ] ][ 2 ] )
+                            normal_outfile = mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+
+                # Disease
+                # s_B2N:    - "s_B2Ta, s_B2Tb"
+                #           - s_B2Tc
+                if isinstance( ctrl_dis_pairs[ data_type ], list ):
+                    disease_list = ctrl_dis_pairs[ data_type ]
+                else:
+                    disease_list = [ ctrl_dis_pairs[ data_type ] ]
+
+                for disease_data in disease_list:
+                    disease_merge_list = []
+                    disease_outfile = None
+                    if -1 != disease_data.find( ',' ):
+                        for disease_sample in disease_data.replace( ' ', '' ).split( ',' ):
+                            disease_input = make_bam_filename_for_markdup_result( 
+                                    param_list[ data_dict[ disease_sample ] ][ 0 ] )
+                            disease_merge_list.append( disease_input )
+                            if disease_outfile == None:
+                                mutation_dir_name = os.path.dirname( param_list[ data_dict[ disease_sample ] ][ 3 ] )
+                                disease_outfile = mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                    else:
+                        disease_input = make_bam_filename_for_markdup_result( 
+                                param_list[ data_dict[ disease_data ] ][ 0 ] )
+                        disease_merge_list.append( disease_input )
+                        mutation_dir_name = os.path.dirname( param_list[ data_dict[ disease_data ] ][ 3 ] )
+                        disease_outfile =  mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                    #
+                    # Return parameters
+                    #
+                    yield( normal_dir_list,
+                           disease_merge_list,
+                           os.path.split( normal_outfile )[ 0 ],
+                           disease_outfile )
+
+def generate_params_for_annotation():
+    """
+        Generate parameters for ANNOVAR annotation
+
+    """
+
+    param_return = False
+    if Sample.make_param( 'annotation', 'fisher_mutation_call', '', 'annotation', 1, 1 ):
+        for param in Sample.param( 'annotation' ):
+            mutation_dir_name = os.path.dirname( param[ 0 ] )
+            annotation_dir_name = os.path.dirname( param[ 3 ] )
+            yield ( mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt',
+                    annotation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) ) 
+
+
 
 #
 # Extract compressed file
@@ -1314,8 +1527,8 @@ def bam_stats(
 def fisher_mutation_call(
     control_input_file_list,
     disease_input_file_list,
-    disease_output_file,
     control_output_dir,
+    disease_output_file,
     ):
     """
        Mutaion calling
@@ -1334,81 +1547,94 @@ def fisher_mutation_call(
         #
         # Make shell script
         #
-        env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
-                                    libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
+        if control_output_dir != None:
+            #
+            # Fisher
+            #
+            env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
+                                        libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
 
-        control_merge_bam_flag = ( len( control_input_file_list ) > 1 )
-        disease_merge_bam_flag = ( len( disease_input_file_list ) > 1 )
+            control_merge_bam_flag = ( len( control_input_file_list ) > 1 )
+            disease_merge_bam_flag = ( len( disease_input_file_list ) > 1 )
 
-        control_bam_file_list = ''
-        if Geno.job.get_job( 'use_biobambam' ) and control_merge_bam_flag:
-            biobambam_format = "I="
-        else:
-            biobambam_format = ""
-        for input_file in control_input_file_list:
-            control_bam_file_list +=  "{biobambam_format}{input_file} ".format(
-                                        input_file = input_file,
-                                        biobambam_format = biobambam_format )
+            control_bam_file_list = ''
+            if Geno.job.get_job( 'use_biobambam' ) and control_merge_bam_flag:
+                biobambam_format = "I="
+            else:
+                biobambam_format = ""
 
-        disease_bam_file_list = ''
-        if Geno.job.get_job( 'use_biobambam' ) and disease_merge_bam_flag:
-            biobambam_format = "I="
-        else:
-            biobambam_format = ""
-        for input_file in disease_input_file_list:
-            disease_bam_file_list +=  "{biobambam_format}{input_file} ".format(
-                                        input_file = input_file,
-                                        biobambam_format = biobambam_format )
+            for input_file in control_input_file_list:
+                control_bam_file_list +=  "{biobambam_format}{input_file} ".format(
+                                            input_file = input_file,
+                                            biobambam_format = biobambam_format )
 
-        disease_output_dir = os.path.split( disease_output_file )[ 0 ]
-        bam_file_list_array = "INPUT_FILE=(\n"
-        output_dir_array    = "OUT_FILE=(\n"
-        merge_bam_flag      = "FLAG=(\n"
+            disease_bam_file_list = ''
+            if Geno.job.get_job( 'use_biobambam' ) and disease_merge_bam_flag:
+                biobambam_format = "I="
+            else:
+                biobambam_format = ""
 
-        bam_file_list_array += " [1]=\"{file_list}\"\n".format( file_list = control_bam_file_list )
-        output_dir_array    += " [1]=\"{output_dir}\"\n".format( output_dir = control_output_dir )
-        merge_bam_flag      += " [1]=\"{flag}\"\n".format( flag = control_merge_bam_flag )
+            for input_file in disease_input_file_list:
+                disease_bam_file_list +=  "{biobambam_format}{input_file} ".format(
+                                            input_file = input_file,
+                                            biobambam_format = biobambam_format )
 
-        bam_file_list_array += " [2]=\"{file_list}\"\n".format( file_list = disease_bam_file_list )
-        output_dir_array    += " [2]=\"{output_dir}\"\n".format(  output_dir = disease_output_dir )
-        merge_bam_flag      += " [2]=\"{flag}\"\n".format(  flag = disease_merge_bam_flag )
+            disease_output_dir = os.path.split( disease_output_file )[ 0 ]
+            bam_file_list_array = "INPUT_FILE=(\n"
+            output_dir_array    = "OUT_FILE=(\n"
+            merge_bam_flag      = "FLAG=(\n"
 
-        bam_file_list_array += ")\n"
-        output_dir_array    += ")\n"
-        merge_bam_flag      += ")\n"
+            bam_file_list_array += " [1]=\"{file_list}\"\n".format( file_list = control_bam_file_list )
+            output_dir_array    += " [1]=\"{output_dir}\"\n".format( output_dir = control_output_dir )
+            merge_bam_flag      += " [1]=\"{flag}\"\n".format( flag = control_merge_bam_flag )
 
-        #
-        # Make shell script
-        #
-        shell_script_full_path = make_script_file_name( function_name + '_merge_bam', Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.fisher_merge_bams.format(
-                                        log = Geno.dir[ 'log' ],
-                                        env_variables = env_variable_str,
-                                        use_biobambam = Geno.job.get_job( 'use_biobambam' ),
-                                        array_data = bam_file_list_array + output_dir_array + merge_bam_flag,
-                                        input_bam_files = "${INPUT_FILE[$SGE_TASK_ID]}",
-                                        merge_bam_flag = "${FLAG[$SGE_TASK_ID]}",
-                                        merged_bam_file = '${OUT_FILE[$SGE_TASK_ID]}/merged_accepted_hits.bam',
-                                        out_dir = '${OUT_FILE[$SGE_TASK_ID]}',
-                                        biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
-                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' )
+            bam_file_list_array += " [2]=\"{file_list}\"\n".format( file_list = disease_bam_file_list )
+            output_dir_array    += " [2]=\"{output_dir}\"\n".format(  output_dir = disease_output_dir )
+            merge_bam_flag      += " [2]=\"{flag}\"\n".format(  flag = disease_merge_bam_flag )
+
+            bam_file_list_array += ")\n"
+            output_dir_array    += ")\n"
+            merge_bam_flag      += ")\n"
+
+            #
+            # Make shell script
+            #
+            shell_script_full_path = make_script_file_name( function_name + '_merge_bam', Geno )
+            shell_script_file = open( shell_script_full_path, 'w' )
+            shell_script_file.write( wgs_res.fisher_merge_bams.format(
+                                            log = Geno.dir[ 'log' ],
+                                            env_variables = env_variable_str,
+                                            use_biobambam = Geno.job.get_job( 'use_biobambam' ),
+                                            array_data = bam_file_list_array + output_dir_array + merge_bam_flag,
+                                            input_bam_files = "${INPUT_FILE[$SGE_TASK_ID]}",
+                                            merge_bam_flag = "${FLAG[$SGE_TASK_ID]}",
+                                            merged_bam_file = '${{OUT_FILE[$SGE_TASK_ID]}}/{sample_name}.bam'.format(
+                                                                sample_name = Geno.job.get_job( 'sample_name' ) ),
+                                            out_dir = '${OUT_FILE[$SGE_TASK_ID]}',
+                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
+                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' )
+                                        )
                                     )
-                                )
 
-        shell_script_file.close()
+            shell_script_file.close()
 
-        runtask_return_code = Geno.RT.run_arrayjob(
-                            shell_script_full_path,
-                            Geno.job.get_job( 'cmd_options' )[ function_name ],
-                            id_start = 1,
-                            id_end = 2 )
+            runtask_return_code = Geno.RT.run_arrayjob(
+                                shell_script_full_path,
+                                Geno.job.get_job( 'cmd_options' )[ function_name ],
+                                id_start = 1,
+                                id_end = 2 )
 
-        if runtask_return_code != 0:
-            log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            if runtask_return_code != 0:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
+                raise
 
-
+            control_input_bam = control_output_dir + '/{sample_name}.bam'.format(
+                                    sample_name = Geno.job.get_job( 'sample_name' ) )
+            disease_input_bam = disease_output_dir + '/{sample_name}.bam'.format(
+                                    sample_name = Geno.job.get_job( 'sample_name' ) )
+        else:
+            control_input_bam = 'None'
+            disease_input_bam = disease_input_file_list[ 0 ]
         #
         # fisher mutation call
         #
@@ -1421,8 +1647,8 @@ def fisher_mutation_call(
         shell_script_file.write( wgs_res.fisher_mutation_call.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
-                                        control_input_bam = control_output_dir + '/merged_accepted_hits.bam',
-                                        disease_input_bam = disease_output_dir + '/merged_accepted_hits.bam',
+                                        control_input_bam = control_input_bam,
+                                        disease_input_bam = disease_input_bam,
                                         output_txt = disease_output_file,
                                         max_indel = Geno.job.get_param( 'fisher_mutation_call', 'max_indel' ),
                                         max_distance = Geno.job.get_param( 'fisher_mutation_call', 'max_distance' ),
@@ -1433,8 +1659,7 @@ def fisher_mutation_call(
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                         python = Geno.conf.get( 'SOFTWARE', 'python' ),
                                         script_dir = Geno.dir[ 'script' ]
-                                    )
-                                )
+                                 ) )
         shell_script_file.close()
 
         #
@@ -1499,31 +1724,164 @@ def fisher_mutation_call(
 
     return return_value
 
-def check_file_exists_for_bam2fastq(
-        input_file1,
-        input_file2,
-        output_file1,
-        output_file2
-        ):
-    return check_file_exists_for_input_output(
-                'bam2fastq',
-                input_file1,
-                input_file2,
-                output_file1,
-                output_file2)
+#
+# Stage 9: itd_detection
+#
+def itd_detection(
+    control_file_list,
+    tumor_file_list,
+    ctrl_output_dir_list,
+    tumor_output_dir_list,
+    ):
+    """
+        Genomon-ITDetector
 
-def check_file_exists_for_cutadapt(
-        input_file1,
-        input_file2,
-        output_file1,
-        output_file2
-        ):
-    return check_file_exists_for_input_output(
-                'cutadapt',
-                input_file1,
-                input_file2,
-                output_file1,
-                output_file2)
+    """
+
+    try:
+        function_name = whoami()
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
+
+        #
+        # Make data for array job 
+        #
+        use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
+
+        in_file_list = control_file_list if control_file_list != None else [] + \
+                    tumor_file_list if tumor_file_list != None else []
+        out_dir_list = ctrl_output_dir_list if ctrl_output_dir_list != None else [] + \
+                    tumor_output_dir_list if tumor_output_dir_list != None else []
+
+        input_files = "FILE1=(\n"
+        output_files = "FILE2=(\n"
+        name_list = "NAME=(\n"
+        id = 0
+        for input_file, output_file in zip( in_file_list, out_dir_list ):
+            id += 1
+            name = os.path.basename( input_file )[ :-4 ]
+            input_files += "[{id}]=\"{file}\"\n".format( id = id, file = input_file )
+            output_files += "[{id}]=\"{file}\"\n".format( id = id, file = output_file )
+            name_list += "[{id}]=\"{name}\"\n".format( id = id, name = name )
+        input_files += ")\n"
+        output_files += ")\n"
+        name_list += ")\n"
+        
+        #
+        # Make shell script for array job
+        #
+        shell_script_full_path = make_script_file_name( function_name, Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.itd_detection.format(
+                                        log = Geno.dir[ 'log' ],
+                                        array = input_files + output_files + name_list,
+                                        bam_file = "${FILE1[$SGE_TASK_ID]}",
+                                        output_file = "${FILE2[$SGE_TASK_ID]}",
+                                        name = "${NAME[$SGE_TASK_ID]}",
+                                        itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ) ) )
+        shell_script_file.close()
+
+        #
+        # Run
+        #
+        runtask_return_code = Geno.RT.run_arrayjob(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ function_name ],
+                            id_start = 1,
+                            id_end = id )
+
+        if runtask_return_code != 0:
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+            
+        save_status_of_this_process( function_name, out_dir_list[ 0 ], runtask_return_code )
+
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
+        return_value = False
+
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+
+    except:
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        return_value = False
+
+    else:
+        return_value = True
+
+    return return_value
+
+#
+# Stage 10: annotation
+#
+def annotation(
+    input_file,
+    output_file,
+    ):
+    """
+
+    """
+
+    try:
+        function_name = whoami()
+        with log_mutex:
+            log.info( "#{function}".format( function = function_name ) )
+
+        #
+        # Make data for array job 
+        #
+        shell_script_full_path = make_script_file_name( function_name, Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.annotation.format(
+                                        log = Geno.dir[ 'log' ],
+                                        input_file = input_file,
+                                        output_prefix = output_file,
+                                        use_table_annovar = Geno.job.get_param( 'annotation', 'use_table_annovar' ),
+                                        summarize_annovar_params = Geno.job.get_param( 'annotation', 'summarize_annovar_params' ),
+                                        table_annovar_params = Geno.job.get_param( 'annotation', 'table_annovar_params' ),
+                                        annovar = Geno.conf.get( 'SOFTWARE', 'annovar' ),
+                                        ) )
+        shell_script_file.close()
+
+        #
+        # Run
+        #
+        runtask_return_code = Geno.RT.runtask(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
+
+        if runtask_return_code != 0:
+            with log_mutex:
+                log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+
+        save_status_of_this_process( function_name, output_file, runtask_return_code )
+
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        return_value = False
+
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+
+    except:
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        return_value = False
+
+    else:
+        return_value = True
+
+    return return_value
 
 #####################################################################
 #
@@ -1648,7 +2006,7 @@ def stage_6( input_file_list, output_file ):
 @active_if ( 'bam_stats' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_bam_stats )
 @check_if_uptodate( check_file_exists_for_bam_stats )
-def stage_7(  input_file1, input_file2, output_file ):
+def stage_7( input_file1, input_file2, output_file ):
     return_value = bam_stats(  input_file1, input_file2, output_file )
     if not return_value:
         raise
@@ -1660,21 +2018,52 @@ def stage_7(  input_file1, input_file2, output_file ):
 #   in:     bam
 #   out:    txt
 #
-@follows( stage_7 )
+@follows( stage_6, stage_7 )
 @active_if ( 'fisher_mutation_call' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @files( generate_params_for_fisher_mutation_call )
 @check_if_uptodate( check_file_exists_for_fisher_mutation_call )
-def stage_8(  control_file_list, disease_file_list, output_file, control_outrir ):
-    return_value = fisher_mutation_call(  control_file_list, disease_file_list, output_file, control_outrir )
+def stage_8( control_file_list, disease_file_list, control_outdir, output_file ):
+    return_value = fisher_mutation_call(  control_file_list, disease_file_list, control_outdir, output_file )
     if not return_value:
         raise
 
+#####################################################################
+#
+#   STAGE 9 itd_detection
+#
+#   in:     bam
+#   out:    txt
+#
+@follows( stage_8 )
+@active_if ( 'itd_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_itd_detection )
+@check_if_uptodate( check_file_exists_for_itd_detection )
+def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_output_dir_list ):
+    return_value = itd_detection( control_file_list, tumor_file_list, control_output_dir_list, tumor_output_dir_list )
+    if not return_value:
+        raise
+
+#####################################################################
+#
+#   STAGE 10 annotation
+#
+#   in:     txt
+#   out:    xls or vcf
+#
+@follows( stage_9 )
+@active_if ( 'annotation' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_annotation )
+@check_if_uptodate( check_file_exists_for_annotation )
+def stage_10(  input_file, output_file ):
+    return_value = annotation(  input_file, output_file )
+    if not return_value:
+        raise
 
 #####################################################################
 #
 #   LAST STAGE 
 #
-@follows( stage_8 )
+@follows( stage_10 )
 def last_function():
     with log_mutex:
         log.info( "Genomon pipline has finished successflly!" )

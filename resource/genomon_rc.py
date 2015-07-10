@@ -29,7 +29,7 @@ project_directory:
         sample_name:
             - all_summary
             - config
-            - script
+            - script:
             - log
             - out:
                 - fastq
@@ -43,6 +43,7 @@ project_directory:
                     - cummeRbund
                     - cnv
                     - sv
+                    - itd
                     - star
                     - star_fusion
 """
@@ -60,6 +61,7 @@ end_dir_list = ( 'config',
                  'cnv',
                  'fusion',
                  'sv',
+                 'itd',
                  'star',
                  'star_fusion',
                  'summary',
@@ -73,6 +75,7 @@ subdir_list = ( 'fastq',
                 'cnv',
                 'fusion',
                 'sv',
+                'itd',
                 'cufflinks',
                 'cuffdiff',
                 'cummeRbund',
@@ -83,6 +86,7 @@ subdir_list = ( 'fastq',
 
 data_ext_list = { 'fastq':          'fastq',
                   'bam':            'bam',
+                  'itd':            'txt',
                   'annotation':     'txt',
                   'summary':        'txt',
                   'all_summary':    'txt'
@@ -128,8 +132,24 @@ job_config_default ={
           'min_depth': 9 },
     'star_genome': 
         { 'additional_params': '--sjdbOverhang 99' },
+    'star': 
+        { 'additional_params': '--outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
+                                --outReadsUnmapped None --chimSegmentMin 15 --chimJunctionOverhangMin 15 \
+                                --alignMatesGapMax 200000 --alignIntronMax 200000 --outSAMtype BAM SortedByCoordinate' },
+    'star_fusion': 
+        { 'additional_params': ' ' },
+    'tophat2':
+        { 'additional_params': '-p 8'},
+    'cuffdiff':
+        { 'additional_params': '-p 4'},
+    'cufflinks':
+        { 'additional_params': ' '},
+    'itd_detection':
+        { 'additional_params': ' '},
+    'annotattion':
+        { 'additional_params': '--buildver hg19 --verdbsnp 131' },
     'use_biobambam': False,
-    'bam_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown'
+    'bam_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown',
 }
 
 #

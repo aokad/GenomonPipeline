@@ -701,6 +701,7 @@ then
                --min_depth {min_depth}
 
 fi
+#rm $CONTROL_FILTERED_BAM
 
 if [ $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
 then
@@ -717,6 +718,7 @@ then
                --min_depth {min_depth}
 
 fi
+#rm $DISEASE_FILTERED_BAM
 
 """
 
@@ -749,10 +751,75 @@ do
     if [ -f $INTERVAL_OUT ]
     then
         tail -n+2 $INTERVAL_OUT >> {output_txt}
+        #rm $INTERVAL_OUT
     fi
 done
 
 """
 
 interval_num = 274
+
+itd_detection = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+echo SGE_TASK_ID:$SGE_TASK_ID
+echo SGE_TASK_FIRST:$SGE_TASK_FIRST
+echo SGE_TASK_LAST:$SGE_TASK_LAST
+echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
+
+{array}
+
+bash {itd_detector}/detectITD.sh \
+        {bam_file} \
+        {output_file} \
+        {name}
+
+"""
+
+annotation = \
+"""
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+if [ "{use_table_annovar}" = "True" ]
+then
+    {annovar}/table_annovar.pl \
+        {input_file} \
+        --outfile {output_prefix} \
+        {annovar}/humandb \
+        {table_annovar_params}
+else
+
+    {annovar}/summarize_annovar.pl \
+        {summarize_annovar_params} \
+        {input_file} \
+        --outfile {output_prefix} \
+        {annovar}/humandb
+fi
+
+"""
 

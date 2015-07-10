@@ -58,6 +58,7 @@ class Sample():
     def make_param(
             self,
             task_name,
+            from_task_name,
             out_ext,
             out_type,
             num_in,
@@ -77,14 +78,23 @@ class Sample():
         if 0 == self.__current_sample_id:
             self.__param.append( [] )
             self.__sample_id_list.append( 'start' )
-            self.get_starting_files()
+            if not self.get_starting_files():
+                return False
 
         if not ( task_name in self.__sample_id_list ):
+            if from_task_name != None:
+                param_list = self.param( from_task_name )
+            else:
+                param_list = self.current()
+
+            if param_list == None:
+                return False
+
             self.__current_sample_id += 1
             self.__sample_id_list.append( task_name )
             self.__param.append( [] )
 
-            for infile1, infile2, outfile1, outfile2 in self.previous():
+            for infile1, infile2, outfile1, outfile2 in param_list:
                 file_ext = Geno.job.get_job( 'file_ext' )
                 if self.__current_sample_id == 1 and file_ext:
                     file_type = Geno.job.get_job( 'input_file_type' )
@@ -130,6 +140,9 @@ class Sample():
 
                 return_list = [ outfile1, outfile2, real_outfile1, real_outfile2 ]
                 self.__param[ self.__current_sample_id ].append( return_list )
+
+
+        return True
 
     def get_starting_files( self ):
         """
@@ -196,7 +209,9 @@ class Sample():
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             log.error( "{function} failed.".format( function = whoami() ) )
             log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            return False
 
+        return True
 
     def filename_list( self, pair_id = None ):
         input_type_list = []
