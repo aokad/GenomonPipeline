@@ -252,6 +252,13 @@ def set_env_variables():
     return return_value
 
 ########################################
+class InputFileError( Exception ):
+    def __init__( self, value ):
+        self.value = value
+    def __str__( self ):
+        return repr( self.value )
+
+########################################
 def cleanup_intermediates():
     """
     Clean up intermediate files
@@ -310,9 +317,14 @@ def main():
         # Parse system and job config file
         #
         Geno.conf = ge_cfg( config_file = Geno.options.config_file, log = log )
+        if not Geno.conf.check_file( Geno.dir[ 'genomon' ] + '/db/job_file_words.yaml' ):
+            raise InputFileError( 'The system config file contains invalid settings.' )
+
         Geno.job = ge_job( job_file = Geno.options.job_file,
                            param_file = Geno.options.param_file,
                            log = log )
+        if not Geno.job.check_file( Geno.dir[ 'genomon' ] + '/db/job_file_words.yaml' ):
+            raise InputFileError( 'The job YAML file contains invalid settings.' )
 
         #
         # Prepare directory tree for pipeline to run.
@@ -422,6 +434,9 @@ def main():
 #        cmdline.run( Geno.options )
         #
         #######################################################################
+
+    except InputFileError as error:
+        log.error( "{name}: Input file error: {error}.".format( name = whoami(), error = error ) )
 
     except IOError as (errno, strerror):
         log.error( "{0}: I/O error({1}): {2}".format( whoami(), errno, strerror) )
