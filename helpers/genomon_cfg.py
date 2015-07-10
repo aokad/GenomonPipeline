@@ -1,7 +1,10 @@
 #  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
 #  @since 2015
-
+import sys
+import os
 import ConfigParser
+import yaml
+import job_check
 
 """
     Genomon system configuration file parser
@@ -32,11 +35,13 @@ class genomon_config( object ):
         except IOError as (errno, stderror ):
             self.__log.error( "genomon_config.open_cfg: IOError: error number: {num}, std_error: {stderr}".format(
                         num = errno, stderr = stderror ) )
+            raise
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             self.__log.error( "genomon_config.open_cfg: Unexpected error" )
             self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
 
     def get( self, section, item ):
@@ -51,4 +56,24 @@ class genomon_config( object ):
         else:
             self.__log.error( "genomon_config.get: configuration file is not loaded properly." )
             return None
+
+    def check_file( self, keyword_file ):
+        try:
+            f = open( keyword_file )
+            f_yaml = yaml.load( f )
+            if job_check.System_config_file_check( self.__conf, f_yaml ):
+                return_value = True
+            else:
+                return_value = False
+
+            f.close()
+
+            return return_value
+
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            self.__log.error( "genomon_job.open_job: unexpected error:", sys.exc_info()[0] )
+            self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 

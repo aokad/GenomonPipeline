@@ -1,9 +1,12 @@
 #  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
 #  @since 2015
-
+import sys
+import os
 import yaml
 from __main__ import *
 from resource.genomon_rc import job_config_default as default_values
+import job_check
+
 
 """
     Genomon job configuration file parse
@@ -41,11 +44,14 @@ class genomon_job:
         except IOError as (errno, stderror ):
             self.__log.error( "genomon_job.open_job: IOError: error number: {num}, std_error: {stderr}".format(
                         num = errno, stderr = stderror ) )
+            raise
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             self.__log.error( "genomon_job.open_job: unexpected error:", sys.exc_info()[0] )
             self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
     def open_job( self, job_file = None ):
         if job_file != None:
@@ -96,4 +102,25 @@ class genomon_job:
         else:
             self.__log.error( "genomon_job.get: job file is not loaded properly." )
             return None
+
+    def check_file( self, keyword_file ):
+        try:
+            f = open( keyword_file )
+            f_yaml = yaml.load( f )
+            if ( job_check.Job_file_check( self.__job, f_yaml ) and
+                 job_check.Param_file_check( self.__job, self.__param, f_yaml ) ):
+                return_value = True
+            else:
+                return_value = False
+
+            f.close()
+
+            return return_value
+
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            self.__log.error( "genomon_job.open_job: unexpected error:", sys.exc_info()[0] )
+            self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
