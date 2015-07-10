@@ -22,9 +22,9 @@ set -xv
 
 PATH=$PATH:{bowtie_path}
 
-{tophat2} -p 8 \
-          -o {output_dir} \
+{tophat2} -o {output_dir} \
           -G {ref_gtf} \
+         {additional_params} \
          {bowtie2_database} \
          {input_fastq}          
 """
@@ -50,6 +50,7 @@ set -xv
 {cufflinks} -p 8 \
           -o {output_dir} \
           -G {ref_gtf} \
+         {additional_params} \
           {bam_file}
 """
 
@@ -133,11 +134,11 @@ set -xv
 
 {env_variables}
 
-{cuffdiff} -p 4\
-         {ref_gtf} \
-         -o {output_dir} \
-         -L {data_labels} \
-         {merged_control_bam_file} {merged_disease_bam_file}
+{cuffdiff} {ref_gtf} \
+           {additional_params} \
+           -o {output_dir} \
+           -L {data_labels} \
+           {merged_control_bam_file} {merged_disease_bam_file}
 
 """
 

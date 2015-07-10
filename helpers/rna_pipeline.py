@@ -103,19 +103,19 @@ def check_file_exists_for_cummeRbund( input_dir, output_dir ):
 #
 def generate_params_for_tophat2( ):
     global Sample
-    Sample.make_param( 'tophat2', '', 'bam', 1, 1 )
+    Sample.make_param( 'tophat2', None, '', 'bam', 1, 1 )
     for infile1, infile2, outfile1, outfil2 in Sample.param( 'tophat2' ):
         yield ( infile1, outfile1 )
 
 def generate_params_for_cufflinks( ):
     global Sample
-    Sample.make_param( 'cufflinks', '', 'cufflinks', 1, 1 )
+    Sample.make_param( 'cufflinks', None, '', 'cufflinks', 1, 1 )
     for infile1, infile2, outdir1, outdir2 in Sample.param( 'cufflinks' ):
         yield ( infile1, outdir1 )
 
 def generate_params_for_cuffdiff( ):
     global Sample
-    Sample.make_param( 'cuffdiff', '', 'cuffdiff', 1, 1 )
+    Sample.make_param( 'cuffdiff', None, '', 'cuffdiff', 1, 1 )
 
     #
     # Make sure that 'control_disease_pairs' is defined,
@@ -161,7 +161,7 @@ def generate_params_for_cuffdiff( ):
 
 def generate_params_for_cummeRbund( ):
     global Sample
-    Sample.make_param( 'cummeRbund', '', 'cummeRbund', 1, 1 )
+    Sample.make_param( 'cummeRbund', None, '', 'cummeRbund', 1, 1 )
 
     #
     # Make sure that 'control_disease_pairs' is defined,
@@ -243,6 +243,7 @@ def tophat2(
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         input_fastq = input_file,
                                         output_dir = output_dir,
+                                        additional_params = Geno.job.get_param( 'tophat2', 'additional_params' ),
                                         ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         bowtie2_database = Geno.conf.get( 'REFERENCE', 'bowtie2_db' ),
                                         bowtie_path = bowtie_path,
@@ -321,6 +322,7 @@ def cufflinks(
                                         log = Geno.dir[ 'log' ],
                                         bam_file = input_file + '/accepted_hits.bam',
                                         output_dir = output_dir,
+                                        additional_params = Geno.job.get_param( 'cufflinks', 'additional_params' ),
                                         ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         cufflinks = Geno.conf.get( 'SOFTWARE', 'cufflinks' )
                                     )
@@ -478,6 +480,7 @@ def cuffdiff(
                                         merged_disease_bam_file = disease_output_dir + '/merged_accepted_hits.bam',
                                         output_dir = disease_output_dir,
                                         data_labels = data_labels,
+                                        additional_params = Geno.job.get_param( 'cuffdiff', 'additional_params' ),
                                         ref_gtf = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         cuffdiff = Geno.conf.get( 'SOFTWARE', 'cuffdiff' )
                                     )
