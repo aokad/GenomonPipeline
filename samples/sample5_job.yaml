@@ -7,7 +7,7 @@
 #   analysis_date:  either 'today' or a specific date
 #
 #   project name directory is going to be created at project_root specified below.
-#       {project_root}/{project}/data, results
+#       {project_root}/data, results
 #
 project_root:           ~/tmp
 sample_name:            star_sample

@@ -58,16 +58,6 @@ project_dir_tree:
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
-#   control_subdir
-#   disease_subdir
-#                   if you want to perform mutation call with control and disease samples,
-#                   you can specify control sample in 'control' and tumor sample in 'disease'.
-#                   Wild cards are NOT allowed.
-#
-#                   <example>
-#                   control_subdir: s_B1N
-#                   disease_subdir: s_B2N
-#
 #
 input_file_dir:             /home/w3varann/samples/small
 input_file_type:            paired_fastq
