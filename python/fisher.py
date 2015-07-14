@@ -92,12 +92,6 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth, compare ):
             return None
 
         #
-        # skip if reference is 'N'
-        #
-        if ref_base_U == 'N':
-            return None
-
-        #
         # data_pair IDs
         # POS_CHR = 0
         # POS_COORD = 1
@@ -220,29 +214,11 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth, compare ):
                 #
                 data_pair[ data_id ][ 'proper_read_depth' ] = 0
                 for nuc, qual in zip( read_bases, qual_list ):
-                    if qual in filter_quals:
+                    if not ( qual in filter_quals ):
                         if nuc in 'ATGCatgc':
                             base_num[ nuc ] += 1
                             base_num[ 'total_' + nuc.upper() ] += 1
                             data_pair[ data_id ][ 'proper_read_depth' ] += 1 
-
-                if int( data_pair[ data_id ][ 'proper_read_depth' ] ) <= min_depth:
-                    continue
-
-                ref_num = base_num[ 'total_' + ref_base_U ]
-
-                mis_num = 0
-                for nuc in ( 'A', 'C', 'G', 'T' ):
-                    data_pair[ data_id ][ nuc ] = base_num[ nuc ]
-                    tmp = nuc.lower()
-                    data_pair[ data_id ][ tmp ] = base_num[ tmp ]
-                    tmp = 'total_' + nuc
-                    data_pair[ data_id ][ tmp ] = base_num[ tmp ]
-
-                    if nuc != ref_base_U:
-                        if base_num[ tmp ] > mis_num:
-                            mis_num = base_num[ tmp ]
-                            mis_base_U = nuc
 
                 #
                 # InsDel
@@ -266,24 +242,42 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth, compare ):
                             data_pair[ data_id ][ 'indel' ][ type ][ bases ][ 's_ratio' ] = \
                                 float( indel[ type ][ key ][ '+' ] ) / data_pair[ data_id ][ 'indel' ][ type ][ bases ][ 'both' ]
 
+                #
+                # skip if reference is 'N'
+                #
+                if ref_base_U != 'N' and int( data_pair[ data_id ][ 'proper_read_depth' ] ) > min_depth:
+                    ref_num = base_num[ 'total_' + ref_base_U ]
 
-                #
-                # Calculate ratio
-                #
-                data_pair[ data_id ][ 'mis_rate' ] = mis_num / float( data_pair[ data_id ][ 'proper_read_depth' ] )
-                data_pair[ data_id ][ 'mis_base' ] = mis_base_U
-                if mis_base_U:
-                    data_pair[ data_id ][ 's_ratio' ]  = float( base_num[ mis_base_U ] ) / ( base_num[ mis_base_U ] + base_num[ mis_base_U.lower() ] )
-                else:
-                    data_pair[ data_id ][ 's_ratio' ]  = 0
+                    mis_num = 0
+                    for nuc in ( 'A', 'C', 'G', 'T' ):
+                        data_pair[ data_id ][ nuc ] = base_num[ nuc ]
+                        tmp = nuc.lower()
+                        data_pair[ data_id ][ tmp ] = base_num[ tmp ]
+                        tmp = 'total_' + nuc
+                        data_pair[ data_id ][ tmp ] = base_num[ tmp ]
 
-                #
-                # Beta distribution for SNV
-                #
-                data_pair[ data_id ][ '0.1' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.1 )
-                data_pair[ data_id ][ 'mid' ] = ( mis_num + 1 ) / float( ref_num + mis_num + 2 )
-                data_pair[ data_id ][ '0.9' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.9 )
+                        if nuc != ref_base_U:
+                            if base_num[ tmp ] > mis_num:
+                                mis_num = base_num[ tmp ]
+                                mis_base_U = nuc
 
+
+                    #
+                    # Calculate ratio
+                    #
+                    data_pair[ data_id ][ 'mis_rate' ] = mis_num / float( data_pair[ data_id ][ 'proper_read_depth' ] )
+                    data_pair[ data_id ][ 'mis_base' ] = mis_base_U
+                    if mis_base_U:
+                        data_pair[ data_id ][ 's_ratio' ]  = float( base_num[ mis_base_U ] ) / ( base_num[ mis_base_U ] + base_num[ mis_base_U.lower() ] )
+                    else:
+                        data_pair[ data_id ][ 's_ratio' ]  = 0
+
+                    #
+                    # Beta distribution for SNV
+                    #
+                    data_pair[ data_id ][ '0.1' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.1 )
+                    data_pair[ data_id ][ 'mid' ] = ( mis_num + 1 ) / float( ref_num + mis_num + 2 )
+                    data_pair[ data_id ][ '0.9' ] = scipy.special.btdtri( mis_num + 1, ref_num + 1, 0.9 )
 
         #
         # Fisher
@@ -534,7 +528,7 @@ def Pileup_and_count(
         # Initalize filter quality values
         #
         filter_quals = ''
-        for qual in range( 33 + threshold, 33 + 50 ):
+        for qual in range( 33, 33 + threshold ):
             filter_quals += str( unichr( qual ) )
 
         #
