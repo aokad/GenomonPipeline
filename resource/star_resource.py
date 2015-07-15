@@ -110,7 +110,7 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-{environment_variables}
+export PERL5LIB={environment_variables}
 
 {star_fusion} \
     --chimeric_out_sam {chimeric_sam} \
@@ -120,3 +120,4 @@ set -xv
     {additional_params}
 
 """
+
