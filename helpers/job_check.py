@@ -53,9 +53,6 @@ def Job_file_check( job_yaml, keywords ):
     """
     #
     # Mandatory difinitions
-    # 0x01
-    f_error = 0
-
     for keyword in keywords[ 'mandatory' ]:
         if not ( keyword in job_yaml ):
             print( "Keyword '{keyword}' is not defined.".format(
@@ -71,13 +68,10 @@ def Job_file_check( job_yaml, keywords ):
     # 4) pair_id check: pair_id is defined, if {pair_id} exists in qsub_cmd.
     # 5) file_ext check: check if the file_name contains file_ext.
     # 6) sample_subdir exits in input_file_dir.
-    # 7) control_subdir exits in input_file_dir.
-    # 8) disease_subdir exits in input_file_dir.
     #
 
     #
     # 1), 2)
-    # 0x02
     data_dir_list = ( 'input_file_dir', 'project_root' )
     for dir_tmp in data_dir_list:
         if not glob( os.path.expanduser( job_yaml[ dir_tmp ] ) ):
@@ -86,7 +80,6 @@ def Job_file_check( job_yaml, keywords ):
 
     #
     # 3), 4), 5), 6), 7), 8)
-    # 0x04
     pair_id_list = None
     if 'pair_id' in job_yaml:
         pair_id_list = job_yaml[ 'pair_id' ]
@@ -132,7 +125,7 @@ def Job_file_check( job_yaml, keywords ):
 
         for dir_tmp in dir_list:
             if not glob( dir_tmp ):
-                print( "Specified input files do not exist." )
+                print( "Specified input file ( {file_name} ) do not exist.".format( file_name = dir_tmp ) )
                 return False
 
     #
@@ -163,7 +156,6 @@ def Param_file_check( job_yaml, param_yaml, keyword_file ):
     #
     # Parameters
     #
-    f_error = 0
     for task in job_yaml[ 'tasks' ].keys():
         for task_process in job_yaml[ 'tasks' ][ task ]:
             if task_process in keyword_file[ 'parameters' ].keys():
@@ -181,12 +173,10 @@ def Param_file_check( job_yaml, param_yaml, keyword_file ):
 #
 def System_config_file_check( system_config, keyword_file ):
 
-    num_error = 0
     system_data = keyword_file[ 'system' ]
     for type in system_data.keys():
         for data in system_data[ type ].keys():
             if not system_config.get( type, data ):
-                num_error += 1
                 print( "Keyword '{type}:{data}' is not defined in system configuration file.".format(
                             type = type, data = data ) )
                 return False
