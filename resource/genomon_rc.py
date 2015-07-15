@@ -139,13 +139,16 @@ job_config_default ={
     'star_fusion': 
         { 'additional_params': ' ' },
     'tophat2':
-        { 'additional_params': '-p 8'},
+        { 'additional_params': '-p 8' },
     'cuffdiff':
-        { 'additional_params': '-p 4'},
+        { 'additional_params': '-p 4' },
     'cufflinks':
-        { 'additional_params': ' '},
+        { 'additional_params': ' ' },
     'itd_detection':
-        { 'additional_params': ' '},
+        { 'create_ctrl_panel': False,
+          'itd_ctrl_panel_files': ' ',
+          'ctrl_panel_normal': ' ',
+          'additional_params': ' ' },
     'annotattion':
         { 'additional_params': '--buildver hg19 --verdbsnp 131' },
     'use_biobambam': False,

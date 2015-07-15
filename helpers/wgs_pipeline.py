@@ -268,20 +268,19 @@ def check_file_exists_for_itd_detection(
                 tumor_output_dir_list if tumor_output_dir_list != None else []
     exit_status = get_status_of_this_process( 'itd_detection', out_dir_list[ 0 ] )
 
-    if exit_status != 0 or not os.path.exists( out_dir_list[ 0 ] ):
-        return True, "Missing file {outputfile} for {inputfile}.".format(
-                            outputfile = out_dir_list[ 0 ],
-                            inputfile = in_file_list[ 0 ])
+    for in_file, out_dir in zip( in_file_list,  out_dir_list ) :
+        if exit_status != 0 or not os.path.exists( out_dir ):
+            return True, "Missing file {outputfile} for inputfile.".format(
+                                outputfile = out_dir,
+                                inputfile = in_file )
 
-    else:
-        in_time = os.path.getmtime( in_file_list[ 0 ] )
-        out_time = os.path.getmtime( out_dir_list[ 0 ] )
-        if in_time > out_time:
-            return True, "{output} is older than {input}.".format( output = out_dir_list[ 0 ],
-                                                                   input = in_file_list[ 0 ] )
         else:
-            return False, "File {output} exits for {input}.".format( output = out_dir_list[ 0 ],
-                                                                     input = in_file_list[ 0 ] )
+            in_time = os.path.getmtime( in_file )
+            out_time = os.path.getmtime( out_dir )
+            if in_time > out_time:
+                return True, "{output} is older than {input}.".format( output = out_dir, input = in_file )
+
+    return False, "Output files  exits."
 
 def check_file_exists_for_annotation(
         input_file,
@@ -290,7 +289,15 @@ def check_file_exists_for_annotation(
     """
     """
     exit_status = get_status_of_this_process( 'annotation', output_file )
-    output_tmp = output_file + '.genome_summary.csv' 
+    if Geno.job.get_param( 'annotation', 'use_table_annovar' ):
+        output_tmp = glob( output_file + '.*_multianno.txt' )
+        file_exists = output_tmp != []
+        if file_exists:
+            output_tmp = output_tmp[ 0 ]
+    else:
+        output_tmp = output_file + '.genome_summary.csv' 
+        file_exists = os.path.exists( output_tmp )
+
     if exit_status != 0 or not os.path.exists( output_tmp ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = output_tmp,
@@ -645,35 +652,50 @@ def generate_params_for_itd_detection( ):
         #   
         # Create parameters for comparison
         #
+        normal_file_list = []
+        disease_file_list = []
+        normal_outfile_list = []
+        disease_outfile_list = []
         for data_type in ctrl_dis_pairs.keys():
             #
             # Normal only and Disease only cases are not going to be processed.
             #
-            if data_type != 'Normal' and data_type != 'Disease':
+            if data_type == 'Normal':
+                for normal_dir in ctrl_dis_pairs[ 'Normal' ]:
+                    normal_input = make_bam_filename_for_markdup_result( 
+                            param_list[ data_dict[ normal_dir ] ][ 0 ] )
+                    normal_file_list.append( normal_input )
+
+                    itd_dir_name = os.path.dirname( param_list[ data_dict[ normal_dir ] ][ 2 ] )
+                    normal_outfile_list.append( itd_dir_name )
+
+            elif data_type == 'Disease':
+                for tumor_dir in ctrl_dis_pairs[ 'Disease' ]:
+                    disease_input = make_bam_filename_for_markdup_result(
+                            param_list[ data_dict[ tumor_dir ] ][ 0 ] )
+                    disease_file_list.append( disease_input )
+
+                    itd_dir_name = os.path.dirname( param_list[ data_dict[ tumor_dir ] ][ 2 ] )
+                    disease_outfile_list.append( itd_dir_name )
+
+            else:
                 #
                 # Make list
                 #
 
                 #
                 # Normal
-                # Always merge in the following case.
-                # "s_B2Na, s_B2Nb":     s_B2T
-                #
-                # Does not have to merge.
-                # s_B2Na:   s_B2T
-                # s_B2Nb:   s_B2T
+                # case 1) "s_B2Na, s_B2Nb":     s_B2T
+                # case 2) s_B2Na:   s_B2T
                 #
                 normal_list = data_type.replace( ' ', '' ).split( ',' )
-                normal_dir_list = []
-                normal_outfile = None
                 for normal_sample in normal_list:
                     if normal_sample in data_dict.keys():
                         normal_input = make_bam_filename_for_markdup_result(
                                 param_list[ data_dict[ normal_sample ] ][ 0 ] )
-                        normal_dir_list.append( normal_input )
-                        if normal_outfile == None:
-                            mutation_dir_name = os.path.dirname( param_list[ data_dict[ normal_sample ] ][ 2 ] )
-                            normal_outfile = mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                        normal_file_list.append( normal_input )
+                        itd_dir_name = os.path.dirname( param_list[ data_dict[ normal_sample ] ][ 2 ] )
+                        normal_outfile_list.append( itd_dir_name )
 
                 # Disease
                 # s_B2N:    - "s_B2Ta, s_B2Tb"
@@ -684,29 +706,26 @@ def generate_params_for_itd_detection( ):
                     disease_list = [ ctrl_dis_pairs[ data_type ] ]
 
                 for disease_data in disease_list:
-                    disease_merge_list = []
-                    disease_outfile = None
                     if -1 != disease_data.find( ',' ):
                         for disease_sample in disease_data.replace( ' ', '' ).split( ',' ):
                             disease_input = make_bam_filename_for_markdup_result( 
                                     param_list[ data_dict[ disease_sample ] ][ 0 ] )
-                            disease_merge_list.append( disease_input )
-                            if disease_outfile == None:
-                                mutation_dir_name = os.path.dirname( param_list[ data_dict[ disease_sample ] ][ 3 ] )
-                                disease_outfile = mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                            disease_file_list.append( disease_input )
+                            itd_dir_name = os.path.dirname( param_list[ data_dict[ disease_sample ] ][ 3 ] )
+                            disease_outfile_list.append( itd_dir_name )
                     else:
                         disease_input = make_bam_filename_for_markdup_result( 
                                 param_list[ data_dict[ disease_data ] ][ 0 ] )
-                        disease_merge_list.append( disease_input )
-                        mutation_dir_name = os.path.dirname( param_list[ data_dict[ disease_data ] ][ 3 ] )
-                        disease_outfile =  mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
-                    #
-                    # Return parameters
-                    #
-                    yield( normal_dir_list,
-                           disease_merge_list,
-                           os.path.split( normal_outfile )[ 0 ],
-                           disease_outfile )
+                        disease_file_list.append( disease_input )
+                        itd_dir_name = os.path.dirname( param_list[ data_dict[ disease_data ] ][ 3 ] )
+                        disease_outfile_list.append( itd_dir_name ) 
+        #
+        # Return parameters
+        #
+        yield( normal_file_list,
+               disease_file_list,
+               normal_outfile_list,
+               disease_outfile_list )
 
 def generate_params_for_annotation():
     """
@@ -1730,8 +1749,8 @@ def fisher_mutation_call(
 def itd_detection(
     control_file_list,
     tumor_file_list,
-    ctrl_output_dir_list,
-    tumor_output_dir_list,
+    ctrl_output_file_list,
+    tumor_output_file_list,
     ):
     """
         Genomon-ITDetector
@@ -1744,24 +1763,195 @@ def itd_detection(
             log.info( "#{function}".format( function = function_name ) )
 
         #
-        # Make data for array job 
+        # Preparation
         #
-        use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
+        # 1) create_ctrl_panel
+        #   If create_ctrl_panel is set True,
+        #       ctrl_panel is created from normal samples.
+        #   If ctrl_panel_normal is set True and ctrl_panel_normal has a list of samples,
+        #       ctrl_panel is created from the list of samples.
+        #
+        # 2) itd_ctrl_panel_files
+        #   1. Get the file names.
+        #   2. Cat the all files with extension 'inhouse_itd_list'
+        #       into config/genomon_20150713_0927_049401_inhouse_itd.list
+        #   4. soft-link the file to normal_inhouse_itd.list
+        #   5. Cat the all files with extension 'inhouse_breakpoint_list'
+        #       into config/genomon_20150713_0927_049401_inhouse_itd.list
+        #   6. soft-link the file to normal_inhouse_breakpoint.list
+        #   7. Pass the file name to detectITD.sh
+        #       > detectITD.sh [input bam file] [output dir] [sample name] [inhouse file dir]
+        #
+        #   inhouse file dir:   normal_inhouse_itd.list
+        #                       normal_inhouse_breakpoint.list
+        #
+        # 3) ctrl_panel_normal
+        #   Get the list of normal samples.
+        #   Run itd detection on the samples first.
+        #   Get the inhouse data and add the list to normal_inhouse_itd.list and normal_inhouse_breakpint.list
+        #
+        normal_itd_file = Geno.dir[ 'config' ] + '/normal_inhouse_itd.list'
+        normal_bp_file = Geno.dir[ 'config' ] + '/normal_inhouse_breakpoint.list'
+        if os.path.exists( normal_itd_file ):
+            os.remove( normal_itd_file )
+        if os.path.exists( normal_bp_file ):
+            os.remove( normal_bp_file )
 
-        in_file_list = control_file_list if control_file_list != None else [] + \
-                    tumor_file_list if tumor_file_list != None else []
-        out_dir_list = ctrl_output_dir_list if ctrl_output_dir_list != None else [] + \
-                    tumor_output_dir_list if tumor_output_dir_list != None else []
+
+        #
+        # Make data for array job for create_ctrl_panel is True.
+        #
+        # First, look for 'ctrl_panel_normal'.
+        # If there is no 'ctrl_panel_normal', use normal as normal samples to create ctrl_panel.
+        in_file_list = []
+        out_dir_list = []
+        if Geno.job.get_param( 'itd_detection', 'create_ctrl_panel' ):
+            ctrl_panel_normal_list = Geno.job.get_param( 'itd_detection', 'ctrl_panel_normal' )
+            if ctrl_panel_normal_list:
+                for ctrl_panel_normal in ctrl_panel_normal_list:
+                    for i,x in [ (i,x) for i,x in enumerate( control_file_list ) if x.find( ctrl_panel_normal ) != -1 ]:
+                        in_file_list.append( x )
+                        out_dir_list.append( ctrl_output_file_list[ i ] )
+
+                    for i, x in [ (i,x) for i,x in enumerate( tumor_file_list ) if x.find( ctrl_panel_normal ) != -1 ]:
+                        in_file_list.append( x )
+                        out_dir_list.append( tumor_output_file_list[ i ] )
+
+            else:
+                in_file_list = control_file_list if control_file_list != None else []
+                out_dir_list = ctrl_output_file_list if ctrl_output_file_list != None else []
+
+            #
+            # Run itd_detection to create ctrl_panel
+            #
+            input_files = "FILE1=(\n"
+            output_files = "FILE2=(\n"
+            name_list = "NAME=(\n"
+            id = 0
+            for input_file, output_file in zip( in_file_list, out_dir_list ):
+                id += 1
+                name = os.path.basename( input_file )[ :-4 ]
+                input_files += "[{id}]=\"{file}\"\n".format( id = id, file = input_file )
+                output_files += "[{id}]=\"{file}\"\n".format( id = id, file = output_file )
+                name_list += "[{id}]=\"{name}\"\n".format( id = id, name = name )
+            input_files += ")\n"
+            output_files += ")\n"
+            name_list += ")\n"
+            
+            #
+            # Make shell script for array job
+            #
+            shell_script_full_path = make_script_file_name( function_name, Geno )
+            shell_script_file = open( shell_script_full_path, 'w' )
+            shell_script_file.write( wgs_res.itd_detection.format(
+                                            log = Geno.dir[ 'log' ],
+                                            array = input_files + output_files + name_list,
+                                            itd_inhouse_files = ' ',
+                                            bam_file = "${FILE1[$SGE_TASK_ID]}",
+                                            output_file = "${FILE2[$SGE_TASK_ID]}",
+                                            name = "${NAME[$SGE_TASK_ID]}",
+                                            itd_inhouse_dir = Geno.dir[ 'config' ],
+                                            itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ) ) )
+            shell_script_file.close()
+
+            #
+            # Run
+            #
+            runtask_return_code = Geno.RT.run_arrayjob(
+                                shell_script_full_path,
+                                Geno.job.get_job( 'cmd_options' )[ function_name ],
+                                id_start = 1,
+                                id_end = id )
+
+            if runtask_return_code != 0:
+                with log_mutex:
+                    log.error( "{function}: runtask failed".format( function = function_name ) )
+                raise
+
+        #
+        # Make control panel file
+        #
+
+        #
+        # Gather the inhouse files created from the firs itd_detection above.
+        #
+        inhouse_bp_list = []
+        inhouse_itd_list = []
+        for out_dir in out_dir_list:
+            inhouse_bp_list.append( out_dir + '/inhouse_breakpoint.tsv' )
+            inhouse_itd_list.append( out_dir + '/inhouse_itd.tsv' )
+
+        #
+        # Create inhouse file for detectITD.sh from 'itd_ctrl_panel_files' + on-fly-created file above.
+        #
+        timestamp = res.timestamp_format.format(
+                                            year=Geno.now.year,
+                                            month=Geno.now.month,
+                                            day=Geno.now.day,
+                                            hour=Geno.now.hour,
+                                            min=Geno.now.minute,
+                                            msecond=Geno.now.microsecond )
+        itd_dest_file = "genomon_{timestamp}_itd.list".format(
+                                    timestamp = timestamp )
+        bp_dest_file = "genomon_{timestamp}_breakpoint.list".format(
+                                    timestamp = timestamp )
+        itd_dest = open( Geno.dir[ 'config' ] + '/' + itd_dest_file, 'w' )
+        bp_dest = open( Geno.dir[ 'config' ] + '/' + bp_dest_file, 'w' )
+
+        ctrl_panel_files = Geno.job.get_param( 'itd_detection', 'itd_ctrl_panel_files' )
+        if ctrl_panel_files:
+            for filename in ctrl_panel_files:
+                if os.path.exists( filename ):
+                    if filename[ -9: ] == '_itd.list':
+                        shutil.copyfileobj( open( filename, 'r' ), itd_dest )
+                    elif filename[ -16: ] == '_breakpoint.list':
+                        shutil.copyfileobj( open( filename, 'r' ), bp_dest )
+
+        for filename in inhouse_bp_list:
+            if os.path.exists( filename ):
+                shutil.copyfileobj( open( filename, 'r' ), bp_dest )
+        for filename in inhouse_itd_list:
+            if os.path.exists( filename ):
+                shutil.copyfileobj( open( filename, 'r' ), itd_dest )
+
+        itd_dest.close()
+        bp_dest.close()
+
+        os.symlink( itd_dest_file, normal_itd_file )
+        os.symlink( bp_dest_file, normal_bp_file )
+
+        #
+        # Run the main itd detection
+        #
+
+        #
+        # Remove ctrl_panel_normal from the list in sample_subdir
+        #
+        data_list = []
+        if Geno.job.get_param( 'itd_detection', 'create_ctrl_panel' ) and ctrl_panel_normal_list:
+            for input_file, output_dir in zip( control_file_list + tumor_file_list ,
+                                                   ctrl_output_file_list + tumor_output_file_list ):
+                for ctrl_panel_normal in ctrl_panel_normal_list:
+                    if input_file.find( ctrl_panel_normal ) != -1:
+                        data_list.append( ( input_file, output_dir ) )
+        elif Geno.job.get_param( 'itd_detection', 'create_ctrl_panel' ):
+            for input_file, output_dir in zip( tumor_file_list, tumor_output_file_list ):
+                data_list.append( (input_file, output_dir ) )
+        else:
+            for input_file, output_dir in zip( control_file_list + tumor_file_list,
+                                               ctrl_panel_normal_list + tumor_output_file_list ):
+                data_list.append( (input_file, output_dir ) )
+
 
         input_files = "FILE1=(\n"
         output_files = "FILE2=(\n"
         name_list = "NAME=(\n"
         id = 0
-        for input_file, output_file in zip( in_file_list, out_dir_list ):
+        for input_file, output_dir in data_list:
             id += 1
             name = os.path.basename( input_file )[ :-4 ]
             input_files += "[{id}]=\"{file}\"\n".format( id = id, file = input_file )
-            output_files += "[{id}]=\"{file}\"\n".format( id = id, file = output_file )
+            output_files += "[{id}]=\"{file}\"\n".format( id = id, file = output_dir )
             name_list += "[{id}]=\"{name}\"\n".format( id = id, name = name )
         input_files += ")\n"
         output_files += ")\n"
@@ -1775,9 +1965,11 @@ def itd_detection(
         shell_script_file.write( wgs_res.itd_detection.format(
                                         log = Geno.dir[ 'log' ],
                                         array = input_files + output_files + name_list,
+                                        itd_inhouse_files = itd_dest_file + ',' + bp_dest_file,
                                         bam_file = "${FILE1[$SGE_TASK_ID]}",
                                         output_file = "${FILE2[$SGE_TASK_ID]}",
                                         name = "${NAME[$SGE_TASK_ID]}",
+                                        itd_inhouse_dir = Geno.dir[ 'config' ],
                                         itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ) ) )
         shell_script_file.close()
 
@@ -1794,7 +1986,6 @@ def itd_detection(
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
-            
         save_status_of_this_process( function_name, out_dir_list[ 0 ], runtask_return_code )
 
     except IOError as (errno, strerror):
@@ -1807,9 +1998,11 @@ def itd_detection(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
-        with log_mutex:
-            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:

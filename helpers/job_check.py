@@ -68,6 +68,7 @@ def Job_file_check( job_yaml, keywords ):
     # 4) pair_id check: pair_id is defined, if {pair_id} exists in qsub_cmd.
     # 5) file_ext check: check if the file_name contains file_ext.
     # 6) sample_subdir exits in input_file_dir.
+    # 7) cmd_options need to be defined for specified process in 'tasks'.
     #
 
     #
@@ -79,7 +80,7 @@ def Job_file_check( job_yaml, keywords ):
             return False
 
     #
-    # 3), 4), 5), 6), 7), 8)
+    # 3), 4), 5), 6)
     pair_id_list = None
     if 'pair_id' in job_yaml:
         pair_id_list = job_yaml[ 'pair_id' ]
@@ -129,18 +130,26 @@ def Job_file_check( job_yaml, keywords ):
                 return False
 
     #
+    # 7) cmd_options
+    #
+    for task in job_yaml[ 'tasks' ].values()[0]:
+        if not ( task in job_yaml[ 'cmd_options' ].keys() ):
+            print( "cmd_option for {task} is not defined.".format( task = task ) )
+            return False
+
+    #
     # project_dir_tree output directory check
     #
-    print( "" )
     if 'project_dir_tree' in job_yaml:
         dir_tree = job_yaml[ 'project_dir_tree' ]
         task_ids = job_yaml[ 'tasks' ]
-        for task in task_ids:
-            for nec_dir in keywords[ 'out_dir' ].keys():
-                if ( nec_dir in task_ids[ task ] and
-                     not get_dir( dir_tree, '', keywords[ 'out_dir' ][ nec_dir ] ) ):
-                    print( "{dir} is not found in 'project_dir_tree:'.".format( dir = nec_dir ) )
-                    return False
+        for task in task_ids.values()[0]:
+            if ( task in keywords[ 'out_dir' ].keys() and
+                not get_dir( dir_tree, '', keywords[ 'out_dir' ][ task ] ) ):
+                print( "{dir} for {task} is not found in 'project_dir_tree:'.".format(
+                            dir = keywords[ 'out_dir' ][ task ], task = task ) )
+                return False
+
 
     return True
 

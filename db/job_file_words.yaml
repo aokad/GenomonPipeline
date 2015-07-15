@@ -50,6 +50,7 @@ out_dir:
         ebcall_mutation_call:   mutation
         copy_number:            cnv
         sv:                     sv
+        itd_detection:          itd
         bam_stats:              summary
         all_stats:              all_summary
 
