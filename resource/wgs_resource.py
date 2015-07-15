@@ -623,7 +623,7 @@ if [ -e "{control_input_bam}" -a ! -e "$CONTROL_FILTERED_BAM" ]
 then
 
     {samtools} view -bh \
-                  -q 15 \
+                  -q {map_quality} \
                   {control_input_bam} \
                   ${{INTERVAL[$SGE_TASK_ID]}} \
               > $CONTROL_INTERVAL_BAM
@@ -640,7 +640,7 @@ fi
 if [ -e "{disease_input_bam}" -a ! -e "$DISEASE_FILTERED_BAM" ]
 then
     {samtools} view -bh \
-                  -q 15 \
+                  -q {map_quality} \
                   {disease_input_bam} \
                   ${{INTERVAL[$SGE_TASK_ID]}} \
               > $DISEASE_INTERVAL_BAM
@@ -780,12 +780,15 @@ echo SGE_TASK_FIRST:$SGE_TASK_FIRST
 echo SGE_TASK_LAST:$SGE_TASK_LAST
 echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
+# {itd_inhouse_files}
+
 {array}
 
 bash {itd_detector}/detectITD.sh \
         {bam_file} \
         {output_file} \
-        {name}
+        {name} \
+        {itd_inhouse_dir}
 
 """
 
