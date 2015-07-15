@@ -176,7 +176,7 @@ def star_genome(
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{function}: Unexpected error: {error}.".format(
-                    function = whoami()) , error = sys.exc_info()[0] )
+                    function = whoami() , error = sys.exc_info()[0] ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_code = False
 
@@ -311,7 +311,7 @@ def star(
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{function}: Unexpected error: {error}.".format(
-                    function = whoami()) , error = sys.exc_info()[0] )
+                    function = whoami() , error = sys.exc_info()[0] ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_code = False
 
@@ -352,6 +352,7 @@ def star_fusion(
                                         chimeric_junction = junction,
                                         out_prefix = output_prefix,
                                         gtf_file = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
+                                        environment_variables = Geno.conf.get( 'ENV', 'PERL5LIB' ),
                                         star_fusion = Geno.conf.get( 'SOFTWARE', 'STAR-Fusion' ),
                                         additional_params = Geno.job.get_param( 'star_fusion', 'additional_params' )
                                     )
@@ -390,7 +391,7 @@ def star_fusion(
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{function}: Unexpected error: {error}.".format(
-                    function = whoami()) , error = sys.exc_info()[0] )
+                    function = whoami() , error = sys.exc_info()[0] ) )
         return_code = False
 
 

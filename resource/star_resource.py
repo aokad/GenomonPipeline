@@ -110,6 +110,8 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
+{environment_variables}
+
 {star_fusion} \
     --chimeric_out_sam {chimeric_sam} \
     --chimeric_junction {chimeric_junction} \
