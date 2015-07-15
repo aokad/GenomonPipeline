@@ -83,7 +83,10 @@ class genomon_job:
                 return_value = param_dict[ item ]
 
         if None == return_value:
-            return_value = self.__default[ task ][ item ]
+            if item in self.__default[ task ]:
+                return_value = self.__default[ task ][ item ]
+            else:
+                return_value = None
 
         return return_value
 
