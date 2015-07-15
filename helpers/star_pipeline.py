@@ -51,16 +51,16 @@ def check_file_exists(input_file, output_file):
         else:
             return False, "File %s exists" % output_file
 
-def check_file_exists_for_star_genome( fasta, star_genome_dir ):
+def check_file_exists_for_star_genome( fasta, gtf, star_genome_dir ):
 
     exit_status = get_status_of_this_process( 'star_genome', star_genome_dir )
     if ( not os.path.exists( star_genome_dir + '/Genome' ) or
          not os.path.exists( star_genome_dir + '/SA' ) or
          not os.path.exists( star_genome_dir + '/SAindex' ) or
          exit_status != 0 ):
-        return True, "Missing file %s" % output_file
+        return True, "Missing file %s" % star_genome_dir
     else:
-        return False, "File %s exists" % output_file
+        return False, "File %s exists" % star_genome_dir
 
 def check_file_exists_for_star( input_file1, input_file2, output_prefix ):
     exit_status = get_status_of_this_process( 'star', output_prefix )
@@ -133,7 +133,7 @@ def star_genome(
         #
         shell_script_full_path = make_script_file_name( function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( star_res.star.format(
+        shell_script_file.write( star_res.star_genome.format(
                                         log = Geno.dir[ 'log' ],
                                         ref_fasta = fasta,
                                         ref_gtf = gtf,
