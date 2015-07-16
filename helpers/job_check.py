@@ -142,6 +142,10 @@ def Job_file_check( job_yaml, keywords ):
     #
     if 'project_dir_tree' in job_yaml:
         dir_tree = job_yaml[ 'project_dir_tree' ]
+        if not dir_tree:
+            print( "project_dir_tree is empty." )
+            return False
+
         task_ids = job_yaml[ 'tasks' ]
         for task in task_ids.values()[0]:
             if ( task in keywords[ 'out_dir' ].keys() and
@@ -149,6 +153,17 @@ def Job_file_check( job_yaml, keywords ):
                 print( "{dir} for {task} is not found in 'project_dir_tree:'.".format(
                             dir = keywords[ 'out_dir' ][ task ], task = task ) )
                 return False
+
+    #
+    # If bam_read_group contains PI, the value needs to be a number.
+    #
+    if 'bam_read_group' in job_yaml:
+        bam_read_group_str = job_yaml[ 'bam_read_group' ]
+        PI_id = bam_read_group_str.find( 'PI:' )
+        num_end_id = bam_read_group_str[ PI_id + 3: ].find( "\t" )
+        if not bam_read_group_str[ PI_id + 3: num_end_id ].isdigit():
+            print( "bam_read_group: 'PI:' needs to have number set." )
+            return False
 
 
     return True
