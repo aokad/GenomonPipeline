@@ -81,6 +81,7 @@ tasks:
 #   HGC Shirokane super computer specific parameters
 #
 cmd_options:
+            star_genome:      '-l ljob,s_vmem=32G,mem_req=32G'
             star:             '-l ljob,s_vmem=32G,mem_req=32G'
             star_fusion:      '-l ljob,s_vmem=16G,mem_req=16G'
 
