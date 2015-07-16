@@ -701,7 +701,7 @@ then
                --min_depth {min_depth}
 
 fi
-#rm $CONTROL_FILTERED_BAM
+rm $CONTROL_FILTERED_BAM
 
 if [ $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
 then
@@ -718,7 +718,7 @@ then
                --min_depth {min_depth}
 
 fi
-#rm $DISEASE_FILTERED_BAM
+rm $DISEASE_FILTERED_BAM
 
 """
 
@@ -751,7 +751,7 @@ do
     if [ -f $INTERVAL_OUT ]
     then
         tail -n+2 $INTERVAL_OUT >> {output_txt}
-        #rm $INTERVAL_OUT
+        rm $INTERVAL_OUT
     fi
 done
 
