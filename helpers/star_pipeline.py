@@ -38,6 +38,7 @@ def get_status_of_this_process( process_name, output_file ):
                     use_subdir = use_subdir ) 
 
     return exit_status
+
 #####################################################################
 #
 def check_file_exists(input_file, output_file):
@@ -75,7 +76,7 @@ def check_file_exists_for_star_fusion( input_file1, input_file2, output_prefix )
     if exit_status != 0:
         return True, "Missing file %s" % output_prefix
     else:
-        output_tmp = output_prefix + '.fusion_candidates.txt'
+        output_tmp = output_prefix + '.junction_breakpts_to_genes.txt'
         return check_file_exists( input_file1, output_tmp )
 
 
@@ -206,20 +207,27 @@ def star(
         function_name = whoami()
         log.info( "#{function}".format( function = function_name ) )
 
-        if input_file1[ -3: ] == '.gz' or input_file1[ -4: ] == '.gz2':
-
-
+        if input_file1[ -3: ] == '.gz' or input_file1[ -4: ] == '.bz2':
             #
             # Extract file
             #
-            if ( len( input_file2 ) >= 3 and ( input_file2[ -3: ] == '.gz' or input_file2[ -4: ] == '.gz2' ) ):
+            if input_file1[ -3: ] == '.gz':
+                fastq_file1 = input_file1[ :-3 ]
+            elif input_file1[ -4: ] == '.bz2':
+                fastq_file1 = input_file1[ :-4 ]
+
+            if ( len( input_file2 ) >= 3 ): # if input_file1 has a filename in it.
                 id = 2
-                fastq_file2 = input_file2[ :-3 ]
+                if ( input_file2[ -3: ] == '.gz' ):
+                    fastq_file2 = input_file2[ :-3 ]
+
+                elif ( input_file2[ -4: ] == '.bz2' ):
+                    fastq_file2 = input_file2[ :-4 ]
+
             else:
                 id = 1
                 fastq_file2 = ''
 
-            fastq_file1 = input_file1[ :-3 ]
             array_data  = "IN_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
                                         file1 = input_file1, file2 = input_file2 ) + \
                           "OUT_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
