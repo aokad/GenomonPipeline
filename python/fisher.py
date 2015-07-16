@@ -287,8 +287,8 @@ def Pileup_out( mpileup, w, threshold, mismatch_rate, min_depth, compare ):
         if ( data_pair[ POS_COUNT ] == 2 and
              ref_base_U and
              mis_base_U and
-             len( data_pair[ POS_DATA1 ].values()) >= 22 and
-             len( data_pair[ POS_DATA2 ].values()) >= 22
+             'mid' in data_pair[ POS_DATA1 ].keys() and
+             'mid' in data_pair[ POS_DATA2 ].keys()
            ):
             odds_ratio, fisher_pvalue = fisher(
                         ( ( int( data_pair[ POS_DATA2 ][ 'total_' + ref_base_U ] ),
@@ -360,7 +360,7 @@ def print_data( data, w, min_depth, mismatch_rate, posterior_10_quantile, fisher
             f_print = True
             # Genomon output for barcode
             # chr \t start \t end \t ref \t obs \tdepth \t A,C,G,T \t mis \t s_ratio \t 0.1 \t ratio \t 0.9
-            outstr = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6},{7},{8},{9}\t{10}\t{11}\t{12}\t{13}\t{14}\n'.format(
+            outstr = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6},{7},{8},{9}\t{10:.3f}\t{11:.3f}\t{12:.3f}\t{13:.3f}\t{14:.3f}\n'.format(
                         data[ POS_CHR ],
                         data[ POS_COORD ],
                         data[ POS_COORD ],
@@ -388,7 +388,7 @@ def print_data( data, w, min_depth, mismatch_rate, posterior_10_quantile, fisher
                     if ( data[ POS_DATA1 ][ 'indel' ][ type ][ bases ][ 'both' ] > 0 and
                          data[ POS_DATA1 ][ 'indel' ][ type ][ bases ][ '0.1' ]  > posterior_10_quantile ):
                             f_print_indel = True
-                            str_indel_dict[ type ][ bases ] = '\t{0}\t{1}\t{2}\t{3},{4}\t{5}\t{6}\t{7}\t{8}\t{9}\n'.format(
+                            str_indel_dict[ type ][ bases ] = '{0}\t{1}\t{2}\t{3},{4}\t{5:.3f}\t{6:.3f}\t{7:.3f}\t{8:.3f}\t{9:.3f}\n'.format(
                                         bases if type == '-' else '-',
                                         '-' if type == '-' else bases,
                                         data[ POS_DATA1 ][ 'depth' ],
@@ -408,15 +408,15 @@ def print_data( data, w, min_depth, mismatch_rate, posterior_10_quantile, fisher
                     for bases in str_indel_dict[ type ].keys():
                         #
                         outstr += data[ POS_CHR ] + '\t' +  \
-                                  str( data[ POS_COORD ] ) + '\t' +    \
-                                  str( data[ POS_COORD ] ) +   \
+                                  str( data[ POS_COORD ] ) + '\t' + \
+                                  str( data[ POS_COORD ] ) + '\t' + \
                                   str_indel_dict[ type ][ bases ]
                 elif type == '-':
                     for bases in str_indel_dict[ type ].keys():
-                        pos = str( data[ POS_COORD ] + 1 )
-                        outstr += data[ POS_CHR ] + '\t' +  \
-                                  pos + '\t' +  \
-                                  pos + '\t' +  \
+                        pos = data[ POS_COORD ]
+                        outstr += data[ POS_CHR ] + '\t' + \
+                                  str( pos + 1 ) + '\t' + \
+                                  str( pos + len( bases ) ) + '\t' + \
                                   str_indel_dict[ type ][ bases ]
 
     elif data[ POS_COUNT ] == 2:
@@ -454,7 +454,7 @@ def print_data( data, w, min_depth, mismatch_rate, posterior_10_quantile, fisher
                         data[ POS_DATA1 ][ 'total_G' ],
                         data[ POS_DATA1 ][ 'total_T' ],
                         )\
-                     + '\t{0}\t{1}\t{2}\t{3}\t{4}\n'.format(
+                     + '\t{0:.3f}\t{1:.3f}\t{2:.3f}\t{3:.3f}\t{4:.3f}\n'.format(
                         data[ POS_DATA2 ][ 'mis_rate' ],
                         data[ POS_DATA2 ][ 's_ratio' ],
                         data[ POS_DATA1 ][ 'mis_rate' ],
@@ -487,7 +487,7 @@ def print_data( data, w, min_depth, mismatch_rate, posterior_10_quantile, fisher
                                         fisher_tmp_list[ 0 ] if data_type == POS_FISHER_DEL else '-',
                                         '-' if data_type == POS_FISHER_DEL else fisher_tmp_list[ 0 ]
                                         )\
-                                     + '{0},{1}\t{2},{3}\t{4}\t{5}\t{6}\t{7}\n'.format(
+                                     + '{0},{1}\t{2},{3}\t{4:.3f}\t{5:.3f}\t{6:.3f}\t{7:.3f}\n'.format(
                                         data[ POS_DATA2 ][ 'depth' ],
                                         data[ POS_DATA2 ][ 'indel' ][ data_type_symbol ][ bases ][ 'both' ],
                                         data[ POS_DATA1 ][ 'depth' ],
