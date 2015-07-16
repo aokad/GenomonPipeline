@@ -298,7 +298,7 @@ def check_file_exists_for_annotation(
         output_tmp = output_file + '.genome_summary.csv' 
         file_exists = os.path.exists( output_tmp )
 
-    if exit_status != 0 or not os.path.exists( output_tmp ):
+    if exit_status != 0 or not file_exists:
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = output_tmp,
                             inputfile = input_file )
@@ -874,9 +874,12 @@ def bam2fastq(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         with log_mutex:
             log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -978,9 +981,12 @@ def split_fastq(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         with log_mutex:
             log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -1087,9 +1093,12 @@ def cutadapt(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         with log_mutex:
             log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -1203,9 +1212,12 @@ def bwa_mem(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         with log_mutex:
             log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -1297,9 +1309,12 @@ def merge_bam(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         with log_mutex:
             log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -1411,8 +1426,9 @@ def markduplicates(
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
-        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -2001,8 +2017,9 @@ def itd_detection(
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
-        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
@@ -2066,9 +2083,12 @@ def annotation(
             log.error( "{function}: ValueError".format( function = whoami() ) )
         return_value = False
 
-    except:
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         with log_mutex:
             log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
         return_value = False
 
     else:
