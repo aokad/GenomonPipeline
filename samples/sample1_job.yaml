@@ -83,6 +83,8 @@ tasks:
                         - markduplicates
                         - bam_stats
                         - fisher_mutation_call
+                        - annotation
+                        - itd_detection
 
 #
 # BAM mem read group
