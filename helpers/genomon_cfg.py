@@ -45,15 +45,18 @@ class genomon_config( object ):
 
 
     def get( self, section, item ):
-        if self.__conf != None:
-            return_string =  self.__conf.get( section, item )
-            if None == return_string:
-                self.__log.error( "genomon_config.get: {sec}: {item} is not defined in system config file.".format(
-                                sec = section,
-                                item = item
-                            ))
+        try:
+            return_string = ''
+            if self.__conf != None:
+                return_string =  self.__conf.get( section, item )
+                if None == return_string:
+                    self.__log.error( "genomon_config.get: {sec}: {item} is not defined in system config file.".format(
+                                    sec = section,
+                                    item = item
+                                ))
             return return_string
-        else:
+
+        except:
             self.__log.error( "genomon_config.get: configuration file is not loaded properly." )
             return None
 
@@ -77,3 +80,18 @@ class genomon_config( object ):
             self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
             raise
 
+    def items( self, section ):
+        try:
+            return_list = []
+            if self.__conf != None:
+                return_list = self.__conf.items( section )
+                if [] == return_list:
+                    self.__log.error( "genomon_config.get: {sec}: {item} is not defined in system config file.".format(
+                                    sec = section,
+                                    item = item
+                                ))
+            return return_string
+
+        except:
+            self.__log.error( "genomon_config.get: configuration file is not loaded properly." )
+            return None

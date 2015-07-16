@@ -158,7 +158,7 @@ def Job_file_check( job_yaml, keywords ):
 #
 def Param_file_check( job_yaml, param_yaml, keyword_file ):
     """
-    Analsysi parameter file checker
+    Analysis parameter file checker
 
     """
 
@@ -181,13 +181,36 @@ def Param_file_check( job_yaml, param_yaml, keyword_file ):
 # System configuration file check
 #
 def System_config_file_check( system_config, keyword_file ):
+    """
+    System configuration file checker
 
-    system_data = keyword_file[ 'system' ]
-    for type in system_data.keys():
-        for data in system_data[ type ].keys():
-            if not system_config.get( type, data ):
-                print( "Keyword '{type}:{data}' is not defined in system configuration file.".format(
-                            type = type, data = data ) )
-                return False
+    """
 
-    return True
+    try:
+        system_data = keyword_file[ 'system' ]
+        for section in system_data.keys():
+            for item in system_data[ section ].keys():
+                data = system_config.get( section, item )
+                if not data:
+                    print( "Config file: [{section}] {item} is not defined in system configuration file.".format(
+                                section = section, item = item ) )
+                    return False
+
+                elif system_data[ section ][ item ] == 'FILE' and not os.path.exists( data ):
+                    print( "Config file: [{section}] {item} {data} does not exists.".format(
+                                section = section, item = item, data = data ) )
+                    return False
+
+            if section != 'ENV':
+                for item, data in system_config.items( section ):
+                    if data != 'True' and data != 'False' and not os.path.exists( data ):
+                        if len( glob( data + '*' ) ) == 0 :
+                            print( "Config file: [{section}] {item} {data} does not exists.".format(
+                                    section = section, item = item, data = data ) )
+                            return False
+
+        return True
+
+    except:
+        print( "Config file: get {type}:{item} failed.".format( type = type, item = item, data = data ) )
+        return False
