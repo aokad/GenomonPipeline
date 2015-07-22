@@ -528,7 +528,7 @@ def generate_params_for_fisher_mutation_call():
         data_dict = {}
         param_list = Sample.param( 'fisher_mutation_call' )
         for infile1, infile2, outdir1, outdir2 in param_list:
-            tmp_dir = os.path.basename( os.path.split( infile2 )[0] )
+            tmp_dir = os.path.basename( os.path.split( infile2 )[ 0 ] )
             data_dict[ tmp_dir ] = list_id
             list_id += 1
 
@@ -734,12 +734,35 @@ def generate_params_for_annotation():
     """
 
     param_return = False
-    if Sample.make_param( 'annotation', 'fisher_mutation_call', '', 'annotation', 1, 1 ):
+    Sample.make_param( 'annotation', 'fisher_mutation_call', '', 'annotation', 1, 1 )
+    ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
+
+    if ctrl_dis_pairs == None:
+        for param in Sample.param( 'annotation' ):
+            mutation_dir_name = os.path.dirname( param[ 0 ] )
+            annotation_dir_name = os.path.dirname( param[ 2 ] )
+            yield ( mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt',
+                    annotation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) ) 
+
+    else:
+        disease_subdir_list = []
+        for subdir in ctrl_dis_pairs.keys():
+            if subdir == 'Disease':
+                disease_subdir_list += ctrl_dis_pairs[ 'Disease' ]
+            elif subdir  != 'Normal':
+                if isinstance( ctrl_dis_pairs[ subdir ], list ):
+                    disease_subdir_list += ctrl_dis_pairs[ subdir ]
+                elif -1 == ctrl_dis_pairs[ subdir ].find( ',' ):
+                    disease_subdir_list.append( ctrl_dis_pairs[ subdir ] )
+                else:
+                    disease_subdir_list += ctrl_dis_pairs[ subdir ].replace( ' ', '' ).split( ',' )
+
         for param in Sample.param( 'annotation' ):
             mutation_dir_name = os.path.dirname( param[ 0 ] )
             annotation_dir_name = os.path.dirname( param[ 3 ] )
-            yield ( mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt',
-                    annotation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) ) 
+            if os.path.basename( mutation_dir_name ) in disease_subdir_list:
+                yield ( mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt',
+                        annotation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) ) 
 
 
 
@@ -1576,15 +1599,15 @@ def fisher_mutation_call(
             log.info( "#{function}".format( function = function_name ) )
 
         #
-        # Merge bam files of multiple control set or disease set
+        # Merge bam files of multiple control sets or disease sets
         #
 
         #
-        # Make shell script
+        # There are control and tumor data to compare in fisher test.
         #
         if control_output_dir != None:
             #
-            # Fisher
+            # Make shell script for merge bam files
             #
             env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
                                         libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
@@ -1668,12 +1691,17 @@ def fisher_mutation_call(
             disease_input_bam = disease_output_dir + '/{sample_name}.bam'.format(
                                     sample_name = Geno.job.get_job( 'sample_name' ) )
         else:
+        #
+        # Not need to compare control and tumor in fisher test.
+        # Run beta-distrubtion on allele frequencies in disease data.
+        #
             control_input_bam = 'None'
             disease_input_bam = disease_input_file_list[ 0 ]
-        #
-        # fisher mutation call
-        #
 
+
+        #
+        # Mutation call
+        #
         #
         # Make shell script
         #
@@ -1685,6 +1713,7 @@ def fisher_mutation_call(
                                         control_input_bam = control_input_bam,
                                         disease_input_bam = disease_input_bam,
                                         output_txt = disease_output_file,
+                                        remove_intermediate = False,
                                         max_indel = Geno.job.get_param( 'fisher_mutation_call', 'max_indel' ),
                                         max_distance = Geno.job.get_param( 'fisher_mutation_call', 'max_distance' ),
                                         base_quality = Geno.job.get_param( 'fisher_mutation_call', 'base_quality' ),
@@ -1808,11 +1837,6 @@ def itd_detection(
         #
         normal_itd_file = Geno.dir[ 'config' ] + '/normal_inhouse_itd.list'
         normal_bp_file = Geno.dir[ 'config' ] + '/normal_inhouse_breakpoint.list'
-        if os.path.exists( normal_itd_file ):
-            os.remove( normal_itd_file )
-        if os.path.exists( normal_bp_file ):
-            os.remove( normal_bp_file )
-
 
         #
         # Make data for array job for create_ctrl_panel is True.
@@ -1915,7 +1939,7 @@ def itd_detection(
         bp_dest = open( Geno.dir[ 'config' ] + '/' + bp_dest_file, 'w' )
 
         ctrl_panel_files = Geno.job.get_param( 'itd_detection', 'itd_ctrl_panel_files' )
-        if ctrl_panel_files:
+        if len( ctrl_panel_files ) > 0 :
             for filename in ctrl_panel_files:
                 if os.path.exists( filename ):
                     if filename[ -9: ] == '_itd.list':
@@ -1933,6 +1957,10 @@ def itd_detection(
         itd_dest.close()
         bp_dest.close()
 
+        if os.path.exists( normal_itd_file ):
+            os.remove( normal_itd_file )
+        if os.path.exists( normal_bp_file ):
+            os.remove( normal_bp_file )
         os.symlink( itd_dest_file, normal_itd_file )
         os.symlink( bp_dest_file, normal_bp_file )
 

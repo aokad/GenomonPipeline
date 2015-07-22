@@ -146,9 +146,9 @@ job_config_default ={
         { 'additional_params': ' ' },
     'itd_detection':
         { 'create_ctrl_panel': False,
-          'itd_ctrl_panel_files': ' ',
-          'ctrl_panel_normal': ' ',
-          'additional_params': ' ' },
+          'itd_ctrl_panel_files': '',
+          'ctrl_panel_normal': '',
+          'additional_params': '' },
     'annotattion':
         { 'additional_params': '--buildver hg19 --verdbsnp 131' },
     'use_biobambam': False,
