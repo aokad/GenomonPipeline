@@ -133,7 +133,11 @@ def Job_file_check( job_yaml, keywords ):
     # 7) cmd_options
     #
     for task in job_yaml[ 'tasks' ].values()[0]:
-        if not ( task in job_yaml[ 'cmd_options' ].keys() ):
+        if not 'cmd_options' in job_yaml:
+            print( "cmd_option is not defined." )
+            return False
+
+        elif not ( task in job_yaml[ 'cmd_options' ].keys() ):
             print( "cmd_option for {task} is not defined.".format( task = task ) )
             return False
 
