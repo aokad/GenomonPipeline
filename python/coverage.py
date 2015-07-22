@@ -91,7 +91,7 @@ def main():
         #
         # Calculate coverage
         #
-        cov = 0
+        total_cov = 0
         sum = 0
         coverage = {}
         reads = 0
@@ -100,28 +100,21 @@ def main():
             # Run samtools mpileup
             #
             mpileup_file = arg.coverage_tmp + str( i )
-            f_first = True
-#            f_first = False
-            while f_first:
-#            while f_first or 0 == os.path.getsize( mpileup_file ):
-                f_first = False
-                position = gen_bed.get_random_interval()
-                #print "{0}:{1}".format( position[ 0 ], position[ 1 ] )
+            position = gen_bed.get_random_interval()
 
-                samtools_mpileup_cmd = '{samtools} mpileup -f {fa} -r {chr}:{start}-{end} {bam} > {mpileup}'.format(
-                                            samtools = arg.samtools,
-                                            fa = arg.ref_fasta,
-                                            bam = arg.input_bam,
-                                            chr = position[ 0 ], start = position[ 1 ], end = position[ 1 ] + arg.bin_size - 1,
-                                            mpileup = mpileup_file
-                                        )
-                process = subprocess.Popen( samtools_mpileup_cmd,
-                                  shell=True,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-                std_out, std_err = process.communicate()
-                p_return_code = process.returncode
-                #print os.path.getsize( mpileup_file )
+            samtools_mpileup_cmd = '{samtools} mpileup -f {fa} -r {chr}:{start}-{end} {bam} > {mpileup}'.format(
+                                        samtools = arg.samtools,
+                                        fa = arg.ref_fasta,
+                                        bam = arg.input_bam,
+                                        chr = position[ 0 ], start = position[ 1 ], end = position[ 1 ] + arg.bin_size - 1,
+                                        mpileup = mpileup_file
+                                    )
+            process = subprocess.Popen( samtools_mpileup_cmd,
+                              shell=True,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+            std_out, std_err = process.communicate()
+            p_return_code = process.returncode
 
             #
             # Calculate coverage
@@ -131,7 +124,7 @@ def main():
                     line_list = line.split( "\t" )
                     reads += 1
                     if line_list[ 2 ] != 'N':
-                        cov += 1
+                        total_cov += 1
                         for num in arg.coverage_depth.split( ',' ):
                             sum += int( line_list[ 3 ] )
                             if int( line_list[ 3 ] ) >= int( num ):
@@ -150,13 +143,12 @@ def main():
             data_string += "\t{0}x\t{0}x_ratio".format( num )
         print data_string
 
-        data_string = "\n{0}\t{1}\t{2}".format( sum, reads, cov )
-        for num in arg.coverage_depth.split( ',' ):
-            if num in coverage:
+        data_string = "\n{0}\t{1}\t{2}".format( sum, reads, total_cov )
+        for cov_tmp in arg.coverage_depth.split( ',' ):
+            if cov_tmp in coverage:
                 data_string += "\t{num}\t{ratio}".format(
-                                cov = num,
-                                num = coverage[ num ],
-                                ratio = float( coverage[ num ] )/float( cov ) ),
+                                num = coverage[ cov_tmp ],
+                                ratio = float( coverage[ cov_tmp ] )/ float( total_cov ) if coverage[ cov_tmp ] > 0 else 0 )
             else:
                 data_string += "\t0\t0"
 
