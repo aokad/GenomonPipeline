@@ -635,6 +635,11 @@ then
                --map_quality {map_quality} \
             $CONTROL_INTERVAL_BAM \
             $CONTROL_FILTERED_BAM
+
+    if [ "{remove_intermediate}" = "True" ]
+    then
+        rm $CONTROL_INTERVAL_BAM
+    fi
 fi
 
 if [ -e "{disease_input_bam}" -a ! -e "$DISEASE_FILTERED_BAM" ]
@@ -652,6 +657,11 @@ then
                --map_quality {map_quality} \
             $DISEASE_INTERVAL_BAM \
             $DISEASE_FILTERED_BAM
+
+    if [ "{remove_intermediate}" = "True" ]
+    then
+        rm $DISEASE_INTERVAL_BAM
+    fi
 fi
 
 INTERVAL_OUT=`echo {output_txt} | sed "s/\.txt/_${{INTERVAL[$SGE_TASK_ID]}}.txt/"`
@@ -701,7 +711,6 @@ then
                --min_depth {min_depth}
 
 fi
-rm $CONTROL_FILTERED_BAM
 
 if [ $SIZE_OF_DISEASE_BAM -gt 300 -a ! -e $INTERVAL_OUT ]
 then
@@ -718,7 +727,12 @@ then
                --min_depth {min_depth}
 
 fi
-rm $DISEASE_FILTERED_BAM
+
+if [ "{remove_intermediate}" = "True" ]
+then
+    rm $CONTROL_FILTERED_BAM
+    rm $DISEASE_FILTERED_BAM
+fi
 
 """
 
