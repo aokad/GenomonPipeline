@@ -547,9 +547,9 @@ def Pileup_and_count(
         # Print header only for testing.
         #
         if compare:
-            header_str = "chr\tstart\tend\tref\tobs\tA,C,G,T\tA,C,G,T\tdis_mis\tdis_s_ration\tctrl_mis\tctrl_s_ratio\tfisher\n"
+            header_str = "#chr\tstart\tend\tref\tobs\tA,C,G,T\tA,C,G,T\tdis_mis\tdis_s_ration\tctrl_mis\tctrl_s_ratio\tfisher\n"
         else:
-            header_str = "chr\tstart\tend\tref\tobs\tdepth\tA,C,G,T,\tmis\ts_ratio\t0.1\tratio\t0.9\n"
+            header_str = "#chr\tstart\tend\tref\tobs\tdepth\tA,C,G,T,\tmis\ts_ratio\t0.1\tratio\t0.9\n"
 
         w.write( header_str )
 
