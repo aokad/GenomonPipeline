@@ -143,7 +143,7 @@ def main():
             data_string += "\t{0}x\t{0}x_ratio".format( num )
         print data_string
 
-        data_string = "\n{0}\t{1}\t{2}".format( sum, reads, total_cov )
+        data_string = "{0}\t{1}\t{2}".format( sum, reads, total_cov )
         for cov_tmp in arg.coverage_depth.split( ',' ):
             if cov_tmp in coverage:
                 data_string += "\t{num}\t{ratio}".format(
