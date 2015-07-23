@@ -41,7 +41,7 @@ if __name__ == "__main__":
     myself = argvs[ 0 ]
     argc = len(argvs)
 
-    parser = argparse.ArgumentParser( description = "Template" )
+    parser = argparse.ArgumentParser( description = "tsv2xl.pl" )
     parser.add_argument( '-x', '--excel_file',  help = "Excel file",    type = str )
     parser.add_argument( '-t', '--tsv_files',   help = "TSV file",      type = str )
 
