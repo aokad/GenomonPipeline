@@ -508,7 +508,7 @@ set -xv
 OUT_TSV=`echo {output_txt} | sed 's/\.txt/.tsv/'`
 OUT_XLS=`echo {output_txt} | sed 's/\.txt/.xls/'`
 
-sed -e '$!{{h;d;}}' -e x {output_txt}.tmp.5 > {output_txt}.5-1
+awk '/ratio/ {{ print }}' {output_txt}.tmp.5 > {output_txt}.5-1
 for TMP_FILE in `ls {output_txt}.tmp.*`
 do
     tail -n1 $TMP_FILE >> {output_txt}.5-1
@@ -822,20 +822,42 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-if [ "{use_table_annovar}" = "True" ]
+if [ "{output_in_vcf}" = "True" ]
 then
+    {python} {scriptdir}/ToVCF.py \
+        --ref_fasta {ref_fa} \
+        --output_vcf {output_vcf} \
+        --annovar_input {input_file}
+
     {annovar}/table_annovar.pl \
-        {input_file} \
+        --vcfinput \
         --outfile {output_prefix} \
+        {output_vcf} \
         {annovar}/humandb \
         {table_annovar_params}
+
 else
 
-    {annovar}/summarize_annovar.pl \
-        {summarize_annovar_params} \
-        {input_file} \
-        --outfile {output_prefix} \
-        {annovar}/humandb
+    if [ "{use_table_annovar}" = "True" ]
+    then
+        {annovar}/table_annovar.pl \
+            {input_file} \
+            --outfile {output_prefix} \
+            {annovar}/humandb \
+            {table_annovar_params}
+    else
+
+        {annovar}/summarize_annovar.pl \
+            {summarize_annovar_params} \
+            {input_file} \
+            --outfile {output_prefix} \
+            {annovar}/humandb
+
+        {python} {scriptdir}/ToVCF.py \
+            --ref_fasta {ref_fa} \
+            --output_vcf {output_vcf} \
+            --tsv_annovar {input_file}
+    fi
 fi
 
 """

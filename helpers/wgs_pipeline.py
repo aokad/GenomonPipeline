@@ -1520,6 +1520,7 @@ def bam_stats(
                                 Geno.job.get_job( 'cmd_options' )[ function_name ],
                                 id_start = 1,
                                 id_end = 14 )
+            calc_return_code = 0
 
             #
             # Merge results
@@ -1554,7 +1555,8 @@ def bam_stats(
                     log.error( "{function}: runtask failed".format( function = function_name + '_merge' ) )
                 # raise
 
-            save_status_of_this_process( shell_script_name, output_file, calc_return_code + merge_return_code )
+            if calc_return_code != 0 and merge_return_code != 0:
+                save_status_of_this_process( shell_script_name, output_file, calc_return_code + merge_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -2071,6 +2073,8 @@ def annotation(
         with log_mutex:
             log.info( "#{function}".format( function = function_name ) )
 
+        output_vcf = input_file[ :input_file.find( '.txt' ) ] + '.vcf'
+
         #
         # Make data for array job 
         #
@@ -2080,10 +2084,15 @@ def annotation(
                                         log = Geno.dir[ 'log' ],
                                         input_file = input_file,
                                         output_prefix = output_file,
+                                        output_vcf = output_vcf,
+                                        output_in_vcf = Geno.job.get_param( 'annotation', 'output_in_vcf' ),
                                         use_table_annovar = Geno.job.get_param( 'annotation', 'use_table_annovar' ),
                                         summarize_annovar_params = Geno.job.get_param( 'annotation', 'summarize_annovar_params' ),
                                         table_annovar_params = Geno.job.get_param( 'annotation', 'table_annovar_params' ),
+                                        ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         annovar = Geno.conf.get( 'SOFTWARE', 'annovar' ),
+                                        scriptdir = Geno.dir[ 'script' ],
+                                        python = Geno.conf.get( 'SOFTWARE', 'python' ),
                                         ) )
         shell_script_file.close()
 

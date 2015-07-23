@@ -108,6 +108,8 @@ script_files = ( 'shell/utility.sh',
                  'python/merge_cov.py',
                  'python/mkxls.py',
                  'python/xl2tsv.py',
+                 'python/ToVCF.py',
+                 'python/ANNOVAR.py',
                  'R/cummeRbund.R',
                  'R/report.R'
         )
