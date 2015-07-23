@@ -238,7 +238,12 @@ if __name__ == "__main__":
                                   'mean_insert_size',
                                   'insert_size_sd',
                                   'median_insert_size' ]:
-            ws.write( 1, i, '' )
+
+            ws.write( 1, i, xlwt.Formula( 'average({start_col}{start_row}:{end_col}{end_row})'.format(
+                                        start_col = ToExcelString( i + 1),
+                                        start_row = 3,
+                                        end_col = ToExcelString( i + 1 ),
+                                        end_row = num_readgroup + 3 - 1 ) ) )
 
         elif tsv_header[ i ] in [
                                   #'readgroup', 
