@@ -133,6 +133,9 @@ cmd_options:
                     markduplicates:         '-l ljob,s_vmem=8G,mem_req=8'
                     bam_stats:              '-l ljob,s_vmem=2G,mem_req=2'
                     fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1'
+                    itd_detection:          '-l ljob,s_vmem=8G,mem_req=8'
+                    annotation:             '-l ljob,s_vmem=6G,mem_req=6'
+
 #   For Shirokane3
 #                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
 #                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
@@ -142,6 +145,8 @@ cmd_options:
 #                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
 #                    bam_stats:              '-l ljob,s_vmem=2G,mem_req=2G'
 #                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
+#                    itd_detection:          '-l ljob,s_vmem=8G,mem_req=8G'
+#                    annotation:             '-l ljob,s_vmem=6G,mem_req=6G'
 
 #
 # qsub command format
