@@ -47,5 +47,5 @@ Or if you are on HGC Shirokane2 or Shirokane3,
 2. Edit it so that the file describes your job configuration.
 3. Run the following command.
 ```
-/home/w3varann/tools/Genomon/test/run.sh [your job yaml file]
+/home/w3varann/tools/Genomon/run.sh [your job yaml file]
 ```
