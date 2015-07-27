@@ -12,6 +12,8 @@ from datetime import datetime
 import argparse
 import random
 import subprocess
+import multiprocessing
+
 from bedparse import BedExtract
 
 #
@@ -30,6 +32,32 @@ def PrintHeader( myself, arg ):
     print 'bin:\t{bin_size} '.format( bin_size = arg.bin_size )
     print 'sample_num:\t{sample_num} '.format( sample_num = arg.sample_num )
     print 'coverage:\t{coverage} '.format( coverage = arg.coverage_depth )
+
+def mpileup_worker(
+        samtools,
+        ref_fasta,
+        bam,
+        chr,
+        start,
+        end,
+        mpileup_file
+        ):
+
+    samtools_mpileup_cmd = '{samtools} mpileup -f {fa} -r {chr}:{start}-{end} {bam} > {mpileup}'.format(
+                                samtools = samtools,
+                                fa = ref_fasta,
+                                bam = bam,
+                                chr = chr,
+                                start = start,
+                                end = end,
+                                mpileup = mpileup_file
+                            )
+    process = subprocess.Popen( samtools_mpileup_cmd,
+                      shell=True,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE)
+    std_out, std_err = process.communicate()
+    p_return_code = process.returncode
 
 
 #
@@ -55,6 +83,7 @@ def main():
     parser.add_argument( '-s', '--samtools', help = "Path to samtools", type = str, default = '/home/w3varann/tools/samtools-1.2/samtools' )
     parser.add_argument( '-c', '--coverage_depth', help = "List of coverage depth", type = str, default = '2,10,20,30,40,50,100' )
     parser.add_argument( '-r', '--chr_str', help = "Add 'chr' in bed", dest='chr_str', action = 'store_true' )
+    parser.add_argument( '-p', '--process', help = "Number of processes to run ", type = int,  default = 10 )
     parser.set_defaults( chr_str=False )
 
     arg = parser.parse_args()
@@ -89,6 +118,44 @@ def main():
             p_return_code = process.returncode
 
         #
+        # Run samtools mpileup
+        #
+        jobs = []
+        if arg.sample_num == 1:
+            mpileup_file = arg.coverage_tmp + '0'
+            position = gen_bed.get_random_interval()
+            mpileup_worker( arg.samtools,
+                            arg.ref_fasta,
+                            arg.input_bam,
+                            position[ 0 ],
+                            position[ 1 ],
+                            position[ 1 ] + arg.bin_size - 1,
+                            mpileup_file )
+        else:
+            for i in range( 0, arg.sample_num ):
+                mpileup_file = arg.coverage_tmp + str( i )
+                position = gen_bed.get_random_interval()
+                process = multiprocessing.Process(
+                            target = mpileup_worker,
+                            args=(
+                                arg.samtools,
+                                arg.ref_fasta,
+                                arg.input_bam,
+                                position[ 0 ],
+                                position[ 1 ],
+                                position[ 1 ] + arg.bin_size - 1,
+                                mpileup_file )
+                        )
+                process.start()
+                jobs.append( process )
+
+                if len( jobs ) >= arg.process:
+                    while len( jobs ) >= 1:
+                        j = jobs.pop()
+                        j.join()
+
+
+        #
         # Calculate coverage
         #
         total_cov = 0
@@ -96,29 +163,8 @@ def main():
         coverage = {}
         reads = 0
         for i in range( 0, arg.sample_num ):
-            #
-            # Run samtools mpileup
-            #
             mpileup_file = arg.coverage_tmp + str( i )
-            position = gen_bed.get_random_interval()
 
-            samtools_mpileup_cmd = '{samtools} mpileup -f {fa} -r {chr}:{start}-{end} {bam} > {mpileup}'.format(
-                                        samtools = arg.samtools,
-                                        fa = arg.ref_fasta,
-                                        bam = arg.input_bam,
-                                        chr = position[ 0 ], start = position[ 1 ], end = position[ 1 ] + arg.bin_size - 1,
-                                        mpileup = mpileup_file
-                                    )
-            process = subprocess.Popen( samtools_mpileup_cmd,
-                              shell=True,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
-            std_out, std_err = process.communicate()
-            p_return_code = process.returncode
-
-            #
-            # Calculate coverage
-            #
             with open( mpileup_file ) as f:
                 for line in f:
                     line_list = line.split( "\t" )
@@ -133,7 +179,7 @@ def main():
                                 else:
                                     coverage[ num ] = 1
 
-            os.remove( mpileup_file )
+                os.remove( mpileup_file )
 
         #
         # Output result

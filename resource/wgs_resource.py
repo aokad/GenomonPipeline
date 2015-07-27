@@ -481,6 +481,7 @@ else
             -e {bed_file} \
             -b 1000 \
             -n 1000 \
+            -p 10 \
             {chr_str_in_fa} \
             -c {coverage} \
             -s {samtools} \
