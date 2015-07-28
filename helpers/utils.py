@@ -206,21 +206,16 @@ def make_input_target( subdir, dir_tree, cwd, Geno ):
                                 subdir = subdir ) )
 
     for target_dir in res.end_dir_list:
-        if not target_dir in res.subdir_list:
-            tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
-            if tmp_dir:
-                Geno.dir[ target_dir ] = tmp_dir
-
-        elif ( target_dir in res.dir_task_list.keys() and
+        tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
+        if tmp_dir:
+            Geno.dir[ target_dir ] = tmp_dir
+            make_dir( Geno.dir[ target_dir ], Geno )
+            if ( target_dir in res.dir_task_list.keys() and
                  res.dir_task_list[ target_dir ] in Geno.job.get_job( 'tasks' )[ Geno.job_tasks ] ):
-                tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
-                if tmp_dir:
-                    Geno.dir[ target_dir ] = tmp_dir
-                    make_dir( Geno.dir[ target_dir ], Geno )
-                    if subdir and target_dir in res.subdir_list:
-                        for subdir_tmp in [ x for x in subdir_list if os.path.isdir( x ) ]:
-                            make_dir( "{dir}/{subdir}".format(
-                                            dir = Geno.dir[ target_dir ],
-                                            subdir = os.path.basename( subdir_tmp ) ),
-                                     Geno )
+                if subdir and target_dir in res.subdir_list:
+                    for subdir_tmp in [ x for x in subdir_list if os.path.isdir( x ) ]:
+                        make_dir( "{dir}/{subdir}".format(
+                                        dir = Geno.dir[ target_dir ],
+                                        subdir = os.path.basename( subdir_tmp ) ),
+                                 Geno )
 
