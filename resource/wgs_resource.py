@@ -566,7 +566,7 @@ then
     if [ "{use_biobambam}" = "True" ]
     then
         {biobambam}/bammerge  \
-                        {input_bam_files} \
+                        {bambam_input_bam_files} \
                         md5filename="$OUT_BAM_PREFIX".metrics \
                         tmpfile="$OUT_BAM_PREFIX".tmp \
                         indexfilename={merged_bam_file}.bai \
@@ -576,13 +576,12 @@ then
     else
         {samtools} merge \
                     {merged_bam_file} \
-                    {input_bam_files};
+                    {samtools_input_bam_files};
         {samtools} index {merged_bam_file};
     fi
 else
-    INPUT_BAM={input_bam_files}
-    cp {input_bam_files} {merged_bam_file}
-    cp ${{INPUT_BAM}}.bai {merged_bam_file}.bai
+    cp {input_bam_file} {merged_bam_file}
+    cp {input_bam_file}.bai {merged_bam_file}.bai
 fi
 """
 
