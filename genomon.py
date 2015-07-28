@@ -26,11 +26,12 @@ class Geno(object):
     options = None
     conf    = None
     job     = None
-    dir     = {}
     RT      = None
+    status = None
     cwd     = None
     dir_mode = 0755
-    status = None
+    dir     = {}
+    job_tasks = None
 
 
 ################################################################################
@@ -103,9 +104,7 @@ def make_directories():
         project_root = os.path.expanduser( Geno.job.get_job( 'project_root' ))
         Geno.dir[ 'project_root' ] = project_root
         if not os.path.exists( project_root ):
-            log.error( "Dir: {dir} not found.".format( dir = project_root ) ) 
-            raise
-
+            os.makedirs( project_root )
 
         #
         # get directory tree, directory permission
@@ -141,12 +140,14 @@ def make_directories():
         # make symbolic link from the original input_file_dir
         #   if input_file_dir is not the same as data dir
         #
-        make_dir( "{data}".format( data = get_dir( dir_tree, cwd, 'data', Geno )), Geno )
-        Geno.dir[ 'data' ] = "{data}/{sample_name}".format(
-                                data = get_dir( dir_tree, cwd, 'data', Geno ),
-                                sample_name = Geno.job.get_job( 'sample_name' ) )
+        data_dir = get_dir( dir_tree, cwd, 'data', Geno )
+        make_dir( data_dir, Geno )
+    
+        data_tree = dir_tree[ 'project_directory' ][ 'data' ]
+        Geno.dir[ 'data' ] = get_dir( data_tree, data_dir, 'sample_name', Geno) 
         if ( not os.path.exists( Geno.dir[ 'data' ] ) and
              Geno.job.get_job( 'input_file_dir' ) != Geno.dir[ 'data' ] ):
+                make_dir( os.path.split( Geno.dir[ 'data' ] )[0], Geno )
                 os.symlink( Geno.job.get_job( 'input_file_dir' ), Geno.dir[ 'data' ] )
 
     except IOError, (errno, strerror):
@@ -331,6 +332,7 @@ def main():
         # Copy the input configuration files to results directory
         # Link input_data to project's data directory
         #
+        Geno.job_tasks = Geno.job.get_job( 'tasks' ).keys()[ 0 ]
         make_directories()
         copy_config_files()
         copy_script_files()
@@ -375,18 +377,17 @@ def main():
         # Run the defined pipeline
         # Figure out what analysis to run from job configuration file
         #
-        job_tasks = Geno.job.get_job( 'tasks' )
         run_flag = False
 
-        if 'WGS' in job_tasks:
+        if 'WGS' in Geno.job_tasks:
             from helpers import wgs_pipeline as pipeline
             run_flag = True
 
-        elif 'RNA' in job_tasks:
+        elif 'RNA' in Geno.job_tasks:
             from helpers import rna_pipeline as pipeline
             run_flag = True
 
-        elif 'STAR' in job_tasks:
+        elif 'STAR' in Geno.job_tasks:
             from helpers import star_pipeline as pipeline
             run_flag = True
 

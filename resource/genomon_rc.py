@@ -84,6 +84,18 @@ subdir_list = ( 'fastq',
                 'summary',
                 'all_summary' )
 
+dir_task_list = { 'fastq':          'split_fastq',
+                  'bam':            'bwa_mem',
+                  'bam':            'merge_bam',
+                  'bam':            'markduplicates',
+                  'summary':        'bam_stats',
+                  'mutation':       'fisher_mutation_call',
+                  'annotation':     'annotation',
+                  'itd':            'itd_detection',
+                  'star':           'star',
+                  'star_fusion':    'star_fusion'
+}
+                
 data_ext_list = { 'fastq':          'fastq',
                   'bam':            'bam',
                   'itd':            'txt',
@@ -125,6 +137,8 @@ job_config_default ={
         { 'adaptor': [ 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN', 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' ] },
     'bwa_mem':
         { 'min_score': 20 },
+    'markduplicates':
+        { 'java_memory': '6G' },
     'fisher_mutation_call':
         { 'max_indel': 2,
           'max_distance': 5,

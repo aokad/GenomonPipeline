@@ -156,14 +156,14 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
             dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
             if dir_replace:
                  cwd_tmp += '/' + dir_replace
-            if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
-                return cwd_tmp
-            if ( isinstance( dir_tree[ dir_tmp ], dict ) or
-                 isinstance( dir_tree[ dir_tmp ], list ) ):
-                dir_returned =  get_dir( dir_tree[ dir_tmp ], cwd_tmp, dir_name, Geno  )
 
-                if None != dir_returned:
-                    return dir_returned
+            if dir_tmp == dir_name:
+                return cwd_tmp
+
+            dir_returned =  get_dir( dir_tree[ dir_tmp ], cwd_tmp, dir_name, Geno  )
+
+            if None != dir_returned:
+                return dir_returned
             
     elif isinstance( dir_tree, list ):
         n = 0
@@ -190,9 +190,9 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
                         return dir_returned
             n = n + 1
     else:
-        if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
+        if isinstance( dir_tree, str) and dir_tree == dir_name:
             cwd_tmp = cwd
-            dir_replace = replace_reserved_string( dir_tmp, cwd, Geno )
+            dir_replace = replace_reserved_string( dir_tree, cwd, Geno )
             if dir_replace != '':
                 cwd_tmp += '/' + dir_replace
             return cwd_tmp
@@ -206,14 +206,21 @@ def make_input_target( subdir, dir_tree, cwd, Geno ):
                                 subdir = subdir ) )
 
     for target_dir in res.end_dir_list:
-        tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
-        if tmp_dir:
-            Geno.dir[ target_dir ] = get_dir( dir_tree, cwd, target_dir, Geno )
-            make_dir( Geno.dir[ target_dir ], Geno )
-            if subdir and target_dir in res.subdir_list:
-                for subdir_tmp in subdir_list:
-                    make_dir( "{dir}/{subdir}".format(
-                                    dir = Geno.dir[ target_dir ],
-                                    subdir = os.path.basename( subdir_tmp ) ),
-                             Geno )
+        if not target_dir in res.subdir_list:
+            tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
+            if tmp_dir:
+                Geno.dir[ target_dir ] = tmp_dir
+
+        elif ( target_dir in res.dir_task_list.keys() and
+                 res.dir_task_list[ target_dir ] in Geno.job.get_job( 'tasks' )[ Geno.job_tasks ] ):
+                tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
+                if tmp_dir:
+                    Geno.dir[ target_dir ] = tmp_dir
+                    make_dir( Geno.dir[ target_dir ], Geno )
+                    if subdir and target_dir in res.subdir_list:
+                        for subdir_tmp in [ x for x in subdir_list if os.path.isdir( x ) ]:
+                            make_dir( "{dir}/{subdir}".format(
+                                            dir = Geno.dir[ target_dir ],
+                                            subdir = os.path.basename( subdir_tmp ) ),
+                                     Geno )
 
