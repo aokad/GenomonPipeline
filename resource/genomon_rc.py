@@ -41,7 +41,6 @@ project_directory:
                     - cufflinks
                     - cuffdiff
                     - cummeRbund
-                    - cnv
                     - sv
                     - itd
                     - star
@@ -58,7 +57,6 @@ end_dir_list = ( 'config',
                  'cufflinks',
                  'cuffdiff',
                  'cummeRbund',
-                 'cnv',
                  'fusion',
                  'sv',
                  'itd',
@@ -72,7 +70,6 @@ subdir_list = ( 'fastq',
                 'bam',
                 'annotation',
                 'mutation',
-                'cnv',
                 'fusion',
                 'sv',
                 'itd',

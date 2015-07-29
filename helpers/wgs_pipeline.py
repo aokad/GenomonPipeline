@@ -275,7 +275,7 @@ def check_file_exists_for_itd_detection(
     exit_status = get_status_of_this_process( 'itd_detection', out_dir_list[ 0 ] )
 
     for in_file, out_dir in zip( in_file_list,  out_dir_list ) :
-        if exit_status != 0 or not os.path.exists( out_dir ):
+        if exit_status != 0 or not os.path.exists( out_dir + '/itd_list.tsv' ):
             return True, "Missing file {outputfile} for inputfile.".format(
                                 outputfile = out_dir,
                                 inputfile = in_file )
@@ -499,7 +499,12 @@ def generate_params_for_fisher_mutation_call():
 
     """
     
-    Sample.make_param( 'fisher_mutation_call', None, '.txt', 'mutation', 2, 1 )
+    param_return = False
+    task_name_list = ( 'markduplicates', 'merge_bam', 'bwa_mem' )
+    id = 0
+    while( not param_return ):
+        param_return = Sample.make_param( 'fisher_mutation_call', task_name_list[ id ], '.txt', 'mutation', 2, 1 )
+        id += 1
 
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
 
@@ -551,7 +556,7 @@ def generate_params_for_fisher_mutation_call():
             #
             # Normal only and Disease only cases are not going to be processed.
             #
-            if data_type != 'Normal' and data_type != 'Disease':
+            if data_type != 'Normal' and data_type != 'Disease' and data_type in data_dict.keys():
                 #
                 # Make list
                 #
@@ -609,6 +614,19 @@ def generate_params_for_fisher_mutation_call():
                            disease_merge_list,
                            os.path.split( normal_outfile )[ 0 ],
                            disease_outfile )
+
+            elif data_type == 'Disease':
+                for tumor_dir in ctrl_dis_pairs[ 'Disease' ]:
+                    input_bam = make_bam_filename_for_markdup_result( param_list[ data_dict[ tumor_dir ] ][ 0 ] )
+                    mutation_dir_name = os.path.dirname( param_list[ data_dict[ tumor_dir ] ][ 3 ] )
+
+                    return_list = [
+                                    [ None ],
+                                    [ input_bam ],
+                                    None ,
+                                    mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                                  ]
+                    yield return_list
 
 def generate_params_for_itd_detection( ):
     """
@@ -690,7 +708,7 @@ def generate_params_for_itd_detection( ):
                     itd_dir_name = os.path.dirname( param_list[ data_dict[ tumor_dir ] ][ 2 ] )
                     disease_outfile_list.append( itd_dir_name )
 
-            else:
+            elif data_type in data_dict.keys():
                 #
                 # Make list
                 #
@@ -1890,7 +1908,8 @@ def itd_detection(
             #
             # Make shell script for array job
             #
-            shell_script_full_path = make_script_file_name( function_name, Geno )
+            normal_function_name = function_name + '_normal'
+            shell_script_full_path = make_script_file_name( normal_function_name, Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.itd_detection.format(
                                             log = Geno.dir[ 'log' ],
@@ -1914,7 +1933,7 @@ def itd_detection(
 
             if runtask_return_code != 0:
                 with log_mutex:
-                    log.error( "{function}: runtask failed".format( function = function_name ) )
+                    log.error( "{function}: runtask failed".format( function = normal_function_name ) )
                 raise
 
         #
@@ -1991,12 +2010,12 @@ def itd_detection(
             for input_file, output_dir in zip( tumor_file_list, tumor_output_file_list ):
                 data_list.append( (input_file, output_dir ) )
         else:
-            input_file_list = control_file_list if control_file_list != None else [] +\
-                              tumor_file_list if tumor_file_list != None else [] 
-            output_file_list = ctrl_output_file_list if ctrl_output_file_list != None else [] +\
-                               tumor_output_file_list if tumor_output_file_list != None else [] 
+            input_file_list = control_file_list if control_file_list != None else []
+            input_file_list += tumor_file_list if tumor_file_list != None else [] 
+            output_file_list = ctrl_output_file_list if ctrl_output_file_list != None else []
+            output_file_list += tumor_output_file_list if tumor_output_file_list != None else [] 
             for input_file, output_dir in zip( input_file_list, output_file_list ):
-                data_list.append( (input_file, output_dir ) )
+                data_list.append( ( input_file, output_dir ) )
 
 
         input_files = "FILE1=(\n"
@@ -2016,7 +2035,8 @@ def itd_detection(
         #
         # Make shell script for array job
         #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
+        tumor_function_name = function_name + '_tumor'
+        shell_script_full_path = make_script_file_name( tumor_function_name, Geno )
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( wgs_res.itd_detection.format(
                                         log = Geno.dir[ 'log' ],
@@ -2040,7 +2060,7 @@ def itd_detection(
 
         if runtask_return_code != 0:
             with log_mutex:
-                log.error( "{function}: runtask failed".format( function = function_name ) )
+                log.error( "{function}: runtask failed".format( function = tumor_function_name ) )
             raise
 
         save_status_of_this_process( function_name, data_list[ 0 ][ 1 ], runtask_return_code )

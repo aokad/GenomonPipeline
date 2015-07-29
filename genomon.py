@@ -55,19 +55,35 @@ def construct_arguments( ):
     
     """
 
-    parser = cmdline.get_argparse( description='Genome Analysis Pipeline' )
+    parser = argparse.ArgumentParser( 'genomon', 'Genomon Pipeline Framework' );
 
-    ge_arg = parser.add_argument_group( 'genomon', 'Genomon options' );
+    parser.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",      type = str )
+    parser.add_argument( '-f', "--job_file",     help = "Genomon pipeline job configuration file",  type = str )
+    parser.add_argument( '-p', "--param_file",   help = "Genomon pipeline analysis parameter file", type = str )
 
-    ge_arg.add_argument( '-s', "--config_file",  help = "Genomon pipeline configuration file",      type = str )
-    ge_arg.add_argument( '-f', "--job_file",     help = "Genomon pipeline job configuration file",  type = str )
-    ge_arg.add_argument( '-p', "--param_file",   help = "Genomon pipeline analysis parameter file", type = str )
 
-    ge_arg.add_argument( '-m', "--mpi",          help = "Use MPI job submission",       action ='store_true',
+    parser.add_argument( '-v', "--verbose",  help = "Print more verbose messages for each additional verbose level.",
+                                                                                                    type = int, default = 0 )
+    parser.add_argument( '-L', "--log_file",     help = "Name and path of log file",                type = str )
+    parser.add_argument( '-j', "--jobs",         help = "Allow N jobs (commands) to run simultaneously.",
+                                                                                                    type = int, default = 1 )
+
+    parser.add_argument( '-o', "--multiprocess", help = "Number of multiprocesses to run", type = int, default = None )
+    parser.add_argument( '-r', "--multithread", help = "Number of multithread to run", type = int, default = None )
+    parser.add_argument( '-u', "--use_threads", help = "Use multiple threads rather than processes. Needs --jobs N with N > 1", action = 'store_true', default = False )
+
+
+    parser.add_argument( "--touch_files_only", help = "Don't actually run the pipeline; just 'touch' the output for each tasks to make them appear up to date.",
+                                                                                                    type = str )
+    parser.add_argument( "--recreate_database", help = "Don't actually run the pipeline; just recreate the checksum database.",
+                                                                                                    type = str )
+    parser.add_argument( "--checksum_file_name", dest = "history_file", metavar="FILE", type=str,
+                                            help="Path of the checksum file.")
+    parser.add_argument( '-m', "--mpi",          help = "Use MPI job submission",       action ='store_true',
                                                                                         default = False )
-    ge_arg.add_argument( '-d', "--drmaa",        help = "Use DRMAA job submission",     action ='store_true',
+    parser.add_argument( '-d', "--drmaa",        help = "Use DRMAA job submission",     action ='store_true',
                                                                                         default = False )
-    ge_arg.add_argument( '-l', "--abpath",       help = "Use absolute path in scripts", action ='store_true',
+    parser.add_argument( '-l', "--abpath",       help = "Use absolute path in scripts", action ='store_true',
                                                                                         default = False )
 
     return parser
@@ -85,6 +101,7 @@ def printheader( myself, options ):
     log.info( "Input job file    = {input}".format( input = options.job_file  ) )
 
 
+########################################
 def make_directories():
     """
     Make Directory Tree Structure
@@ -253,23 +270,35 @@ def set_env_variables():
     return return_value
 
 ########################################
+def sample_num():
+    n = 0
+    file_name_format_tmp = Geno.job.get_job( 'file_name' )
+
+    if file_name_format_tmp:
+        pair_id_list = Geno.job.get_job( 'pair_id' )
+        if pair_id_list:
+            file_name_format = file_name_format_tmp.format( pair_id = pair_id_list[0] )
+        else:
+            file_name_format = file_name_format_tmp
+
+        sample_subdir  = Geno.job.get_job( 'sample_subdir' )
+        if sample_subdir:
+            file_name = "{subdir}/{filename}".format( subdir = sample_subdir, filename = file_name_format )
+        else:
+            file_name = fileuname_format
+         
+        n = len( glob( Geno.dir[ 'data' ] + '/' + file_name ) )
+
+    return n
+
+
+########################################
 class InputFileError( Exception ):
     def __init__( self, value ):
         self.value = value
     def __str__( self ):
         return repr( self.value )
 
-########################################
-def cleanup_intermediates():
-    """
-    Clean up intermediate files
-
-    * Split fastq files
-    * Unnecessary bam files
-    * Split mutation call results
-
-    """
-    pass
 
 ###############################################################################
 #
@@ -301,10 +330,10 @@ def main():
         # Logging setup
         #
         #  logger which can be passed to multiprocessing ruffus tasks
-        if Geno.options.verbose:
+        if Geno.options.verbose != 0:
             verbose_level = Geno.options.verbose
         else:
-            verbose_level = 0
+            verbose_level = None
 
         log, log_mutex = cmdline.setup_logging( __name__,
                                                 Geno.options.log_file,
@@ -368,6 +397,28 @@ def main():
                            qsub_cmd = Geno.job.get_job( 'qsub_cmd' ) )
 
         #
+        # Set the number of multiprocess and multithread for pipeline_run
+        #
+        if Geno.options.multiprocess:
+            num_proc = Geno.options.multiprocess
+        elif Geno.options.jobs:
+            num_proc = Geno.options.jobs
+        else:
+            num_proc = sample_num()
+            if num_proc == 0:
+                num_proc = 1
+
+        if  ( Geno.options.use_threads and
+              not "multithread" in Geno.options and
+              Geno.options.jobs and
+              Geno.options.jobs > 1):
+            multithread = Geno.options.jobs
+        elif "multithread" in Geno.options:
+            multithread = Geno.options.multithread
+        else:
+            multithread = 1
+
+        #
         # Print information
         #
 #        log.info( '# main: process={num}'.format( num = Geno.options.jobs ) )
@@ -419,12 +470,22 @@ def main():
 #           level 5 : All Jobs in Out-of-date Tasks, (include only list of up-to-date tasks)
 #           level 6 : All jobs in All Tasks whether out of date or not
 #           level 10: logs messages useful only for debugging ruffus pipeline code
+        if Geno.options.recreate_database:
+            touch_files_only = CHECKSUM_REGENERATE
+        elif Geno.options.touch_files_only:
+            touch_files_only = True
+        else:
+            touch_files_only = False
+
         pipeline_run(   target_tasks = [ pipeline.last_function ],
-                        multiprocess = Geno.options.jobs,
-                        exceptions_terminate_immediately = True,
-                        log_exceptions = True,
-                        checksum_level = 2,
-                        logger = log )
+               multiprocess = num_proc,
+               multithread = multithread,
+               exceptions_terminate_immediately = True,
+               log_exceptions = True,
+               checksum_level = 2,
+               verbose = verbose_level,
+               history_file = Geno.options.history_file,
+               logger = log )
                         
 #        pipeline_cleanup()
 
@@ -450,12 +511,6 @@ def main():
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{0}: Unexpected error".format( whoami() ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-
-    #
-    # Clean up
-    #
-    cleanup_intermediates()
-
 
     sys.exit( 0 )
 
