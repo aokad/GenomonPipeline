@@ -20,7 +20,7 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-PATH=$PATH:{bowtie_path}
+export PATH=$PATH:{bowtie_path}
 
 {tophat2} -o {output_dir} \
           -G {ref_gtf} \
