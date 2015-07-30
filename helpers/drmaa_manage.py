@@ -10,6 +10,7 @@ import sys
 import drmaa
 import time
 import inspect
+import threading
 
 ################################################################################
 #
@@ -51,6 +52,8 @@ class JobManage:
             if work_dir:
                 self.work_dir = work_dir
 
+            self.lock = threading.Lock()
+
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -69,6 +72,9 @@ class JobManage:
             Destructor
 
         """
+        self.lock.acquire()
+        self.delete_job_template( )
+        self.lock.release()
         self.session.exit()
 
     def init_job_template( self, command, args = [],  log_dir = None, cmd_options = '' ):
@@ -82,19 +88,28 @@ class JobManage:
         self.job_template = {}
         self.jobids = []
 
-        if not hasattr( self, 'session' ):
-            self.session = drmaa.Session()
-            self.session.initialize()
+        try:
+            if not hasattr( self, 'session' ):
+                self.session = drmaa.Session()
+                self.session.initialize()
 
-        jt = self.session.createJobTemplate()
-        jt.remoteCommand = '/bin/bash ' + command
-        jt.args = args
-        jt.nativeSpecification = self.native_param.format( cmd_options = cmd_options )
-        jt.workingDirectory = self.work_dir
-        jt.outputPath = ':' + self.log_dir
-        jt.errorPath = ':' + self.log_dir
-        jt.joinFiles = False
-        jt.jobEnvironment = os.environ
+            jt = self.session.createJobTemplate()
+            jt.remoteCommand = '/bin/bash ' + command
+            jt.args = args
+            jt.nativeSpecification = self.native_param.format( cmd_options = cmd_options )
+            jt.workingDirectory = self.work_dir
+            jt.outputPath = ':' + self.log_dir
+            jt.errorPath = ':' + self.log_dir
+            jt.joinFiles = False
+            jt.jobEnvironment = os.environ
+
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
+            print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
+
         return jt
 
     def run_array_job( self,
@@ -109,6 +124,7 @@ class JobManage:
             if not log_dir:
                 log_dir = self.log_dir
 
+            self.lock.acquire()
             jt = self.init_job_template( 
                                     command,
                                     args = [],
@@ -117,8 +133,8 @@ class JobManage:
 
             jobids = self.session.runBulkJobs( jt, id_start, id_end, id_step )
             jobid = jobids[ 0 ][:jobids[ 0 ].find( '.' )]
+            self.lock.release()
             self.session.synchronize( jobids )
-
             self.job_template[ jobid ] = jt
 
         except Exception as e:
@@ -133,12 +149,14 @@ class JobManage:
             if not log_dir:
                 log_dir = self.log_dir
 
+            self.lock.acquire()
             jt = self.init_job_template(
                                     command,
                                     args = [],
                                     log_dir = log_dir,
                                     cmd_options = cmd_options )
             jobid = self.session.runJob( jt )
+            self.lock.release()
             self.job_template[ jobid ] = jt
 
         except Exception as e:
@@ -151,8 +169,9 @@ class JobManage:
     def delete_job_template( self, jobid = None ):
         try:
             if jobid:
-                self.session.deleteJobTemplate( self.job_template[ jobid ] )
-                del self.job_template[ jobid ]
+                if jobid in self.job_template:
+                    self.session.deleteJobTemplate( self.job_template[ jobid ] )
+                    del self.job_template[ jobid ]
             else:
                 for jobid in self.job_template.keys():
                     self.session.deleteJobTemplate( jt = self.job_template[ jobid ] )
@@ -176,8 +195,9 @@ class JobManage:
                         self.delete_job_template( jobid = jobid )
                         return_code = 0
                         break
+
                     if status_id == drmaa.JobState.FAILED:
-                        return_code = status_id
+                        self.lock.acquire()
                         self.delete_job_template( jobid = jobid )
                         break
                     time.sleep( 5 )
