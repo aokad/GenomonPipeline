@@ -1210,50 +1210,50 @@ def bwa_mem(
         str2 += " )\n"
         str3 += " )\n"
 
-        
-        #
-        # Make shell script for array job
-        #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        if use_biobambam:
-            bwa_mem_resource = wgs_res.bwa_mem_biobambam
-        else:
-            bwa_mem_resource = wgs_res.bwa_mem
+        if id > 0: # Error check: make sure that there are fastq files to align
+            #
+            # Make shell script for array job
+            #
+            shell_script_full_path = make_script_file_name( function_name, Geno )
+            shell_script_file = open( shell_script_full_path, 'w' )
+            if use_biobambam:
+                bwa_mem_resource = wgs_res.bwa_mem_biobambam
+            else:
+                bwa_mem_resource = wgs_res.bwa_mem
 
-        env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
-                                        libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
-        shell_script_file.write( bwa_mem_resource.format(
-                                        log = Geno.dir[ 'log' ],
-                                        array_data = str1 + str2 + str3,
-                                        fastq1 = "${FILE1[$SGE_TASK_ID]}",
-                                        fastq2 = "${FILE2[$SGE_TASK_ID]}",
-                                        bam = "${FILE3[$SGE_TASK_ID]}",
-                                        read_group = Geno.job.get_job(  'bam_read_group' ),
-                                        min_score = Geno.job.get_param( 'bwa_mem', 'min_score' ),
-                                        env_variables = env_variable_str,
-                                        ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
-                                        bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
-                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                        biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
+            env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
+                                            libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
+            shell_script_file.write( bwa_mem_resource.format(
+                                            log = Geno.dir[ 'log' ],
+                                            array_data = str1 + str2 + str3,
+                                            fastq1 = "${FILE1[$SGE_TASK_ID]}",
+                                            fastq2 = "${FILE2[$SGE_TASK_ID]}",
+                                            bam = "${FILE3[$SGE_TASK_ID]}",
+                                            read_group = Geno.job.get_job(  'bam_read_group' ),
+                                            min_score = Geno.job.get_param( 'bwa_mem', 'min_score' ),
+                                            env_variables = env_variable_str,
+                                            ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
+                                            bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
+                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
+                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
+                        )
                     )
-                )
-        shell_script_file.close()
+            shell_script_file.close()
 
-        #
-        # Run
-        #
-        runtask_return_code = Geno.RT.run_arrayjob(
-                            shell_script_full_path,
-                            Geno.job.get_job( 'cmd_options' )[ function_name ],
-                            id_start = 1,
-                            id_end = id )
-        if runtask_return_code != 0:
-            with log_mutex:
-                log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
-            
-        save_status_of_this_process( function_name, output_file1, runtask_return_code )
+            #
+            # Run
+            #
+            runtask_return_code = Geno.RT.run_arrayjob(
+                                shell_script_full_path,
+                                Geno.job.get_job( 'cmd_options' )[ function_name ],
+                                id_start = 1,
+                                id_end = id )
+            if runtask_return_code != 0:
+                with log_mutex:
+                    log.error( "{function}: runtask failed".format( function = function_name ) )
+                raise
+                
+            save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
     except IOError as (errno, strerror):
         with log_mutex:
