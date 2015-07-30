@@ -66,7 +66,7 @@ def construct_arguments( ):
                                                                                                     type = int, default = 0 )
     parser.add_argument( '-L', "--log_file",     help = "Name and path of log file",                type = str )
     parser.add_argument( '-j', "--jobs",         help = "Allow N jobs (commands) to run simultaneously.",
-                                                                                                    type = int, default = 1 )
+                                                                                                    type = int, default = None )
 
     parser.add_argument( '-o', "--multiprocess", help = "Number of multiprocesses to run", type = int, default = None )
     parser.add_argument( '-r', "--multithread", help = "Number of multithread to run", type = int, default = None )
@@ -285,7 +285,7 @@ def sample_num():
         if sample_subdir:
             file_name = "{subdir}/{filename}".format( subdir = sample_subdir, filename = file_name_format )
         else:
-            file_name = fileuname_format
+            file_name = file_name_format
          
         n = len( glob( Geno.dir[ 'data' ] + '/' + file_name ) )
 
@@ -399,24 +399,23 @@ def main():
         #
         # Set the number of multiprocess and multithread for pipeline_run
         #
-        if Geno.options.multiprocess:
+        sample_number = sample_num()
+        if Geno.options.multiprocess != None:
             num_proc = Geno.options.multiprocess
         elif Geno.options.jobs:
             num_proc = Geno.options.jobs
         else:
-            num_proc = sample_num()
-            if num_proc == 0:
-                num_proc = 1
+            num_proc = sample_number
 
-        if  ( Geno.options.use_threads and
-              not "multithread" in Geno.options and
-              Geno.options.jobs and
-              Geno.options.jobs > 1):
-            multithread = Geno.options.jobs
-        elif "multithread" in Geno.options:
+        if Geno.options.multithread != None:
             multithread = Geno.options.multithread
+        elif ( Geno.options.use_threads and
+               Geno.options.jobs ):
+            multithread = Geno.options.jobs
+        elif Geno.options.use_threads:
+            multithread = sample_number
         else:
-            multithread = 1
+            multithread = None
 
         #
         # Print information
