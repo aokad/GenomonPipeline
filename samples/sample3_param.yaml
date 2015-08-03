@@ -15,7 +15,7 @@ cutadapt:
 ##########
 # split fastq
 split_fastq:
-    split_fastq_line_number:    160000000
+    split_fastq_line_number:    16000000
     fastq_filter:               False # True or False
 
 
