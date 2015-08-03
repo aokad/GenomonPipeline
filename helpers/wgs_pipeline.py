@@ -84,27 +84,38 @@ def check_file_exists_for_split_fastq(
 
     """
 
-    ( output_prefix, output_suffix ) = os.path.splitext( output_file1 )
-    outfile_list = glob( "{prefix}*{suffix}".format( prefix = output_prefix, suffix = output_suffix ) )
-    if not outfile_list:
+    ( output_prefix1, output_suffix1 ) = os.path.splitext( output_file1 )
+    ( output_prefix2, output_suffix2 ) = os.path.splitext( output_file2 )
+    outfile_list1 =  glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) )
+    outfile_list2 = glob( "{prefix}*{suffix}".format( prefix = output_prefix2, suffix = output_suffix2 ) )
+    if not outfile_list1:
         return True, "Missing file {outprefix}*{outsuffix} for {input}.".format(
-                            outprefix = output_prefix,
-                            outsuffix = output_suffix,
+                            outprefix = output_prefix1,
+                            outsuffix = output_suffix1,
                             input = input_file1 )
+    elif not outfile_list2:
+        return True, "Missing file {outprefix}*{outsuffix} for {input}.".format(
+                            outprefix = output_prefix2,
+                            outsuffix = output_suffix2,
+                            input = input_file2 )
     else:
-        in_time = os.path.getmtime( input_file1 )
-        out_time = os.path.getmtime( outfile_list[ 0 ] )
-
         exit_status = get_status_of_this_process( 'split_fastq', output_file1 )
-        if exit_status != 0 and in_time > out_time:
+
+        in_time1 = os.path.getmtime( input_file1 )
+        out_time1 = os.path.getmtime( outfile_list1[ 0 ] )
+
+        in_time2 = os.path.getmtime( input_file2 )
+        out_time2 = os.path.getmtime( outfile_list2[ 0 ] )
+
+        if exit_status != 0 or in_time1 > out_time1 or in_time2 > out_time2:
             return True, "{outprefix}*{outsuffix} is older than {input}.".format(
-                                outprefix = output_prefix,
-                                outsuffix = output_suffix,
+                                outprefix = output_prefix1,
+                                outsuffix = output_suffix1,
                                 input = input_file1 )
         else:
             return False, "File {outprefix}*{outsuffix} exits for {input}.".format(
-                                outprefix = output_prefix,
-                                outsuffix = output_suffix,
+                                outprefix = output_prefix1,
+                                outsuffix = output_suffix1,
                                 input = input_file1 )
 
 
@@ -829,7 +840,9 @@ def extract_fastq( input_file_list, file_ext ):
                                     log = Geno.dir[ 'log' ],
                                     array_data = array_in + array_out,
                                     input_file = input_file,
-                                    output_file = output_file ) )
+                                    output_file = output_file,
+                                    scriptdir = Geno.dir[ 'script' ] 
+                                    ) )
     shell_script_file.close()
 
     #
@@ -891,7 +904,8 @@ def bam2fastq(
                                             outfastq1 = output_file1,
                                             outfastq2 = output_file2,
                                             tmpfastq = output_file1 + '.tmp',
-                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' )
+                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' ),
+                                            scriptdir = Geno.dir[ 'script' ]
                                             ) )
         elif 'single_bam' == file_type:
             shell_script_file.write( wgs_res.bamtofastq_s.format(
@@ -899,7 +913,8 @@ def bam2fastq(
                                             bamfile = input_file1,
                                             outfastq1 = output_file1,
                                             tmpfastq = output_file1 + '.tmp',
-                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' )
+                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' ),
+                                            scriptdir = Geno.dir[ 'script' ]
                                             ) )
         shell_script_file.close()
 
@@ -1006,7 +1021,8 @@ def split_fastq(
                                         input_file = input_file,
                                         suffix_len = suffix_len,
                                         output_suffix = output_suffix,
-                                        output_prefix = output_prefix ) )
+                                        output_prefix = output_prefix,
+                                        scriptdir = Geno.dir[ 'script' ] ) )
         shell_script_file.close()
 
         #
@@ -1235,9 +1251,8 @@ def bwa_mem(
                                             ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                             bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
                                             samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
-                        )
-                    )
+                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
+                                            scriptdir = Geno.dir[ 'script' ] ) )
             shell_script_file.close()
 
             #
@@ -1335,7 +1350,8 @@ def merge_bam(
                                         output_bam_file = output_file,
                                         env_variables = env_variable_str,
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                        biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
+                                        biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
+                                        scriptdir = Geno.dir[ 'script' ] 
                                         ) )
         shell_script_file.close()
 
@@ -1422,9 +1438,9 @@ def markduplicates(
                                             input_bam_files = input_files,
                                             output_bam = output_file,
                                             env_variables = env_variable_str,
-                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' )
-                                        )
-                                    )
+                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
+                                            scriptdir = Geno.dir[ 'script' ] 
+                                        ) )
             shell_script_file.close()
 
         else:
@@ -1441,9 +1457,9 @@ def markduplicates(
                                             output_bam = output_file,
                                             memory = java_memory,
                                             samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                            picard = Geno.conf.get( 'SOFTWARE', 'picard' )
-                                        )
-                                    )
+                                            picard = Geno.conf.get( 'SOFTWARE', 'picard' ),
+                                            scriptdir = Geno.dir[ 'script' ] 
+                                        ) )
             shell_script_file.close()
 
         #
@@ -1533,7 +1549,7 @@ def bam_stats(
                                             samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                             python = Geno.conf.get( 'SOFTWARE', 'python' ),
                                             chr_str_in_fa = chr_str_flag,
-                                            script_dir = Geno.dir[ 'script' ]
+                                            scriptdir = Geno.dir[ 'script' ]
                                         )
                                     )
             shell_script_file.close()
@@ -1558,7 +1574,7 @@ def bam_stats(
                                             bam_file = bam_file,
                                             output_txt = output_file,
                                             python = Geno.conf.get( 'SOFTWARE', 'python' ),
-                                            script_dir = Geno.dir[ 'script' ]
+                                            scriptdir = Geno.dir[ 'script' ]
                                         )
                                     )
             shell_script_file.close()
@@ -1697,9 +1713,9 @@ def fisher_mutation_call(
                                                                 sample_name = Geno.job.get_job( 'sample_name' ) ),
                                             out_dir = '${OUT_FILE[$SGE_TASK_ID]}',
                                             biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
-                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' )
-                                        )
-                                    )
+                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
+                                            scriptdir = Geno.dir[ 'script' ] 
+                                        ) )
 
             shell_script_file.close()
 
@@ -1749,7 +1765,7 @@ def fisher_mutation_call(
                                         min_depth = Geno.job.get_param( 'fisher_mutation_call', 'min_depth' ),
                                         samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
                                         python = Geno.conf.get( 'SOFTWARE', 'python' ),
-                                        script_dir = Geno.dir[ 'script' ]
+                                        scriptdir = Geno.dir[ 'script' ]
                                  ) )
         shell_script_file.close()
 
@@ -1774,8 +1790,9 @@ def fisher_mutation_call(
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( wgs_res.merge_fisher_result.format(
                                         log = Geno.dir[ 'log' ],
-                                        script_dir = Geno.dir[ 'script' ],
-                                        output_txt = disease_output_file ) )
+                                        output_txt = disease_output_file,
+                                        scriptdir = Geno.dir[ 'script' ] 
+                                 ) )
         shell_script_file.close()
 
         #
@@ -1919,7 +1936,9 @@ def itd_detection(
                                             output_file = "${FILE2[$SGE_TASK_ID]}",
                                             name = "${NAME[$SGE_TASK_ID]}",
                                             itd_inhouse_dir = Geno.dir[ 'config' ],
-                                            itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ) ) )
+                                            itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ),
+                                            scriptdir = Geno.dir[ 'script' ] 
+                                     ) )
             shell_script_file.close()
 
             #
@@ -2046,7 +2065,9 @@ def itd_detection(
                                         output_file = "${FILE2[$SGE_TASK_ID]}",
                                         name = "${NAME[$SGE_TASK_ID]}",
                                         itd_inhouse_dir = Geno.dir[ 'config' ],
-                                        itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ) ) )
+                                        itd_detector = Geno.conf.get( 'SOFTWARE', 'itd_detector' ),
+                                        scriptdir = Geno.dir[ 'script' ] 
+                                ) )
         shell_script_file.close()
 
         #
@@ -2122,8 +2143,8 @@ def annotation(
                                         table_annovar_params = Geno.job.get_param( 'annotation', 'table_annovar_params' ),
                                         ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                         annovar = Geno.conf.get( 'SOFTWARE', 'annovar' ),
-                                        scriptdir = Geno.dir[ 'script' ],
                                         python = Geno.conf.get( 'SOFTWARE', 'python' ),
+                                        scriptdir = Geno.dir[ 'script' ] 
                                         ) )
         shell_script_file.close()
 

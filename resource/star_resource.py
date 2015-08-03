@@ -20,12 +20,15 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
+source {scriptdir}/utility.sh
+
 {star} \
     --runMode genomeGenerate \
     --genomeDir {out_dir} \
     --genomeFastaFiles {ref_fasta} \
     --sjdbGTFfile {ref_gtf} \
     {additional_params} \
+check_error $?
 
 """
 
@@ -51,16 +54,20 @@ echo SGE_TASK_FIRST:$SGE_TASK_FIRST
 echo SGE_TASK_LAST:$SGE_TASK_LAST
 echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
+source {scriptdir}/utility.sh
+
 {array_data}
 
 case {input_file} in
 *\.gz)
     gzip -dc {input_file} >> {output_file}
+    check_error $?
     ;;
 
 *\.bz2)
 
     bzip2 -dc  {input_file} >> {output_file}
+    check_error $?
     ;;
 esac
 
@@ -84,11 +91,14 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
+source {scriptdir}/utility.sh
+
 {star} \
     --genomeDir {star_genome} \
     --readFilesIn {fastq1} {fastq2} \
     --outFileNamePrefix {out_prefix} \
     {additional_params}
+check_error $?
 
 """
 
@@ -111,6 +121,7 @@ date                    # print date
 set -xv
 
 export PERL5LIB={environment_variables}
+source {scriptdir}/utility.sh
 
 {star_fusion} \
     --chimeric_out_sam {chimeric_sam} \
@@ -118,6 +129,7 @@ export PERL5LIB={environment_variables}
     --ref_GTF {gtf_file} \
     --out_prefix {out_prefix} \
     {additional_params}
+check_error $?
 
 """
 

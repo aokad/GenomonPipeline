@@ -140,6 +140,7 @@ def star_genome(
                                         ref_gtf = gtf,
                                         out_dir = output_dir,
                                         star = Geno.conf.get( 'SOFTWARE', 'star' ),
+                                        scriptdir = Geno.dir[ 'script' ],
                                         additional_params = Geno.job.get_param( 'star_genome', 'additional_params' )
                                     )
                                 )
@@ -245,7 +246,8 @@ def star(
                                                 log = Geno.dir[ 'log' ],
                                                 array_data = array_data,
                                                 input_file = "${IN_FILE[$SGE_TASK_ID]}",
-                                                output_file = "${OUT_FILE[$SGE_TASK_ID]}"
+                                                output_file = "${OUT_FILE[$SGE_TASK_ID]}",
+                                                scriptdir = Geno.dir[ 'script' ]
                                             )
                                         )
                 shell_script_file.close()
@@ -282,7 +284,8 @@ def star(
                                         fastq2 = fastq_file2,
                                         out_prefix = output_prefix + '_',
                                         star = Geno.conf.get( 'SOFTWARE', 'STAR' ),
-                                        additional_params = Geno.job.get_param( 'star', 'additional_params' )
+                                        additional_params = Geno.job.get_param( 'star', 'additional_params' ),
+                                        scriptdir = Geno.dir[ 'script' ]
                                     )
                                 )
         shell_script_file.close()
@@ -362,7 +365,8 @@ def star_fusion(
                                         gtf_file = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
                                         environment_variables = Geno.conf.get( 'ENV', 'PERL5LIB' ),
                                         star_fusion = Geno.conf.get( 'SOFTWARE', 'STAR-Fusion' ),
-                                        additional_params = Geno.job.get_param( 'star_fusion', 'additional_params' )
+                                        additional_params = Geno.job.get_param( 'star_fusion', 'additional_params' ),
+                                        scriptdir = Geno.dir[ 'script' ]
                                     )
                                 )
         shell_script_file.close()
