@@ -3,7 +3,6 @@
 
 import re
 from __main__ import *
-from resource.genomon_rc import job_config_default as default_values
 
 """
     Genomon job status management object
