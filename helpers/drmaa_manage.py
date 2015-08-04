@@ -199,7 +199,7 @@ class JobManage:
                     if status_id == drmaa.JobState.FAILED:
                         self.lock.acquire()
                         self.delete_job_template( jobid = jobid )
-                        break
+                        raise
                     time.sleep( 5 )
 
         except Exception as e:
