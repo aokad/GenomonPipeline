@@ -23,6 +23,13 @@ split_fastq:
 # bwa mem
 bwa_mem:
     min_score:          20 # used for -T option of bwa mem
+    additional_params:  '-t 2'
+
+##########
+## BAM markduplicates
+markduplicates:
+    java_memory: '6G'
+
 
 ##########
 # BAM file statistics
