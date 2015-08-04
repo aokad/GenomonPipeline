@@ -1,8 +1,8 @@
 tophat2:
-    'additional_params': '-p 8'
+    additional_params: '-p 8'
 
 cufflinks:
-    'additional_params':
+    additional_params:
 
 cuffdiff:
-    'additional_params': '-p 4'
+    additional_params: '-p 4'
