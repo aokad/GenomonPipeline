@@ -6,9 +6,6 @@
 star_genome = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -34,9 +31,6 @@ check_error $?
 
 extract_fastq = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -77,9 +71,6 @@ esac
 star_map = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -105,9 +96,6 @@ check_error $?
 
 star_fusion = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #

@@ -6,9 +6,6 @@
 tophat2 = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -33,9 +30,6 @@ export PATH=$PATH:{bowtie_path}
 cufflinks = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -56,9 +50,6 @@ set -xv
 
 cuffdiff_merge = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -118,9 +109,6 @@ fi
 cuffdiff = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -144,9 +132,6 @@ set -xv
 
 cummeRbund = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #

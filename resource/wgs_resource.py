@@ -6,9 +6,6 @@
 bamtofastq_s = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -32,9 +29,6 @@ check_error $?
 
 bamtofastq_p = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -60,9 +54,6 @@ check_error $?
 """
 extract_gz = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -92,9 +83,6 @@ check_error $?
 
 splitfile = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -162,8 +150,7 @@ done
 cutadapt = """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
+# Set SGE
 #
 #$ -S /bin/bash
 #$ -cwd
@@ -209,9 +196,6 @@ check_error $?
 bwa_mem = r"""
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -242,9 +226,9 @@ then
 fi
 
 {bwa} mem \
-    -t 2 \
     -T {min_score} \
     -R '{read_group}' \
+    {additional_params} \
     {ref_fa} \
     {fastq1} \
     {fastq2} | \
@@ -259,9 +243,6 @@ check_error $?
 
 bwa_mem_biobambam = r"""
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -288,9 +269,9 @@ source {scriptdir}/utility.sh
 BAM_WITHOUT_SUFFIX=`echo {bam} | sed 's/\.bam//'`
 
 {bwa} mem \
-    -t 2 \
     -T {min_score} \
     -R '{read_group}' \
+    {additional_params} \
     {ref_fa} \
     {fastq1} \
     {fastq2} | \
@@ -317,9 +298,6 @@ check_error $?
 samtools_merge_bam = \
 """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -356,9 +334,6 @@ check_error $?
 biobambam_merge_bam = \
 """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -397,9 +372,6 @@ markduplicates = \
 """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -428,9 +400,6 @@ check_error $?
 biobambam_markduplicates = \
 """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -468,9 +437,6 @@ check_error $?
 bam_stats_calc = \
 """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 #$ -S /bin/bash
 #$ -cwd
@@ -544,9 +510,6 @@ bam_stats_merge = \
 """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 #$ -S /bin/bash
 #$ -cwd
 #$ -e {log}             # log file directory
@@ -582,9 +545,6 @@ check_error $?
 
 fisher_merge_bams = """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 # Set SGE
 #
@@ -654,9 +614,6 @@ fi
 fisher_mutation_call = \
 """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 #$ -S /bin/bash
 #$ -cwd
@@ -814,9 +771,6 @@ merge_fisher_result= \
 """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 #$ -S /bin/bash
 #$ -cwd
 #$ -e {log}             # log file directory
@@ -852,9 +806,6 @@ itd_detection = \
 """
 #!/bin/bash
 #
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
-#
 #$ -S /bin/bash
 #$ -cwd
 #$ -e {log}             # log file directory
@@ -886,9 +837,6 @@ check_error $?
 annotation = \
 """
 #!/bin/bash
-#
-#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
-#  @since 2012
 #
 #$ -S /bin/bash
 #$ -cwd
