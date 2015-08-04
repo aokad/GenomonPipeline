@@ -27,11 +27,11 @@ project_directory:
         sample_name
     results:
         sample_name:
-            - all_summary
             - config
             - script:
             - log
             - out:
+                - all_summary
                 - fastq
                 - bam
                 - summary
@@ -124,55 +124,15 @@ script_files = ( 'shell/utility.sh',
         )
 
 #
-# Job configuration file default values
-#
-job_config_default ={
-    'split_fastq':
-        { 'fastq_filter': False,
-          'split_fastq_line_number': 160000000 },
-    'cutadapt':
-        { 'adaptor': [ 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN', 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' ] },
-    'bwa_mem':
-        { 'min_score': 20 },
-    'markduplicates':
-        { 'java_memory': '6G' },
-    'fisher_mutation_call':
-        { 'max_indel': 2,
-          'max_distance': 5,
-          'map_quality': 30,
-          'base_quality': 15,
-          'mismatch_rate': 0.07,
-          'min_depth': 9 },
-    'star_genome': 
-        { 'additional_params': '--sjdbOverhang 99' },
-    'star': 
-        { 'additional_params': '--outSAMstrandField intronMotif --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-                                --outReadsUnmapped None --chimSegmentMin 15 --chimJunctionOverhangMin 15 \
-                                --alignMatesGapMax 200000 --alignIntronMax 200000 --outSAMtype BAM SortedByCoordinate' },
-    'star_fusion': 
-        { 'additional_params': ' ' },
-    'tophat2':
-        { 'additional_params': '-p 8' },
-    'cuffdiff':
-        { 'additional_params': '-p 4' },
-    'cufflinks':
-        { 'additional_params': ' ' },
-    'itd_detection':
-        { 'create_ctrl_panel': False,
-          'itd_ctrl_panel_files': '',
-          'ctrl_panel_normal': '',
-          'additional_params': '' },
-    'annotattion':
-        { 'additional_params': '--buildver hg19 --verdbsnp 131' },
-    'use_biobambam': False,
-    'bam_read_group': '@RG\\tID:Unknown\\tSM:Unknown\\tLB:Unknown\\tPL:Unknown\\tPU:Unknown\\tCN:unknown',
-}
-
-#
 # Environment variables
 #
 env_list = {
     'libmaus_PATH': [ 'LD_LIBRARY_PATH' ],
     'drmaa_PATH':   [ 'DRMAA_LIBRARY_PATH' ]
 }
+
+#
+# Default parameter file name
+#
+default_file_name = 'resource/default_param.yaml'
 

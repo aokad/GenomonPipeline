@@ -4,7 +4,7 @@ import sys
 import os
 import yaml
 from __main__ import *
-from resource.genomon_rc import job_config_default as default_values
+from resource.genomon_rc import default_file_name as default_file_name
 import job_check
 
 
@@ -19,14 +19,27 @@ class genomon_job:
     #
     # Interface
     #
-    def __init__( self, job_file = None, param_file = None, log = None ):
+    def __init__( self, job_file = None, param_file = None, Genomon_dir = None, log = None ):
 
-        self.__log = log
-        if job_file != None:
-            self.open_job( job_file )
-            self.open_param( param_file )
+        try:
+            self.__log = log
+            if job_file != None:
+                self.open_job( job_file )
+                self.open_param( param_file )
 
-        self.__default = default_values
+            if not Genomon_dir:
+                raise
+
+            f = open( Genomon_dir + '/' + default_file_name )
+            self.__default = yaml.load( f )
+            f.close()
+
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            self.__log.error( "genomon_job.init: unexpected error:", sys.exc_info()[0] )
+            self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise
 
     def open_param( self, param_file = None ):
         if param_file != None:

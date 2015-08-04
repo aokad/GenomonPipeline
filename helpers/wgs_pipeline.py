@@ -123,7 +123,7 @@ def check_file_exists_for_merge_bam(
     input_file_list,
     output_file
     ):
-    if ( Geno.job.get_job( 'use_biobambam' ) and
+    if ( Geno.job.get_param( 'others', 'use_biobambam' ) and
          'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
         return_code = False, "BioBambam does not need merge."
     else:
@@ -177,7 +177,7 @@ def check_file_exists_for_bwa_mem(
 
     exit_status = get_status_of_this_process( 'bwa_mem', output_file1 )
     ( output_prefix, output_suffix ) = os.path.splitext( output_file1 )
-    if Geno.job.get_job( 'use_biobambam' ):
+    if Geno.job.get_param( 'others', 'use_biobambam' ):
         glob_filename = "{prefix}*_bamsorted{suffix}".format( prefix = output_prefix, suffix = output_suffix ) 
     else:
         glob_filename = "{prefix}*_sorted{suffix}".format( prefix = output_prefix, suffix = output_suffix ) 
@@ -257,7 +257,7 @@ def check_file_exists_for_bam_stats(
 
     summary_dir_name = os.path.dirname( output_file )
     out_sum_file =  summary_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
-    if exit_status != 0 or not os.path.exists( summary_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt' ):
+    if exit_status != 0 or not os.path.exists( out_sam_file ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = out_sum_file,
                             inputfile = input_file1 )
@@ -428,7 +428,7 @@ def generate_params_for_markduplicates ():
             input_file_list[ dir_name ] = []
         input_file_list[ dir_name ].append( param[ 0 ] )
 
-    if Geno.job.get_job( 'use_biobambam' ):
+    if Geno.job.get_param( 'others', 'use_biobambam' ):
         for dir_name in input_file_list.keys():
             return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam' ]
             yield return_list
@@ -1247,6 +1247,7 @@ def bwa_mem(
                                             bam = "${FILE3[$SGE_TASK_ID]}",
                                             read_group = Geno.job.get_job(  'bam_read_group' ),
                                             min_score = Geno.job.get_param( 'bwa_mem', 'min_score' ),
+                                            additional_params = Geno.job.get_param( 'bwa_mem', 'additional_params' ),
                                             env_variables = env_variable_str,
                                             ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
                                             bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
@@ -1702,7 +1703,7 @@ def fisher_mutation_call(
             shell_script_file.write( wgs_res.fisher_merge_bams.format(
                                             log = Geno.dir[ 'log' ],
                                             env_variables = env_variable_str,
-                                            use_biobambam = Geno.job.get_job( 'use_biobambam' ),
+                                            use_biobambam = Geno.job.get_param( 'others', 'use_biobambam' ),
                                             array_data = samtools_bam_file_list_array + bambam_bam_file_list_array +\
                                                          output_dir_array + merge_bam_flag,
                                             bambam_input_bam_files = "${BAMBAM_INPUT_FILE[$SGE_TASK_ID]}",
@@ -1952,7 +1953,9 @@ def itd_detection(
 
             if runtask_return_code != 0:
                 with log_mutex:
-                    log.error( "{function}: runtask failed".format( function = normal_function_name ) )
+                    log.error( "{function}: runtask failed. Return code: {code}.".format(
+                                            function = normal_function_name,
+                                            code = runtask_return_code ) )
                 raise
 
         #
@@ -2251,7 +2254,7 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
                             input_file2,
                             output_file1,
                             output_file2, 
-                            Geno.job.get_job( 'use_biobambam' ) )
+                            Geno.job.get_param( 'others', 'use_biobambam' ) )
     if not return_value:
         raise
 
@@ -2267,13 +2270,13 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 @files( generate_params_for_merge_bam )
 @check_if_uptodate( check_file_exists_for_merge_bam)
 def stage_5( input_file_list, output_file ):
-    if ( Geno.job.get_job( 'use_biobambam' ) and
+    if ( Geno.job.get_param( 'others', 'use_biobambam' ) and
          'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
         return_value = True
     else:
         return_value = merge_bam( input_file_list,
                                   output_file,
-                                  Geno.job.get_job( 'use_biobambam' ) )
+                                  Geno.job.get_param( 'others', 'use_biobambam' ) )
 
     if not return_value:
         raise
@@ -2292,7 +2295,7 @@ def stage_5( input_file_list, output_file ):
 def stage_6( input_file_list, output_file ):
     return_value =  markduplicates( input_file_list,
                                     output_file,
-                                    Geno.job.get_job( 'use_biobambam' ) )
+                                    Geno.job.get_param( 'others', 'use_biobambam' ) )
 
     if not return_value:
         raise
