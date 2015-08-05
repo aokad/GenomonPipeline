@@ -59,7 +59,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise
+            raise Exception( 'drmaa_manage.constructor failed' )
 
     def set_native_param( self, native_param ):
         """
@@ -108,7 +108,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise
+            raise Exception( 'drmaa_manage.init_job_template failed' )
 
         return jt
 
@@ -142,7 +142,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise
+            raise Exception( 'drmaa_manage.run_array_job failed' )
 
     def run_job( self, command, array_param = None, args = [],  log_dir = None, cmd_options = '' ):
         try:
@@ -164,7 +164,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise
+            raise Exception( 'drmaa_manage.run_job failed' )
 
     def delete_job_template( self, jobid = None ):
         try:
@@ -182,32 +182,31 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise
+            raise Exception( 'drmaa_manage.delete_job_template failed' )
 
     def wait_jobs( self ):
 
-        return_code = 0
+        return_code = None
         try:
             for jobid in self.job_template.keys():
-                while return_code == 0:
-                    status_id = self.session.jobStatus( jobid )
-                    if status_id == drmaa.JobState.DONE:
-                        self.delete_job_template( jobid = jobid )
-                        return_code = 0
-                        break
+                exited = False
+                while not exited:
+                    retval = self.session.wait( jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER )
+                    exited = retval.hasExited
 
-                    if status_id == drmaa.JobState.FAILED:
-                        self.lock.acquire()
-                        self.delete_job_template( jobid = jobid )
-                        raise
-                    time.sleep( 5 )
+                else:
+                    return_code = retval.exitStatus
+                    self.delete_job_template( jobid = jobid )
+                    if return_code != 0:
+                        raise Exception( 'Job {jobid} exitted with {code}.'.format( jobid = jobid, code = str( return_code ) ) )
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
-            print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            return_code = 1
+            print( "{function}: Unexpected error: {error}, exit_status = {ret}".format( function = self.whoami(), error = sys.exc_info()[0], ret = return_code ) )
+            print( e )
+            print( "{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+            raise Exception( 'Job {jobid} exitted with {code}.'.format( jobid = jobid, code = str( return_code ) ) )
 
         return return_code
 
