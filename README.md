@@ -15,21 +15,23 @@ First you need to install python modules
 Then, install the following tools.
 ```
   bedtools-2
-  biobambam
-  bowtie2
   bwa
-  cufflinks-2
   GATK-3
-  Genomon
-  libmaus
   PCAP-core-dev
   picard-tools
   samtools
-  tophat-2
+
+  biobambam
+  libmaus ( necessary for biobambam )
+
+  tophat-2 ( necessary for RNA analysis )
+  bowtie2 ( necessary for RNA analysis )
+  cufflinks-2 ( necessary for RNA analysis )
+
 ```
 Install R modules.
 ```
-  cummeRbund
+  cummeRbund ( necessary for RNA analysis )
 ```
 Finally,
 
