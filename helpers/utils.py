@@ -219,3 +219,11 @@ def make_input_target( subdir, dir_tree, cwd, Geno ):
                                         subdir = os.path.basename( subdir_tmp ) ),
                                  Geno )
 
+
+def make_script_file( function_name, string, Geno, **kwargs ):
+    shell_script_full_path = make_script_file_name( function_name, Geno )
+    shell_script_file = open( shell_script_full_path, 'w' )
+    shell_script_file.write( string.format( **kwargs))
+    shell_script_file.close()
+    return shell_script_full_path
+

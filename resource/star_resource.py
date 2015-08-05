@@ -6,6 +6,9 @@
 star_genome = """
 #!/bin/bash
 #
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -31,6 +34,9 @@ check_error $?
 
 extract_fastq = """
 #!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
 #
 # Set SGE
 #
@@ -71,6 +77,9 @@ esac
 star_map = """
 #!/bin/bash
 #
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -97,6 +106,9 @@ check_error $?
 star_fusion = """
 #!/bin/bash
 #
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
 # Set SGE
 #
 #$ -S /bin/bash         # set shell in UGE
@@ -117,6 +129,41 @@ source {scriptdir}/utility.sh
     --ref_GTF {gtf_file} \
     --out_prefix {out_prefix} \
     {additional_params}
+check_error $?
+
+"""
+
+
+fusionfusion = """
+#!/bin/bash
+#
+#  Copyright Human Genome Center, Institute of Medical Science, the University of Tokyo
+#  @since 2012
+#
+# Set SGE
+#
+#$ -S /bin/bash         # set shell in UGE
+#$ -cwd                 # execute at the submitted dir
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+# set python environment
+export PYTHONHOME={pythonhome}
+export PATH=$PYTHONHOME/bin:$PATH
+export LD_LIBRARY_PATH={ld_library_path}
+export PYTHONPATH={pythonpath}
+
+source {scriptdir}/utility.sh
+
+{fusion_fusion} \
+    --star {chimeric_sam} \
+    --out {output_prefix} \
+    --param {param_file} \
+
 check_error $?
 
 """

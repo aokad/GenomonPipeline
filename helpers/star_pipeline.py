@@ -77,6 +77,16 @@ def check_file_exists_for_star_fusion( input_file1, input_file2, output_prefix )
         return True, "Missing file %s" % output_prefix
     else:
         output_tmp = output_prefix + '.junction_breakpts_to_genes.txt'
+        print Geno.job.get_job( 'tasks' )
+        return check_file_exists( input_file1, output_tmp )
+
+def check_file_exists_for_fusionfusion( input_file1, input_file2, output_prefix ):
+    exit_status = get_status_of_this_process( 'fusionfusion', output_prefix )
+    if exit_status != 0:
+        return True, "Missing file %s" % output_prefix
+    else:
+        output_tmp = output_prefix + '/star.fusion.result.txt'
+        print output_tmp
         return check_file_exists( input_file1, output_tmp )
 
 
@@ -99,6 +109,14 @@ def generate_params_for_star_fusion( ):
     for infile1, infile2, outdir1, outdir2 in Sample.param( 'star_fusion' ):
         yield ( infile1 + '_Chimeric.out.sam',
                 infile1 + '_Chimeric.out.junction',
+                outdir1 )
+
+def generate_params_for_fusionfusion( ):
+    global Sample
+    Sample.make_param( 'fusionfusion', None, '', 'fusionfusion', 1, 1 )
+    for infile1, infile2, outdir1, outdir2 in Sample.param( 'fusionfusion' ):
+        yield ( infile1 + '_Chimeric.out.sam',
+                infile1 + '_Chimeric.out.sam',
                 outdir1 )
 
 #####################################################################
@@ -132,20 +150,17 @@ def star_genome(
         #
         # Make shell script
         #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( star_res.star_genome.format(
-                                        log = Geno.dir[ 'log' ],
-                                        ref_fasta = fasta,
-                                        ref_gtf = gtf,
-                                        out_dir = output_dir,
-                                        star = Geno.conf.get( 'SOFTWARE', 'star' ),
-                                        scriptdir = Geno.dir[ 'script' ],
-                                        additional_params = Geno.job.get_param( 'star_genome', 'additional_params' )
-                                    )
-                                )
-        shell_script_file.close()
-
+        args = {
+            'log': Geno.dir[ 'log' ],
+            'ref_fasta': fasta,
+            'ref_gtf': gtf,
+            'out_dir': output_dir,
+            'star': Geno.conf.get( 'SOFTWARE', 'star' ),
+            'scriptdir': Geno.dir[ 'script' ],
+            'additional_params': Geno.job.get_param( 'star_genome', 'additional_params' )
+        }
+        shell_script_full_path = make_script_file( function_name, star_res.star_genome, Geno, **args )
+        
         #
         # Run
         #
@@ -240,17 +255,14 @@ def star(
                 #
                 # Make shell script
                 #
-                shell_script_full_path = make_script_file_name( function_name + '_decomp', Geno )
-                shell_script_file = open( shell_script_full_path, 'w' )
-                shell_script_file.write( star_res.extract_fastq.format(
-                                                log = Geno.dir[ 'log' ],
-                                                array_data = array_data,
-                                                input_file = "${IN_FILE[$SGE_TASK_ID]}",
-                                                output_file = "${OUT_FILE[$SGE_TASK_ID]}",
-                                                scriptdir = Geno.dir[ 'script' ]
-                                            )
-                                        )
-                shell_script_file.close()
+                args = {
+                    'log': Geno.dir[ 'log' ],
+                    'array_data': array_data,
+                    'input_file': "${IN_FILE[$SGE_TASK_ID]}",
+                    'output_file': "${OUT_FILE[$SGE_TASK_ID]}",
+                    'scriptdir': Geno.dir[ 'script' ]
+                    }
+                make_script_file( function_name + '_decomp', star_res.extract_fastq, Geno, **args)
 
                 #
                 # Run
@@ -275,20 +287,17 @@ def star(
         # Run Star
         # Make shell script
         #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( star_res.star_map.format(
-                                        log = Geno.dir[ 'log' ],
-                                        star_genome = Geno.conf.get( 'REFERENCE', 'star_genome' ),
-                                        fastq1 = fastq_file1,
-                                        fastq2 = fastq_file2,
-                                        out_prefix = output_prefix + '_',
-                                        star = Geno.conf.get( 'SOFTWARE', 'STAR' ),
-                                        additional_params = Geno.job.get_param( 'star', 'additional_params' ),
-                                        scriptdir = Geno.dir[ 'script' ]
-                                    )
-                                )
-        shell_script_file.close()
+        args = {
+            'log': Geno.dir[ 'log' ],
+            'star_genome': Geno.conf.get( 'REFERENCE', 'star_genome' ),
+            'fastq1': fastq_file1,
+            'fastq2': fastq_file2,
+            'out_prefix': output_prefix + '_',
+            'star': Geno.conf.get( 'SOFTWARE', 'STAR' ),
+            'additional_params': Geno.job.get_param( 'star', 'additional_params' ),
+            'scriptdir': Geno.dir[ 'script' ]
+        }
+        shell_script_full_path = make_script_file( function_name, star_res.star_map, Geno, **args )
 
         #
         # Run
@@ -355,21 +364,95 @@ def star_fusion(
         #
         # Make shell script
         #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( star_res.star_fusion.format(
-                                        log = Geno.dir[ 'log' ],
-                                        chimeric_sam = sam,
-                                        chimeric_junction = junction,
-                                        out_prefix = output_prefix,
-                                        gtf_file = Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
-                                        environment_variables = Geno.conf.get( 'ENV', 'PERL5LIB' ),
-                                        star_fusion = Geno.conf.get( 'SOFTWARE', 'STAR-Fusion' ),
-                                        additional_params = Geno.job.get_param( 'star_fusion', 'additional_params' ),
-                                        scriptdir = Geno.dir[ 'script' ]
-                                    )
-                                )
-        shell_script_file.close()
+        arg = { log: Geno.dir[ 'log' ],
+                chimeric_sam: sam,
+                chimeric_junction: junction,
+                out_prefix: output_prefix,
+                gtf_file: Geno.conf.get( 'REFERENCE', 'ref_gtf' ),
+                environment_variables: Geno.conf.get( 'ENV', 'PERL5LIB' ),
+                star_fusion: Geno.conf.get( 'SOFTWARE', 'STAR-Fusion' ),
+                additional_params: Geno.job.get_param( 'star_fusion', 'additional_params' ),
+                scriptdir: Geno.dir[ 'script' ] }
+        shell_script_full_path = make_script_file( function_name, star_res.star_fusion, Geno, **arg)
+
+        #
+        # Run
+        #
+        return_code = Geno.RT.runtask(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
+
+        if return_code != 0:
+            log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+
+        save_status_of_this_process( function_name, output_prefix, return_code )
+
+    except IOError as (errno, strerror):
+        log.error( "{function}: I/O error({num}): {error}".format(
+                        function = whoami(),
+                        num = errno,
+                        error = strerror)
+                )
+        return_code = False
+
+    except ValueError:
+        log.error( "{function}: ValueError".format(
+                        function = whoami()
+                    )
+                )
+        return_code = False
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error}.".format(
+                    function = whoami() , error = sys.exc_info()[0] ) )
+        return_code = False
+
+
+    return return_code
+
+#####################################################################
+#
+#   STAGE 4
+#
+@follows( star_fusion )
+@active_if( 'fusionfusion' in Geno.job.get_job( 'tasks' )[ 'STAR' ] )
+@files( generate_params_for_fusionfusion )
+@check_if_uptodate( check_file_exists_for_fusionfusion )
+def fusionfusion(
+        sam,
+        junction,
+        output_prefix
+        ):
+    """
+        Stage 4: fusion_fusion
+
+    """
+    return_code = True
+
+    try:
+        function_name = whoami()
+        log.info( "#{function}".format( function = function_name ) )
+
+        #
+        # Make shell script
+        #
+        args =  {
+            'log': Geno.dir[ 'log' ],
+            'pythonhome': Geno.conf.get( 'ENV', 'PYTHONHOME' ),
+            'ld_library_path': Geno.conf.get( 'ENV', 'LD_LIBRARY_PATH'),
+            'pythonpath': Geno.conf.get( 'ENV', 'PYTHONPATH' ),
+            'chimeric_sam': sam,
+            'output_prefix': output_prefix,
+            # 'out_dir': output_dir,
+            'fusion_fusion': Geno.conf.get( 'SOFTWARE', 'fusionfusion' ),
+            'param_file': Geno.job.get_param( 'star_fusion', 'additional_params' ),
+            'scriptdir': Geno.dir[ 'script' ]
+        }
+
+        shell_script_full_path = make_script_file( function_name, star_res.fusionfusion, Geno, **args )
 
         #
         # Run
@@ -414,7 +497,7 @@ def star_fusion(
 #   LAST STAGE 
 #
 
-@follows( star_fusion )
+@follows( fusionfusion )
 def last_function():
     log.info( "Genomon pipline has finished successflly!" )
     return True

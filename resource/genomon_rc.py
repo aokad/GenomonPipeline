@@ -45,6 +45,7 @@ project_directory:
                     - itd
                     - star
                     - star_fusion
+                    - fusionfusion
 """
 
 end_dir_list = ( 'config',
@@ -57,7 +58,7 @@ end_dir_list = ( 'config',
                  'cufflinks',
                  'cuffdiff',
                  'cummeRbund',
-                 'fusion',
+                 'fusionfusion',
                  'sv',
                  'itd',
                  'star',
@@ -78,6 +79,7 @@ subdir_list = ( 'fastq',
                 'cummeRbund',
                 'star',
                 'star_fusion',
+                'fusionfusion',
                 'summary',
                 'all_summary' )
 
@@ -90,13 +92,15 @@ dir_task_list = { 'fastq':          'split_fastq',
                   'annotation':     'annotation',
                   'itd':            'itd_detection',
                   'star':           'star',
-                  'star_fusion':    'star_fusion'
+                  'star_fusion':    'star_fusion',
+                  'fusionfusion':   'fusionfusion'
 }
                 
 data_ext_list = { 'fastq':          'fastq',
                   'bam':            'bam',
                   'itd':            'txt',
                   'annotation':     'txt',
+                  'fusionfusion':   'txt',
                   'summary':        'txt',
                   'all_summary':    'txt'
 }
