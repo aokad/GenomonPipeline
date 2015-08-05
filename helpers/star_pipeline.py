@@ -417,7 +417,7 @@ def star_fusion(
 #
 #   STAGE 4
 #
-@follows( star_fusion )
+@follows( star )
 @active_if( 'fusionfusion' in Geno.job.get_job( 'tasks' )[ 'STAR' ] )
 @files( generate_params_for_fusionfusion )
 @check_if_uptodate( check_file_exists_for_fusionfusion )
@@ -448,7 +448,7 @@ def fusionfusion(
             'output_prefix': output_prefix,
             # 'out_dir': output_dir,
             'fusion_fusion': Geno.conf.get( 'SOFTWARE', 'fusionfusion' ),
-            'param_file': Geno.job.get_param( 'star_fusion', 'additional_params' ),
+            'param_file': Geno.job.get_param( 'fusionfusion', 'param_file' ),
             'scriptdir': Geno.dir[ 'script' ]
         }
 
