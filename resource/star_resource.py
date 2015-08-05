@@ -157,14 +157,12 @@ export PATH=$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-source {scriptdir}/utility.sh
 
 {fusion_fusion} \
     --star {chimeric_sam} \
     --out {output_prefix} \
     --param {param_file} \
 
-check_error $?
 
 """
 
