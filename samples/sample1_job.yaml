@@ -33,6 +33,7 @@ project_dir_tree:
                     - analysis_date:
                         - mutation
                         - summary
+                        - itd
 
 ######################################################################
 #
