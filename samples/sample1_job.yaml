@@ -4,8 +4,9 @@
 #
 # Mandatory definitions
 #   project_root:   All the data and results are stored under this directory.
+#                   If the directory does not exist, it is going to be created.
 #   analysis_date:  either 'today' or a specific date
-#
+#   sample_name:    Name of sample in this yaml.
 #
 project_root:           ~/tmp
 analysis_date:          today
@@ -18,9 +19,22 @@ sample_name:            small
 # Optional
 #   project_dir_tree:   if not specified, the default directory tree is going to be created.
 #
+#   Necessary directories have to be defined in project_dir_tree.
+#   * A link of input_file_dir is going to be created on sample_name under data directory.
+#     sample_name needs to be place under data directory.
+#   * job log files --> log
+#   * yaml files, config files, status files --> log
+#   * script files --> script
+#   * annotation --> annotation
+#   * fisher_mutation_call --> mutation
+#   * itd_detection --> itd
+#   * bam_stats --> summary
+#   * bwa_mem, merge_bam, markduplicates --> bam
+#
 project_dir_tree:
     project_directory:
         data:
+            sample_name
         results:
             sample_name:
                 - all_summmary
@@ -49,7 +63,7 @@ project_dir_tree:
 #   file_ext    we assume that input file extension is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
 #
-#   pair_id     if file_name includes pair_id, need to specify
+#   pair_id     if file_name includes pair_id, need to specify.
 #
 #   sample_subdir   if the input_file_dir includes sub-directories containting data files,
 #                   you can specify.
@@ -58,6 +72,9 @@ project_dir_tree:
 #                   sample_subdir:  s_B1N*
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#   The permission of directories created in the analysis can be set by directory_permission.
+#   You can specify owner, group, or all. 
 #
 #
 input_file_dir:             /home/w3varann/samples/small
@@ -75,7 +92,6 @@ directory_permission:       owner   # owner, group, all
 #
 # Analysis setting
 #
-use_biobambam:      False    # True or False. False is set by default, if not specified
 tasks:
                     WGS:
                         - split_fastq
