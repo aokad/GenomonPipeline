@@ -2,7 +2,6 @@ mandatory:
     - sample_name
     - analysis_date
 
-    - project_root
     - input_file_dir
     - input_file_type
     - file_name
@@ -49,7 +48,7 @@ out_dir:
         fisher_mutation_call:   mutation
         ebcall_mutation_call:   mutation
         copy_number:            cnv
-        sv:                     sv
+        sv_detection:           sv
         itd_detection:          itd
         bam_stats:              summary
         all_stats:              all_summary

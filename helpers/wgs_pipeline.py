@@ -10,6 +10,7 @@ from ruffus import *
 from runtask import RunTask
 from glob import glob
 import difflib
+import yaml
 
 #####################################################################
 #
@@ -298,6 +299,12 @@ def check_file_exists_for_itd_detection(
                 return True, "{output} is older than {input}.".format( output = out_dir, input = in_file )
 
     return False, "Output files  exits."
+
+
+def check_file_exists_for_sv_parse(*param):
+
+    return True, "always true!"
+
 
 def check_file_exists_for_annotation(
         input_file,
@@ -767,6 +774,24 @@ def generate_params_for_itd_detection( ):
                disease_file_list,
                normal_outfile_list,
                disease_outfile_list )
+
+
+def generate_params_for_sv_parse():
+
+
+    Sample.make_param( 'sv_detection', 'markduplicates', '.txt', 'sv', 1, 1 )
+    param_list = Sample.param( 'sv_detection' )
+    for input1, input2, output1, output2 in param_list:
+
+        #
+        # for target group
+        # 
+        bam_path = make_bam_filename_for_markdup_result(input1)
+        bam_dirname = os.path.dirname(bam_path)
+        label = os.path.basename(bam_dirname)
+        out_path = os.path.dirname(output1)
+
+        yield [label, bam_path, out_path] 
 
 def generate_params_for_annotation():
     """
@@ -2350,6 +2375,36 @@ def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_
 
 #####################################################################
 #
+# STAGE 10 sv_detection
+#
+#  in:  bam
+#  out: txt
+#
+@follows (stage_6 )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@parallel( generate_params_for_sv_parse )
+@check_if_uptodate( check_file_exists_for_sv_parse )
+def sv_parse( target_label, target_bam, target_outdir ):
+
+    print "parameters"    
+    print target_label + '\t' + target_bam + '\t' + target_outdir
+
+    sv_sampleConf = {"target": {}}
+    sv_sampleConf["target"]["label"] = target_label 
+    sv_sampleConf["target"]["path_to_bam"] = target_bam
+    sv_sampleConf["target"]["path_to_output_dir"] = target_outdir
+
+    hOUT = open(target_outdir + "/" + target_label + ".yaml", "w")
+    print >> hOUT, yaml.dump(sv_sampleConf, default_flow_style = False)
+    hOUT.close()
+
+    # return_value = sv_parse(target_label, target_bam, target_outdir, match_use, match_bam, nonmatch_use, nonmatch_match_label, nonmatch_path)
+    # if not return_value:
+    #     raise
+
+
+#####################################################################
+#
 #   STAGE 10 annotation
 #
 #   in:     txt
@@ -2368,7 +2423,7 @@ def stage_10(  input_file, output_file ):
 #
 #   LAST STAGE 
 #
-@follows( stage_10 )
+@follows( sv_parse )
 def last_function():
     with log_mutex:
         log.info( "Genomon pipline has finished successflly!" )
