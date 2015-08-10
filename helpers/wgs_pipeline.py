@@ -2384,23 +2384,109 @@ def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_
 @active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @parallel( generate_params_for_sv_parse )
 @check_if_uptodate( check_file_exists_for_sv_parse )
-def sv_parse( target_label, target_bam, target_outdir ):
+def sv_detection_parse( target_label, target_bam, target_outdir ):
 
-    print "parameters"    
-    print target_label + '\t' + target_bam + '\t' + target_outdir
 
+    ##########
+    # generate sample config yaml file
     sv_sampleConf = {"target": {}}
     sv_sampleConf["target"]["label"] = target_label 
     sv_sampleConf["target"]["path_to_bam"] = target_bam
     sv_sampleConf["target"]["path_to_output_dir"] = target_outdir
-
+    
     hOUT = open(target_outdir + "/" + target_label + ".yaml", "w")
     print >> hOUT, yaml.dump(sv_sampleConf, default_flow_style = False)
     hOUT.close()
+    ##########
 
-    # return_value = sv_parse(target_label, target_bam, target_outdir, match_use, match_bam, nonmatch_use, nonmatch_match_label, nonmatch_path)
-    # if not return_value:
-    #     raise
+    return_code = True
+
+    try:
+        function_name = whoami()
+        log.info( "#{function}".format( function = function_name ) )
+
+        #
+        # Make shell script
+        #
+        args =  {
+            'log': Geno.dir[ 'log' ],
+            'pythonhome': Geno.conf.get( 'ENV', 'PYTHONHOME' ),
+            'ld_library_path': Geno.conf.get( 'ENV', 'LD_LIBRARY_PATH'),
+            'pythonpath': Geno.conf.get( 'ENV', 'PYTHONPATH' ),
+            'scriptdir': Geno.dir[ 'script' ],
+            'genomon_sv': Geno.conf.get( 'SOFTWARE', 'genomon_sv' ),
+            'method' : "parse",
+            'sample_conf' : target_outdir + "/" + target_label + ".yaml",
+            'param_conf': Geno.job.get_param( 'genomon_sv', 'param_file' )
+        }
+
+        print wgs_res.sv_parse_filt.format(
+                                 log = Geno.dir[ 'log' ],
+                                 pythonhome = Geno.conf.get( 'ENV', 'PYTHONHOME' ),
+                                 ld_library_path = Geno.conf.get( 'ENV', 'LD_LIBRARY_PATH'),
+                                 pythonpath = Geno.conf.get( 'ENV', 'PYTHONPATH' ),
+                                 scriptdir = Geno.dir[ 'script' ],
+                                 genomon_sv = Geno.conf.get( 'SOFTWARE', 'genomon_sv' ),
+                                 method = "parse",
+                                 sample_conf = target_outdir + "/" + target_label + ".yaml",
+                                 param_conf = Geno.job.get_param( 'genomon_sv', 'param_file' )
+                                 )
+ 
+
+        shell_script_full_path = make_script_file_name( function_name, Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.sv_parse_filt.format(
+                                     log = Geno.dir[ 'log' ],
+                                     pythonhome = Geno.conf.get( 'ENV', 'PYTHONHOME' ),
+                                     ld_library_path = Geno.conf.get( 'ENV', 'LD_LIBRARY_PATH'),
+                                     pythonpath = Geno.conf.get( 'ENV', 'PYTHONPATH' ),
+                                     scriptdir = Geno.dir[ 'script' ],
+                                     genomon_sv = Geno.conf.get( 'SOFTWARE', 'genomon_sv' ),
+                                     method = "parse",
+                                     sample_conf = target_outdir + "/" + target_label + ".yaml",
+                                     param_conf = Geno.job.get_param( 'genomon_sv', 'param_file' )
+                                     ) )
+        shell_script_file.close()
+
+
+        #
+        # Run
+        #
+        return_code = Geno.RT.runtask(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ "sv_detection" ] )
+
+        if return_code != 0:
+            log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+
+        save_status_of_this_process( function_name, output_prefix, return_code )
+
+
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        return_value = False
+
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        return_value = False
+
+    else:
+        return_value = True
+
+    return return_value
+
+
 
 
 #####################################################################
@@ -2423,7 +2509,7 @@ def stage_10(  input_file, output_file ):
 #
 #   LAST STAGE 
 #
-@follows( sv_parse )
+@follows( sv_detection_parse )
 def last_function():
     with log_mutex:
         log.info( "Genomon pipline has finished successflly!" )
