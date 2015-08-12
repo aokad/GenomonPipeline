@@ -223,15 +223,15 @@ star_genome:
 star:
     additional_params:  '
         --outSAMstrandField intronMotif
-        --outSAMunmapped
+        --outSAMunmapped Within
         --outFilterIntronMotifs RemoveNoncanonicalUnannotated
         --outReadsUnmapped None
         --chimSegmentMin 15
         --chimJunctionOverhangMin 15
         --alignMatesGapMax 200000
         --alignIntronMax 200000
-        --outSAMtype BAM SortedByCoordinate
         --limitBAMsortRAM 34350000000
+        --outSAMtype BAM SortedByCoordinate
     '
 
 ##########
