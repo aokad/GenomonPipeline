@@ -114,10 +114,10 @@ bam_stats:
 #    bed_file:           /home/w3varann/database/Illumina/nexterarapidcapture_expandedexome_targetedregions.bed
 #
 #    For Illumina TruSeq
-    bed_file:           /home/w3varann/database/Illumina/truseq_exome_targeted_regions.hg19.bed
+#    bed_file:           /home/w3varann/database/Illumina/truseq_exome_targeted_regions.hg19.bed
 
 #    For WGS
-#    bed_file:           /home/w3varann/database/hg19.fa/hg19_minus_gap.bed
+    bed_file:           /home/w3varann/database/hg19.fa/hg19_minus_gap.bed
     coverage:           '2,10,20,30,40,50,100'
 
 ##########

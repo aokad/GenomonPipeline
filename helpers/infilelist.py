@@ -52,20 +52,18 @@ class input_file_list:
             for line in f:
                 line = line.strip()
                 if line:
-                    if line[ 0:6 ] == '#Input': # header
+                    if line[ 0:7 ] == '[Input]': # header
                         mode = 'input'
-                    elif line[ 0:8 ] == '#Compare': # header
+                    elif line[ 0:9 ] == '[Compare]': # header
                         mode = 'compare'
                     elif line[ 0 ] == '#': # comment
                         continue
                     elif line and mode == 'input':
-                        line.replace( ';', ',' )
-                        line_split = line.split( '\t' )
+                        line_split = line.replace( ';', ',' ).split( '\t' )
                         self.input[ line_split[ 0 ].strip() ] = [ line_split[ 1 ].strip(), line_split[ 2 ].strip() ]
 
                     elif line and mode == 'compare':
-                        line.replace( ';', ',' )
-                        line_split = line.split( '\t' )
+                        line_split = line.replace( ';', ',' ).split( '\t' )
                         self.compare[ line_split[ 0 ].strip() ] = line_split[ 1 ].strip()
 
 
@@ -77,9 +75,9 @@ class input_file_list:
             for line in csv_obj:
                 if line:
                     data_type = line[ 0 ].strip()
-                    if data_type == '#Input': # header
+                    if data_type == '[Input]': # header
                         mode = 'input'
-                    elif data_type == '#Compare': # header
+                    elif data_type == '[Compare]': # header
                         mode = 'compare'
                     elif data_type[ 0 ] == '#': # header or comment
                         continue
@@ -91,7 +89,7 @@ class input_file_list:
 
                     elif mode == 'compare':
                         data_type = line[ 0 ].replace( ';', ',' )
-                        self.compare[ data_type ] = line[ 1 ].strip().repalce( ';', ',' )
+                        self.compare[ data_type ] = line[ 1 ].strip().replace( ';', ',' )
 
     def parse_xlsx( self ):
         import xlrd
@@ -103,9 +101,9 @@ class input_file_list:
             x = worksheet.row_values( rownum )
             data = self.data2str( x[ 0 ].strip() ) if x else None
             if data:
-                if data == '#Input': # header
+                if data == '[Input]': # header
                     mode = 'input'
-                elif data == '#Compare': # header
+                elif data == '[Compare]': # header
                     mode = 'compare'
                 elif data[ 0 ] == '#': # header or comment
                     continue
