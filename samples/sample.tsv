@@ -1,0 +1,21 @@
+[Input]
+#sample	fastq1	fastq2
+s_B1N	/home/eigos/Data/GenomonProj/input/DvsC/s_B1N/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B1N/R2.fastq
+s_B1T	/home/eigos/Data/GenomonProj/input/DvsC/s_B1T/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B1T/R2.fastq
+s_B2Na	/home/eigos/Data/GenomonProj/input/DvsC/s_B2Na/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B2Na/R2.fastq
+s_B2Nb	/home/eigos/Data/GenomonProj/input/DvsC/s_B2Nb/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B2Nb/R2.fastq
+s_B2T	/home/eigos/Data/GenomonProj/input/DvsC/s_B2T/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B2T/R2.fastq
+s_B3N	/home/eigos/Data/GenomonProj/input/DvsC/s_B3N/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B3N/R2.fastq
+s_B3Ta	/home/eigos/Data/GenomonProj/input/DvsC/s_B3Ta/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B3Ta/R2.fastq
+s_B3Tb	/home/eigos/Data/GenomonProj/input/DvsC/s_B3Tb/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B3Tb/R2.fastq
+s_B4N	/home/eigos/Data/GenomonProj/input/DvsC/s_B4N/R1_1.fastq;/home/eigos/Data/GenomonProj/input/DvsC/s_B4N/R2_1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B4N/R1_2.fastq;/home/eigos/Data/GenomonProj/input/DvsC/s_B4N/R2_2.fastq
+s_B4Ta	/home/eigos/Data/GenomonProj/input/DvsC/s_B4Ta/R1.fastq	/home/eigos/Data/GenomonProj/input/DvsC/s_B4Ta/R2.fastq
+
+[Compare]
+#normal	tumor
+s_B1N	s_B1T
+s_B2Na;s_B2Nb	s_B2T
+s_B3N	s_B3Ta;s_B3Tb
+s_B4N	s_B4Ta
+
+#s_B1N  s_B1T  s_B2Na  s_B2Nb  s_B2T  s_B3N  s_B3Ta  s_B3Tb  s_B4N  s_B4Ta  s_B4Tb  s_B5N  s_B6T  s_B7T
