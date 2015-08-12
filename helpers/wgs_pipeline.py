@@ -885,9 +885,9 @@ def bam2fastq(
         #
         # Make sure files exist.
         #
-        if not os.path.isfile( input_file ):
+        if not os.path.isfile( input_file1 ):
             with log_mutex:
-                log.error( "file: {file} does not exist.".format( file=input_file ) )
+                log.error( "file: {file} does not exist.".format( file=input_file1 ) )
             raise
 
         #
@@ -897,23 +897,15 @@ def bam2fastq(
         shell_script_file = open( shell_script_full_path, 'w' )
 
         file_type = Geno.job.get_job( 'input_file_type' )
-        if 'paired_bam' == file_type:
+
+        if 'bam' == file_type:
             shell_script_file.write( wgs_res.bamtofastq_p.format(
                                             log = Geno.dir[ 'log' ],
                                             bamfile = input_file1,
                                             outfastq1 = output_file1,
                                             outfastq2 = output_file2,
                                             tmpfastq = output_file1 + '.tmp',
-                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' ),
-                                            scriptdir = Geno.dir[ 'script' ]
-                                            ) )
-        elif 'single_bam' == file_type:
-            shell_script_file.write( wgs_res.bamtofastq_s.format(
-                                            log = Geno.dir[ 'log' ],
-                                            bamfile = input_file1,
-                                            outfastq1 = output_file1,
-                                            tmpfastq = output_file1 + '.tmp',
-                                            bamtofastq = Geno.conf.get( 'SOFTWARE', 'bamtofastq' ),
+                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
                                             scriptdir = Geno.dir[ 'script' ]
                                             ) )
         shell_script_file.close()
@@ -2203,8 +2195,8 @@ Sample = Sample()
 @active_if( 'bam2fastq' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
 @parallel( generate_params_for_bam2fastq )
 @check_if_uptodate( check_file_exists_for_bam2fastq )
-def stage_1( input_file, output_file ):
-    return_value =  bam2fastq( input_file, output_file )
+def stage_1( input_file1, input_file2, output_file1, output_file2 ):
+    return_value =  bam2fastq( input_file1, input_file2, output_file1, output_file2 )
     if not return_value:
         raise
 

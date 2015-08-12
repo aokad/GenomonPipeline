@@ -83,7 +83,8 @@ subdir_list = ( 'fastq',
                 'summary',
                 'all_summary' )
 
-dir_task_list = { 'fastq':          'split_fastq',
+dir_task_list = { 'bam2fastq':     'bam2fastq',
+                  'fastq':          'split_fastq',
                   'bam':            'bwa_mem',
                   'bam':            'merge_bam',
                   'bam':            'markduplicates',

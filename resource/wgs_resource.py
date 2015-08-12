@@ -18,7 +18,7 @@ date                    # print date
 set -xv
 
 source {scriptdir}/utility.sh
-{bamtofastq}  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
+{biobambam}/bamtofastq  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
             T={tmpfastq}\
             F={outfastq1}\
             collate=1\
@@ -43,7 +43,7 @@ set -xv
 
 source {scriptdir}/utility.sh
 
-{bamtofastq}  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
+{biobambam}/bamtofastq  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
             T={tmpfastq}\
             F={outfastq1}\
             F2={outfastq2}\
