@@ -20,14 +20,13 @@ from resource import rna_resource as rna_res
 from utils import *
 from sample import Sample
 
+use_subdir = ( Geno.job.get_job( 'sample_name' ) != None )
 def save_status_of_this_process( process_name, output_file, return_code ):
 
-    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
     Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
 
 def get_status_of_this_process( process_name, output_file ):
 
-    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
     exit_status = Geno.status.check_exit_status(
                                 process_name,
                                 output_file,
@@ -119,14 +118,14 @@ def generate_params_for_cuffdiff( ):
 
     #
     # Make sure that 'control_disease_pairs' is defined,
-    #            and 'sample_subdir' is defined.
+    #            and 'sample_name' is defined.
     #
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
     if not Sample.subdir_exists() or ctrl_dis_pairs == None:
         raise
 
     #
-    # Get sample_subdir list
+    # Get sample_name list
     #
     list_id = 0
     data_dict = {}
@@ -165,14 +164,14 @@ def generate_params_for_cummeRbund( ):
 
     #
     # Make sure that 'control_disease_pairs' is defined,
-    #            and 'sample_subdir' is defined.
+    #            and 'sample_name' is defined.
     #
     ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
     if not Sample.subdir_exists() or ctrl_dis_pairs == None:
         raise
 
     #
-    # Get sample_subdir list
+    # Get sample_name list
     #
     list_id = 0
     data_dict = {}
@@ -208,6 +207,8 @@ def generate_params_for_cummeRbund( ):
 #   STAGE 0 data preparation
 #
 Sample = Sample()
+if Geno.input_file_list:
+    Sample.set_sample_list( Geno.input_file_list )
 
 #####################################################################
 #

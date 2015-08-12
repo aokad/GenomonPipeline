@@ -20,18 +20,18 @@ from resource import star_resource as star_res
 from utils import *
 from sample import Sample
 
+use_subdir = ( Geno.job.get_job( 'sample_name' ) != None )
+
 #####################################################################
 #
 # Subroutines
 #
 def save_status_of_this_process( process_name, output_file, return_code ):
 
-    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
     Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
 
 def get_status_of_this_process( process_name, output_file ):
 
-    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
     exit_status = Geno.status.check_exit_status(
                     process_name,
                     output_file,
@@ -68,7 +68,7 @@ def check_file_exists_for_star( input_file1, input_file2, output_prefix ):
     if exit_status != 0:
         return True, "Missing file %s" % output_prefix
     else:
-        output_tmp = output_prefix + '_Chimeric.out.junction'
+        output_tmp = output_prefix + '_Log.final.out'
         return check_file_exists( input_file1, output_tmp )
 
 def check_file_exists_for_star_fusion( input_file1, input_file2, output_prefix ):
@@ -100,7 +100,7 @@ def generate_params_for_star_genome( ):
 def generate_params_for_star( ):
     global Sample
     Sample.make_param( 'star', None, '', 'star', 2, 1 )
-    for infile1, infile2, outfile1, outfil2 in Sample.param( 'star' ):
+    for infile1, infile2, outfile1, outfile2 in Sample.param( 'star' ):
         yield infile1, infile2, outfile1
 
 def generate_params_for_star_fusion( ):
@@ -124,12 +124,14 @@ def generate_params_for_fusionfusion( ):
 #   STAGE 0 data preparation
 #
 Sample = Sample()
+if Geno.input_file_list:
+    Sample.set_sample_list( Geno.input_file_list )
 
 #####################################################################
 #
 #   STAGE 1 fastq to bam by star
 #
-@active_if( 'star_genome' in Geno.job.get_job( 'tasks' )[ 'STAR' ] )
+@active_if( 'star_genome' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
 @files( generate_params_for_star_genome )
 @check_if_uptodate( check_file_exists_for_star_genome )
 def star_genome(
@@ -205,7 +207,7 @@ def star_genome(
 #   STAGE 2 fastq to bam by star
 #
 @follows( star_genome )
-@active_if( 'star' in Geno.job.get_job( 'tasks' )[ 'STAR' ] )
+@active_if( 'star' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
 @files( generate_params_for_star )
 @check_if_uptodate( check_file_exists_for_star )
 def star(
@@ -293,7 +295,7 @@ def star(
             'fastq1': fastq_file1,
             'fastq2': fastq_file2,
             'out_prefix': output_prefix + '_',
-            'star': Geno.conf.get( 'SOFTWARE', 'STAR' ),
+            'star': Geno.conf.get( 'SOFTWARE', 'RNA' ),
             'additional_params': Geno.job.get_param( 'star', 'additional_params' ),
             'scriptdir': Geno.dir[ 'script' ]
         }
@@ -343,7 +345,7 @@ def star(
 #   STAGE 3
 #
 @follows( star )
-@active_if( 'star_fusion' in Geno.job.get_job( 'tasks' )[ 'STAR' ] )
+@active_if( 'star_fusion' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
 @files( generate_params_for_star_fusion )
 @check_if_uptodate( check_file_exists_for_star_fusion )
 def star_fusion(
@@ -417,8 +419,8 @@ def star_fusion(
 #
 #   STAGE 4
 #
-@follows( star )
-@active_if( 'fusionfusion' in Geno.job.get_job( 'tasks' )[ 'STAR' ] )
+@follows( star_fusion )
+@active_if( 'fusionfusion' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
 @files( generate_params_for_fusionfusion )
 @check_if_uptodate( check_file_exists_for_fusionfusion )
 def fusionfusion(

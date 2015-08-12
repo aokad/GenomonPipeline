@@ -453,6 +453,7 @@ echo SGE_TASK_FIRST:$SGE_TASK_FIRST
 echo SGE_TASK_LAST:$SGE_TASK_LAST
 echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
+{env_variables}
 source {scriptdir}/utility.sh
 
 if [ "$SGE_TASK_ID" = "1" ]
@@ -595,6 +596,7 @@ then
         check_error $?
     else
         {samtools} merge \
+                    -f \
                     {merged_bam_file} \
                     {samtools_input_bam_files};
         check_error $?
@@ -762,7 +764,9 @@ fi
 if [ "{remove_intermediate}" = "True" ]
 then
     rm -f $CONTROL_FILTERED_BAM
+    rm -f ${{CONTROL_FILTERED_BAM}}.bai
     rm -f $DISEASE_FILTERED_BAM
+    rm -f ${{DISEASE_FILTERED_BAM}}.bai
 fi
 
 """

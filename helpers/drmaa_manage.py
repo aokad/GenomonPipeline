@@ -59,7 +59,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise Exception( 'drmaa_manage.constructor failed' )
+            raise
 
     def set_native_param( self, native_param ):
         """
@@ -108,7 +108,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise Exception( 'drmaa_manage.init_job_template failed' )
+            raise
 
         return jt
 
@@ -142,7 +142,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise Exception( 'drmaa_manage.run_array_job failed' )
+            raise
 
     def run_job( self, command, array_param = None, args = [],  log_dir = None, cmd_options = '' ):
         try:
@@ -164,7 +164,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise Exception( 'drmaa_manage.run_job failed' )
+            raise
 
     def delete_job_template( self, jobid = None ):
         try:
@@ -182,7 +182,7 @@ class JobManage:
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print( "{function}: Unexpected error: {error}".format( function = self.whoami(), error = sys.exc_info()[0] ) )
             print("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise Exception( 'drmaa_manage.delete_job_template failed' )
+            raise
 
     def wait_jobs( self ):
 
@@ -206,7 +206,7 @@ class JobManage:
             print( "{function}: Unexpected error: {error}, exit_status = {ret}".format( function = self.whoami(), error = sys.exc_info()[0], ret = return_code ) )
             print( e )
             print( "{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-            raise Exception( 'Job {jobid} exitted with {code}.'.format( jobid = jobid, code = str( return_code ) ) )
+            raise
 
         return return_code
 

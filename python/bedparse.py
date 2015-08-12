@@ -53,14 +53,14 @@ class BedExtract:
             chr_tmp = random.randrange( 1, 24 )
             if chr_tmp == 23 or chr_tmp == 24:
                 chr_tmp = ( 'X', 'Y' )[ chr_tmp - 23 ]
-            chr = 'chr' + str( chr_tmp )
 
-            pos = random.randrange( 0, int( self.gen_size.get_size( chr ) ) - self.bin_size )
-            if self.get_pos( chr, pos, self.bin_size ):
-                if self.chr_str:
-                    chr_return = 'chr' + str( chr_tmp )
-                else:
-                    chr_return = str( chr_tmp )
+            if self.chr_str:
+                chr_return = 'chr' + str( chr_tmp )
+            else:
+                chr_return = str( chr_tmp )
+
+            pos = random.randrange( 0, int( self.gen_size.get_size( chr_return ) ) - self.bin_size )
+            if self.get_pos( chr_return, pos, self.bin_size ):
 
                 return_value = [ chr_return, pos ]
 
@@ -69,6 +69,12 @@ class BedExtract:
     def get_pos( self, chr, pos, size ):
 
         return_value = False
+
+        if self.chr_str:
+            chr = str( chr )
+        else:
+            chr = 'chr' + str( chr )
+
         if chr in self.data:
             for start in sorted( self.data[ chr ].keys() ):
                 #print "L:{0}:{1}-{2}-{3}".format( chr, start, pos, self.data[ chr ] [ start ] )
@@ -78,3 +84,4 @@ class BedExtract:
                     break
 
         return return_value
+

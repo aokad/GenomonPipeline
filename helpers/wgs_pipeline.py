@@ -21,24 +21,61 @@ from resource import wgs_resource as wgs_res
 from utils import *
 from sample import Sample
 
+use_subdir = ( Geno.job.get_job( 'sample_name' ) != None  or
+               Geno.sample_list )
+
 #####################################################################
 #
 # Subroutines
 #
 def save_status_of_this_process( process_name, output_file, return_code ):
 
-    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
     Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
 
 def get_status_of_this_process( process_name, output_file ):
 
-    use_subdir = ( Geno.job.get_job( 'sample_subdir' ) != None )
     exit_status = Geno.status.check_exit_status(
                     process_name,
                     output_file,
                     use_subdir = use_subdir ) 
 
     return exit_status
+
+def make_sample_name( dir_name = None, filename = None, add_sample_group = False ):
+    if use_subdir:
+        if filename:
+            subdir_name = os.path.basename( os.path.split( filename )[ 0 ] )
+        elif dir_name:
+            subdir_name = os.path.basename( dir_name )
+        else:
+            subdir_name = None
+    else:
+        subdir_name = None
+
+    if add_sample_group and subdir_name:
+        return_str = Geno.job.get_job( 'sample_group' ) + '_' + subdir_name
+    elif subdir_name:
+        return_str = subdir_name
+    else:
+        return_str = ''
+
+    return return_str
+
+def delete_intermediate_files( output_file ):
+    #
+    # Delete intermediate files 
+    #
+    # Replace large intermediate files by 0-byte-size files.
+    #
+    # starting from ( sample_name/R1.fastq, sample_name/R2.fastq )
+    #
+    # Files to delete
+    # split fastq files: out/fastq/sample_name/R1_000000.fastq
+    #                    out/fastq/sample_name/R2_000001.fastq
+    # bwa_mem:           out/bam/sample_name/R1_000000_sorted.bam
+    # bam_merge:         out/bam/sample_name/sample_name_merged.bam
+    #
+    pass
 
 #####################################################################
 #
@@ -124,7 +161,7 @@ def check_file_exists_for_merge_bam(
     output_file
     ):
     if ( Geno.job.get_param( 'others', 'use_biobambam' ) and
-         'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
+         'markduplicates' in Geno.job.get_job( 'tasks' )[ 'DNA'] ):
         return_code = False, "BioBambam does not need merge."
     else:
         return_code = check_file_exists_for_merge(
@@ -256,8 +293,8 @@ def check_file_exists_for_bam_stats(
                   get_status_of_this_process( 'bam_stats_merge', output_file )
 
     summary_dir_name = os.path.dirname( output_file )
-    out_sum_file =  summary_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
-    if exit_status != 0 or not os.path.exists( out_sam_file ):
+    out_sum_file =  summary_dir_name + '/' + make_sample_name( filename = output_file ) + '.txt'
+    if exit_status != 0 or not os.path.exists( out_sum_file ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = out_sum_file,
                             inputfile = input_file1 )
@@ -406,7 +443,8 @@ def generate_params_for_merge_bam():
         input_file_list[ dir_name ].append( param[ 0 ] )
 
     for dir_name in input_file_list.keys():
-        return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam' ]
+        return_list = [ input_file_list[ dir_name ],
+                        dir_name + '/' + make_sample_name( filename = input_file_list[ dir_name ][ 0 ] ) + '_merged.bam' ]
         yield return_list
         
 
@@ -430,12 +468,13 @@ def generate_params_for_markduplicates ():
 
     if Geno.job.get_param( 'others', 'use_biobambam' ):
         for dir_name in input_file_list.keys():
-            return_list = [ input_file_list[ dir_name ], dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam' ]
+            return_list = [ input_file_list[ dir_name ],
+                            dir_name + '/' + make_sample_name( dir_name = dir_name ) + '_markdup.bam' ]
             yield return_list
     else:
         for dir_name in input_file_list.keys():
-            return_list = [ dir_name +'/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam',
-                            dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam' ]
+            return_list = [ dir_name +'/' + make_sample_name( dir_name = dir_name ) + '_merged.bam',
+                            dir_name + '/' + make_sample_name( dir_name = dir_name ) + '_markdup.bam' ]
             yield return_list
 
 #
@@ -452,10 +491,10 @@ def generate_params_for_bam_stats ():
     for param in Sample.param( 'bam_stats' ):
         dir_name = os.path.dirname( param[ 0 ] )
         if not ( dir_name in input_file_list ):
-            if 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
-                input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam'
-            elif 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
-                input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam'
+            if 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+                input_bam =  dir_name + '/' + make_sample_name( filename = param[ 0 ] ) + '_markdup.bam'
+            elif 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+                input_bam =  dir_name + '/' + param[ 0 ] + '_merged.bam'
             else:
                 input_bam =  param[ 0 ]
 
@@ -463,7 +502,7 @@ def generate_params_for_bam_stats ():
             summary_dir_name = os.path.dirname( param[ 2 ] )
             return_list = [ input_bam,
                             'None',
-                            summary_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt' ]
+                            summary_dir_name + '/' + make_sample_name( filename = param[ 2 ] ) + '.txt' ]
             yield return_list
 
 
@@ -495,10 +534,10 @@ def generate_params_for_bam_stats ():
 def make_bam_filename_for_markdup_result( filename ):
 
     dir_name = os.path.dirname( filename )
-    if 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
-        input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam'
-    elif 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ]:
-        input_bam =  dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '_merged.bam'
+    if 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+        input_bam =  dir_name + '/' + make_sample_name( dir_name = dir_name ) + '_markdup.bam'
+    elif 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+        input_bam =  dir_name + '/' + make_sample_name( dir_name = dir_name ) + '_merged.bam'
     else:
         input_bam =  filename
 
@@ -541,7 +580,7 @@ def generate_params_for_fisher_mutation_call():
                                 [ None ],
                                 [ input_bam ],
                                 None ,
-                                mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                                mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name ) + '.txt'
                               ]
                 yield return_list
 
@@ -567,7 +606,14 @@ def generate_params_for_fisher_mutation_call():
             #
             # Normal only and Disease only cases are not going to be processed.
             #
-            if data_type != 'Normal' and data_type != 'Disease' and data_type in data_dict.keys():
+            data_in_data_dict = False
+            normal_list = data_type.replace( ' ', '' ).split( ',' )
+            for data_tmp in normal_list:
+                if data_tmp in data_dict.keys():
+                    data_in_data_dict = True
+                    break
+
+            if data_type != 'Normal' and data_type != 'Disease' and data_in_data_dict:
                 #
                 # Make list
                 #
@@ -581,7 +627,6 @@ def generate_params_for_fisher_mutation_call():
                 # s_B2Na:   s_B2T
                 # s_B2Nb:   s_B2T
                 #
-                normal_list = data_type.replace( ' ', '' ).split( ',' )
                 normal_dir_list = []
                 normal_outfile = None
                 for normal_sample in normal_list:
@@ -591,7 +636,7 @@ def generate_params_for_fisher_mutation_call():
                         normal_dir_list.append( normal_input )
                         if normal_outfile == None:
                             mutation_dir_name = os.path.dirname( param_list[ data_dict[ normal_sample ] ][ 2 ] )
-                            normal_outfile = mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                            normal_outfile = mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name) + '.txt'
 
                 # Disease
                 # s_B2N:    - "s_B2Ta, s_B2Tb"
@@ -611,13 +656,13 @@ def generate_params_for_fisher_mutation_call():
                             disease_merge_list.append( disease_input )
                             if disease_outfile == None:
                                 mutation_dir_name = os.path.dirname( param_list[ data_dict[ disease_sample ] ][ 3 ] )
-                                disease_outfile = mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                                disease_outfile = mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name) + '.txt'
                     else:
                         disease_input = make_bam_filename_for_markdup_result( 
                                 param_list[ data_dict[ disease_data ] ][ 0 ] )
                         disease_merge_list.append( disease_input )
                         mutation_dir_name = os.path.dirname( param_list[ data_dict[ disease_data ] ][ 3 ] )
-                        disease_outfile =  mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                        disease_outfile =  mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name ) + '.txt'
                     #
                     # Return parameters
                     #
@@ -635,7 +680,7 @@ def generate_params_for_fisher_mutation_call():
                                     [ None ],
                                     [ input_bam ],
                                     None ,
-                                    mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+                                    mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name ) + '.txt'
                                   ]
                     yield return_list
 
@@ -665,7 +710,8 @@ def generate_params_for_itd_detection( ):
         output_dir_list = []
         for param in Sample.param( 'itd_detection' ):
             input_file_list.append( make_bam_filename_for_markdup_result( param[ 0 ] ) )
-            output_dir_list.append( os.path.split( param[ 2 ] )[ 0 ] + '/'+ Geno.job.get_job( 'sample_name' ) )
+            dir_name = os.path.split( param[ 2 ] )[ 0 ]
+            output_dir_list.append( dir_name + '/'+ make_sample_name( dir_name = dir_name ) )
 
         return_list = [
                         None,
@@ -747,19 +793,17 @@ def generate_params_for_itd_detection( ):
                     disease_list = [ ctrl_dis_pairs[ data_type ] ]
 
                 for disease_data in disease_list:
-                    if -1 != disease_data.find( ',' ):
-                        for disease_sample in disease_data.replace( ' ', '' ).split( ',' ):
-                            disease_input = make_bam_filename_for_markdup_result( 
-                                    param_list[ data_dict[ disease_sample ] ][ 0 ] )
-                            disease_file_list.append( disease_input )
-                            itd_dir_name = os.path.dirname( param_list[ data_dict[ disease_sample ] ][ 3 ] )
-                            disease_outfile_list.append( itd_dir_name )
+                    if -1 == disease_data.find( ',' ):
+                        disease_sample = disease_data
                     else:
-                        disease_input = make_bam_filename_for_markdup_result( 
-                                param_list[ data_dict[ disease_data ] ][ 0 ] )
-                        disease_file_list.append( disease_input )
-                        itd_dir_name = os.path.dirname( param_list[ data_dict[ disease_data ] ][ 3 ] )
-                        disease_outfile_list.append( itd_dir_name ) 
+                        disease_sample = disease_data.replace( ' ', '' ).split( ',' )[ 0 ]
+
+                    disease_input = make_bam_filename_for_markdup_result( 
+                            param_list[ data_dict[ disease_sample ] ][ 0 ] )
+                    disease_file_list.append( disease_input )
+                    itd_dir_name = os.path.dirname( param_list[ data_dict[ disease_sample ] ][ 3 ] )
+                    disease_outfile_list.append( itd_dir_name )
+
         #
         # Return parameters
         #
@@ -782,8 +826,8 @@ def generate_params_for_annotation():
         for param in Sample.param( 'annotation' ):
             mutation_dir_name = os.path.dirname( param[ 0 ] )
             annotation_dir_name = os.path.dirname( param[ 2 ] )
-            yield ( mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt',
-                    annotation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) ) 
+            yield ( mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name ) + '.txt',
+                    annotation_dir_name + '/' + make_sample_name( dir_name = annotation_dir_name ) ) 
 
     else:
         disease_subdir_list = []
@@ -792,18 +836,30 @@ def generate_params_for_annotation():
                 disease_subdir_list += ctrl_dis_pairs[ 'Disease' ]
             elif subdir  != 'Normal':
                 if isinstance( ctrl_dis_pairs[ subdir ], list ):
+                    #
+                    # Case:
+                    #   'Normal1':
+                    #           - 'Tumor1'
+                    #           - 'Tumor2'
                     disease_subdir_list += ctrl_dis_pairs[ subdir ]
                 elif -1 == ctrl_dis_pairs[ subdir ].find( ',' ):
+                    #
+                    # Case:
+                    #   'Normal1': 'Tumor1'
                     disease_subdir_list.append( ctrl_dis_pairs[ subdir ] )
                 else:
-                    disease_subdir_list += ctrl_dis_pairs[ subdir ].replace( ' ', '' ).split( ',' )
+                    #
+                    # Case:
+                    #   'Normal1': 'Tumor1,Tumor2'
+                    # Output only the first sample  in 'Tumor1,Tumor2'
+                    disease_subdir_list += [ ctrl_dis_pairs[ subdir ].replace( ' ', '' ).split( ',' )[ 0 ] ]
 
         for param in Sample.param( 'annotation' ):
             mutation_dir_name = os.path.dirname( param[ 0 ] )
             annotation_dir_name = os.path.dirname( param[ 3 ] )
             if os.path.basename( mutation_dir_name ) in disease_subdir_list:
-                yield ( mutation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) + '.txt',
-                        annotation_dir_name + '/' + Geno.job.get_job( 'sample_name' ) ) 
+                yield ( mutation_dir_name + '/' + make_sample_name( dir_name = mutation_dir_name ) + '.txt',
+                        annotation_dir_name + '/' + make_sample_name( dir_name = annotation_dir_name ) ) 
 
 
 
@@ -834,16 +890,13 @@ def extract_fastq( input_file_list, file_ext ):
     input_file = '${IN_FILE[$SGE_TASK_ID]}'
     output_file = '${OUT_FILE[$SGE_TASK_ID]}'
 
-    shell_script_full_path = make_script_file_name( 'extract_fastq', Geno )
-    shell_script_file = open( shell_script_full_path, 'w' )
-    shell_script_file.write( res.extract_gz.format(
-                                    log = Geno.dir[ 'log' ],
-                                    array_data = array_in + array_out,
-                                    input_file = input_file,
-                                    output_file = output_file,
-                                    scriptdir = Geno.dir[ 'script' ] 
-                                    ) )
-    shell_script_file.close()
+
+    args = { 'log': Geno.dir[ 'log' ],
+             'array_data': array_in + array_out,
+             'input_file': input_file,
+             'output_file': output_file,
+             'scriptdir': Geno.dir[ 'script' ]  }
+    shell_script_full_path = make_script_file( 'extract_fastq', res.extract_gz, Geno, **args )
 
     #
     # Run
@@ -856,7 +909,7 @@ def extract_fastq( input_file_list, file_ext ):
     if return_code != 0:
         with log_mutex:
             log.error( "{function}: runtask failed",format( function = 'extract_fastq' ) )
-        raise
+        raise Exception( '{0} failed.'.format( function_name ) )
 
 
 #####################################################################
@@ -888,7 +941,7 @@ def bam2fastq(
         if not os.path.isfile( input_file1 ):
             with log_mutex:
                 log.error( "file: {file} does not exist.".format( file=input_file1 ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         #
         # Make shell script
@@ -920,7 +973,7 @@ def bam2fastq(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
@@ -977,7 +1030,7 @@ def split_fastq(
         if not os.path.isfile( input_file1 ):
             with log_mutex:
                 log.error( "file: {file} does not exist.".format( file=input_file1 ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         #
         # Make data for array job 
@@ -1003,19 +1056,16 @@ def split_fastq(
         #
         # Make shell script for array job
         #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.splitfile.format(
-                                        log = Geno.dir[ 'log' ],
-                                        fastq_filter = Geno.job.get_param( 'split_fastq', 'fastq_filter' ),
-                                        array_data = array_in + array_out,
-                                        lines_per_file = Geno.job.get_param( 'split_fastq', 'split_fastq_line_number' ),
-                                        input_file = input_file,
-                                        suffix_len = suffix_len,
-                                        output_suffix = output_suffix,
-                                        output_prefix = output_prefix,
-                                        scriptdir = Geno.dir[ 'script' ] ) )
-        shell_script_file.close()
+        args = { 'log': Geno.dir[ 'log' ],
+                 'fastq_filter': Geno.job.get_param( 'split_fastq', 'fastq_filter' ),
+                 'array_data': array_in + array_out,
+                 'lines_per_file': Geno.job.get_param( 'split_fastq', 'split_fastq_line_number' ),
+                 'input_file': input_file,
+                 'suffix_len': suffix_len,
+                 'output_suffix': output_suffix,
+                 'output_prefix': output_prefix,
+                 'scriptdir': Geno.dir[ 'script' ] }
+        shell_script_full_path = make_script_file( function_name, wgs_res.splitfile, Geno, **args )
 
         #
         # Run
@@ -1028,7 +1078,7 @@ def split_fastq(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
@@ -1093,7 +1143,7 @@ def cutadapt(
         if not os.path.isfile( input_file ):
             with log_mutex:
                 log.error( "file: {file} does not exist.".format( file=input_file ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         output_file1 = make_sample_file_name( output_file1, "{dir}/{base}_" ) + '_cutadapt.fastq'
         output_file2 = make_sample_file_name( output_file2, "{dir}/{base}_" ) + '_cutadapt.fastq'
@@ -1114,20 +1164,18 @@ def cutadapt(
         #
         # Make shell script
         #
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( wgs_res.cutadapt.format(
-                                        log = Geno.dir[ 'log' ],
-                                        infastq = input_file,
-                                        outfastq = output_file,
-                                        array_data = array_data1 + array_data2,
-                                        tmpoutfastq = output_file + '.tmp',
-                                        optadapters = '-a ' + ' -a '.join( Geno.job.get_param( 'cutadapt', 'adaptor' ) ),
-                                        casavacode = 2,
-                                        cutadapt = Geno.conf.get( 'SOFTWARE', 'cutadapt' ),
-                                        scriptdir = Geno.dir[ 'script' ],
-                                        ) )
-        shell_script_file.close()
+        args = {
+            'log': Geno.dir[ 'log' ],
+            'infastq': input_file,
+            'outfastq': output_file,
+            'array_data': array_data1 + array_data2,
+            'tmpoutfastq': output_file + '.tmp',
+            'optadapters': '-a ' + ' -a '.join( Geno.job.get_param( 'cutadapt', 'adaptor' ) ),
+            'casavacode': 2,
+            'cutadapt': Geno.conf.get( 'SOFTWARE', 'cutadapt' ),
+            'scriptdir': Geno.dir[ 'script' ]
+        }
+        shell_script_full_path = make_script_file( function_name, wgs_res.cutadapt, Geno, **args )
 
         #
         # Run
@@ -1140,7 +1188,7 @@ def cutadapt(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
@@ -1222,8 +1270,6 @@ def bwa_mem(
             #
             # Make shell script for array job
             #
-            shell_script_full_path = make_script_file_name( function_name, Geno )
-            shell_script_file = open( shell_script_full_path, 'w' )
             if use_biobambam:
                 bwa_mem_resource = wgs_res.bwa_mem_biobambam
             else:
@@ -1231,22 +1277,23 @@ def bwa_mem(
 
             env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
                                             libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
-            shell_script_file.write( bwa_mem_resource.format(
-                                            log = Geno.dir[ 'log' ],
-                                            array_data = str1 + str2 + str3,
-                                            fastq1 = "${FILE1[$SGE_TASK_ID]}",
-                                            fastq2 = "${FILE2[$SGE_TASK_ID]}",
-                                            bam = "${FILE3[$SGE_TASK_ID]}",
-                                            read_group = Geno.job.get_job(  'bam_read_group' ),
-                                            min_score = Geno.job.get_param( 'bwa_mem', 'min_score' ),
-                                            additional_params = Geno.job.get_param( 'bwa_mem', 'additional_params' ),
-                                            env_variables = env_variable_str,
-                                            ref_fa = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
-                                            bwa = Geno.conf.get( 'SOFTWARE', 'bwa' ),
-                                            samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                            biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
-                                            scriptdir = Geno.dir[ 'script' ] ) )
-            shell_script_file.close()
+            args = {
+                'log': Geno.dir[ 'log' ],
+                'array_data': str1 + str2 + str3,
+                'fastq1': "${FILE1[$SGE_TASK_ID]}",
+                'fastq2': "${FILE2[$SGE_TASK_ID]}",
+                'bam': "${FILE3[$SGE_TASK_ID]}",
+                'read_group': Geno.job.get_job(  'bam_read_group' ),
+                'min_score': Geno.job.get_param( 'bwa_mem', 'min_score' ),
+                'additional_params': Geno.job.get_param( 'bwa_mem', 'additional_params' ),
+                'env_variables': env_variable_str,
+                'ref_fa': Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
+                'bwa': Geno.conf.get( 'SOFTWARE', 'bwa' ),
+                'samtools': Geno.conf.get( 'SOFTWARE', 'samtools' ),
+                'biobambam': Geno.conf.get( 'SOFTWARE', 'biobambam' ),
+                'scriptdir': Geno.dir[ 'script' ] 
+            }
+            shell_script_full_path = make_script_file( function_name, bwa_mem_resource, Geno, **args )
 
             #
             # Run
@@ -1259,7 +1306,7 @@ def bwa_mem(
             if runtask_return_code != 0:
                 with log_mutex:
                     log.error( "{function}: runtask failed".format( function = function_name ) )
-                raise
+                raise Exception( '{0} failed.'.format( function_name ) )
                 
             save_status_of_this_process( function_name, output_file1, runtask_return_code )
 
@@ -1335,18 +1382,16 @@ def merge_bam(
         env_variable_str = "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{libmaus_PATH}".format(
                                 libmaus_PATH = Geno.conf.get( 'ENV', 'libmaus_PATH' ) )
 
-        shell_script_full_path = make_script_file_name( function_name, Geno )
-        shell_script_file = open( shell_script_full_path, 'w' )
-        shell_script_file.write( bam_merge_resource.format(
-                                        log = Geno.dir[ 'log' ],
-                                        input_bam_files = input_files,
-                                        output_bam_file = output_file,
-                                        env_variables = env_variable_str,
-                                        samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
-                                        biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
-                                        scriptdir = Geno.dir[ 'script' ] 
-                                        ) )
-        shell_script_file.close()
+        args = {
+            'log': Geno.dir[ 'log' ],
+            'input_bam_files': input_files,
+            'output_bam_file': output_file,
+            'env_variables': env_variable_str,
+            'samtools': Geno.conf.get( 'SOFTWARE', 'samtools' ),
+            'biobambam': Geno.conf.get( 'SOFTWARE', 'biobambam' ),
+            'scriptdir': Geno.dir[ 'script' ] 
+        }
+        shell_script_full_path = make_script_file( function_name, bam_merge_resource, Geno, **args )
 
         #
         # Run
@@ -1357,7 +1402,7 @@ def merge_bam(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, output_file, runtask_return_code )
 
@@ -1464,9 +1509,25 @@ def markduplicates(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, output_file, runtask_return_code )
+
+        #
+        # Delete intermediate files 
+        #
+        # Replace large intermediate files by 0-byte-size files.
+        #
+        # starting from ( sample_name/R1.fastq, sample_name/R2.fastq )
+        #
+        # Files to delete
+        # split fastq files: out/fastq/sample_name/R1_000000.fastq
+        #                    out/fastq/sample_name/R2_000001.fastq
+        # bwa_mem:           out/bam/sample_name/R1_000000_sorted.bam
+        # bam_merge:         out/bam/sample_name/sample_name_merged.bam
+        #
+        if True:
+            delete_intermediate_files( output_file )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1527,11 +1588,15 @@ def bam_stats(
             #
             # Calculate bam file statistics
             #
+            env_variable_str = "PERL5LIB=$PERL5LIB:{0}".format(
+                                    Geno.conf.get( 'ENV', 'PERL5LIB' ) )
+
             shell_script_name = function_name + '_calc'
             shell_script_full_path = make_script_file_name( shell_script_name , Geno )
             shell_script_file = open( shell_script_full_path, 'w' )
             shell_script_file.write( wgs_res.bam_stats_calc.format(
                                             log = Geno.dir[ 'log' ],
+                                            env_variables = env_variable_str,
                                             bam_file = bam_file,
                                             output_txt = output_file,
                                             coverage = Geno.job.get_param( 'bam_stats', 'coverage' ),
@@ -1583,11 +1648,11 @@ def bam_stats(
             if calc_return_code != 0:
                 with log_mutex:
                     log.error( "{function}: runtask failed".format( function = function_name + '_calc' ) )
-                raise
+                raise Exception( '{0} failed.'.format( function_name ) )
             if merge_return_code != 0:
                 with log_mutex:
                     log.error( "{function}: runtask failed".format( function = function_name + '_merge' ) )
-                raise
+                raise Exception( '{0} failed.'.format( function_name ) )
 
             if merge_return_code == 0:
                 save_status_of_this_process( shell_script_name, output_file, merge_return_code )
@@ -1668,24 +1733,28 @@ def fisher_mutation_call(
             disease_output_dir = os.path.split( disease_output_file )[ 0 ]
 
             samtools_bam_file_list_array = "SAMTOOLS_INPUT_FILE=(\n"
-            bambam_bam_file_list_array = "BAMBAM_INPUT_FILE=(\n"
-            output_dir_array    = "OUT_FILE=(\n"
-            merge_bam_flag      = "FLAG=(\n"
+            bambam_bam_file_list_array   = "BAMBAM_INPUT_FILE=(\n"
+            output_dir_array  = "OUT_FILE=(\n"
+            sample_name_array = "SAMPLE_NAME=(\n"
+            merge_bam_flag    = "FLAG=(\n"
 
             samtools_bam_file_list_array += " [1]=\"{0}\"\n".format( samtools_control_bam_file_list )
-            bambam_bam_file_list_array += " [1]=\"{0}\"\n".format( bambam_control_bam_file_list )
-            output_dir_array    += " [1]=\"{0}\"\n".format( control_output_dir )
-            merge_bam_flag      += " [1]=\"{0}\"\n".format( control_merge_bam_flag )
+            bambam_bam_file_list_array   += " [1]=\"{0}\"\n".format( bambam_control_bam_file_list )
+            output_dir_array  += " [1]=\"{0}\"\n".format( control_output_dir )
+            sample_name_array += " [1]=\"{0}\"\n".format( make_sample_name( dir_name = control_output_dir ) )
+            merge_bam_flag    += " [1]=\"{0}\"\n".format( control_merge_bam_flag )
 
             samtools_bam_file_list_array += " [2]=\"{0}\"\n".format( samtools_disease_bam_file_list )
-            bambam_bam_file_list_array += " [2]=\"{0}\"\n".format( bambam_disease_bam_file_list )
-            output_dir_array    += " [2]=\"{0}\"\n".format(  disease_output_dir )
-            merge_bam_flag      += " [2]=\"{0}\"\n".format(  disease_merge_bam_flag )
+            bambam_bam_file_list_array   += " [2]=\"{0}\"\n".format( bambam_disease_bam_file_list )
+            output_dir_array  += " [2]=\"{0}\"\n".format(  disease_output_dir )
+            sample_name_array += " [2]=\"{0}\"\n".format(  make_sample_name( dir_name = disease_output_dir ) )
+            merge_bam_flag    += " [2]=\"{0}\"\n".format(  disease_merge_bam_flag )
 
             samtools_bam_file_list_array += ")\n"
-            bambam_bam_file_list_array += ")\n"
-            output_dir_array    += ")\n"
-            merge_bam_flag      += ")\n"
+            bambam_bam_file_list_array   += ")\n"
+            output_dir_array  += ")\n"
+            sample_name_array += ")\n"
+            merge_bam_flag    += ")\n"
 
             #
             # Make shell script
@@ -1697,13 +1766,12 @@ def fisher_mutation_call(
                                             env_variables = env_variable_str,
                                             use_biobambam = Geno.job.get_param( 'others', 'use_biobambam' ),
                                             array_data = samtools_bam_file_list_array + bambam_bam_file_list_array +\
-                                                         output_dir_array + merge_bam_flag,
+                                                         output_dir_array + merge_bam_flag + sample_name_array,
                                             bambam_input_bam_files = "${BAMBAM_INPUT_FILE[$SGE_TASK_ID]}",
                                             samtools_input_bam_files = "${SAMTOOLS_INPUT_FILE[$SGE_TASK_ID]}",
                                             input_bam_file = "${SAMTOOLS_INPUT_FILE[$SGE_TASK_ID]}",
                                             merge_bam_flag = "${FLAG[$SGE_TASK_ID]}",
-                                            merged_bam_file = '${{OUT_FILE[$SGE_TASK_ID]}}/{sample_name}.bam'.format(
-                                                                sample_name = Geno.job.get_job( 'sample_name' ) ),
+                                            merged_bam_file = '${OUT_FILE[$SGE_TASK_ID]}/${SAMPLE_NAME[$SGE_TASK_ID]}.bam',
                                             out_dir = '${OUT_FILE[$SGE_TASK_ID]}',
                                             biobambam = Geno.conf.get( 'SOFTWARE', 'biobambam' ),
                                             samtools = Geno.conf.get( 'SOFTWARE', 'samtools' ),
@@ -1720,12 +1788,12 @@ def fisher_mutation_call(
 
             if runtask_return_code != 0:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-                raise
+                raise Exception( '{0} failed.'.format( function_name ) )
 
             control_input_bam = control_output_dir + '/{sample_name}.bam'.format(
-                                    sample_name = Geno.job.get_job( 'sample_name' ) )
+                                    sample_name = make_sample_name( dir_name = control_output_dir ) )
             disease_input_bam = disease_output_dir + '/{sample_name}.bam'.format(
-                                    sample_name = Geno.job.get_job( 'sample_name' ) )
+                                    sample_name = make_sample_name( dir_name = disease_output_dir ) )
         else:
         #
         # Not need to compare control and tumor in fisher test.
@@ -1774,7 +1842,7 @@ def fisher_mutation_call(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         #
         # Make shell script
@@ -1798,7 +1866,7 @@ def fisher_mutation_call(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, disease_output_file, runtask_return_code )
 
@@ -1948,7 +2016,7 @@ def itd_detection(
                     log.error( "{function}: runtask failed. Return code: {code}.".format(
                                             function = normal_function_name,
                                             code = runtask_return_code ) )
-                raise
+                raise Exception( '{0} failed.'.format( function_name ) )
 
         #
         # Make control panel file
@@ -2011,7 +2079,7 @@ def itd_detection(
         #
 
         #
-        # Remove ctrl_panel_normal from the list in sample_subdir
+        # Remove ctrl_panel_normal from the list in sample_name
         #
         data_list = []
         if Geno.job.get_param( 'itd_detection', 'create_ctrl_panel' ) and ctrl_panel_normal_list:
@@ -2077,7 +2145,7 @@ def itd_detection(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = tumor_function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, data_list[ 0 ][ 1 ], runtask_return_code )
 
@@ -2153,7 +2221,7 @@ def annotation(
         if runtask_return_code != 0:
             with log_mutex:
                 log.error( "{function}: runtask failed".format( function = function_name ) )
-            raise
+            raise Exception( '{0} failed.'.format( function_name ) )
 
         save_status_of_this_process( function_name, output_file, runtask_return_code )
 
@@ -2185,6 +2253,8 @@ def annotation(
 #   STAGE 0 data preparation
 #
 Sample = Sample()
+if Geno.input_file_list:
+    Sample.set_sample_list( Geno.input_file_list )
 
 #####################################################################
 #
@@ -2192,13 +2262,13 @@ Sample = Sample()
 #   in:     bam
 #   out:    fastq
 #
-@active_if( 'bam2fastq' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@parallel( generate_params_for_bam2fastq )
+@active_if( 'bam2fastq' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_bam2fastq )
+@files( generate_params_for_bam2fastq )
 def stage_1( input_file1, input_file2, output_file1, output_file2 ):
     return_value =  bam2fastq( input_file1, input_file2, output_file1, output_file2 )
     if not return_value:
-        raise
+        raise Exception( 'stage_1 failed.' )
 
 #####################################################################
 #
@@ -2207,13 +2277,13 @@ def stage_1( input_file1, input_file2, output_file1, output_file2 ):
 #   out:    fastq * X
 #
 @follows( stage_1 )
-@active_if( 'split_fastq' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_split_fastq )
+@active_if( 'split_fastq' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_split_fastq )
+@files( generate_params_for_split_fastq )
 def stage_2( input_file1, input_file2, output_file1, output_file2 ):
     return_value = split_fastq( input_file1, input_file2, output_file1, output_file2 )
     if not return_value:
-        raise
+        raise Exception( 'stage_2 failed.' )
 
 #####################################################################
 #
@@ -2222,13 +2292,13 @@ def stage_2( input_file1, input_file2, output_file1, output_file2 ):
 #   out:    fastq
 #
 @follows( stage_2 )
-@active_if( 'cutadapt' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_cutadapt )
+@active_if( 'cutadapt' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_cutadapt )
+@files( generate_params_for_cutadapt )
 def stage_3( input_file1, input_file2, output_file1, output_file2 ):
     return_value = cutadapt( input_file1, input_file2, output_file1, output_file2 )
     if not return_value:
-        raise
+        raise Exception( 'stage_3 failed' )
 
 #####################################################################
 #
@@ -2238,9 +2308,9 @@ def stage_3( input_file1, input_file2, output_file1, output_file2 ):
 #   out:    bam
 #
 @follows( stage_3 )
-@active_if( 'bwa_mem' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_bwa_mem )
+@active_if( 'bwa_mem' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_bwa_mem )
+@files( generate_params_for_bwa_mem )
 def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
     return_value = bwa_mem( input_file1,
                             input_file2,
@@ -2248,7 +2318,7 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
                             output_file2, 
                             Geno.job.get_param( 'others', 'use_biobambam' ) )
     if not return_value:
-        raise
+        raise Exception( 'stage_4 failed.' )
 
 #####################################################################
 #
@@ -2258,12 +2328,12 @@ def stage_4(  input_file1, input_file2, output_file1, output_file2 ):
 #   out:    bam
 #
 @follows( stage_4 )
-@active_if( 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_merge_bam )
+@active_if( 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_merge_bam)
+@files( generate_params_for_merge_bam )
 def stage_5( input_file_list, output_file ):
     if ( Geno.job.get_param( 'others', 'use_biobambam' ) and
-         'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS'] ):
+         'markduplicates' in Geno.job.get_job( 'tasks' )[ 'DNA'] ):
         return_value = True
     else:
         return_value = merge_bam( input_file_list,
@@ -2271,7 +2341,7 @@ def stage_5( input_file_list, output_file ):
                                   Geno.job.get_param( 'others', 'use_biobambam' ) )
 
     if not return_value:
-        raise
+        raise Exception( 'stage_5 failed.' )
 
 #####################################################################
 #
@@ -2281,16 +2351,16 @@ def stage_5( input_file_list, output_file ):
 #   out:    bam
 #
 @follows( stage_5 )
-@active_if( 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_markduplicates )
+@active_if( 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_markduplicates )
+@files( generate_params_for_markduplicates )
 def stage_6( input_file_list, output_file ):
     return_value =  markduplicates( input_file_list,
                                     output_file,
                                     Geno.job.get_param( 'others', 'use_biobambam' ) )
 
     if not return_value:
-        raise
+        raise Exception( 'stage_6 failed.' )
 
 #####################################################################
 #
@@ -2300,13 +2370,13 @@ def stage_6( input_file_list, output_file ):
 #   out:    txt
 #
 @follows( stage_6 )
-@active_if ( 'bam_stats' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_bam_stats )
+@active_if ( 'bam_stats' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_bam_stats )
+@files( generate_params_for_bam_stats )
 def stage_7( input_file1, input_file2, output_file ):
     return_value = bam_stats(  input_file1, input_file2, output_file )
     if not return_value:
-        raise
+        raise Exception( 'stage_7 failed.' )
 
 #####################################################################
 #
@@ -2316,13 +2386,13 @@ def stage_7( input_file1, input_file2, output_file ):
 #   out:    txt
 #
 @follows( stage_6, stage_7 )
-@active_if ( 'fisher_mutation_call' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_fisher_mutation_call )
+@active_if ( 'fisher_mutation_call' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_fisher_mutation_call )
+@files( generate_params_for_fisher_mutation_call )
 def stage_8( control_file_list, disease_file_list, control_outdir, output_file ):
     return_value = fisher_mutation_call(  control_file_list, disease_file_list, control_outdir, output_file )
     if not return_value:
-        raise
+        raise Exception( 'stage_8 failed.' )
 
 #####################################################################
 #
@@ -2332,13 +2402,13 @@ def stage_8( control_file_list, disease_file_list, control_outdir, output_file )
 #   out:    txt
 #
 @follows( stage_8 )
-@active_if ( 'itd_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_itd_detection )
+@active_if ( 'itd_detection' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_itd_detection )
+@files( generate_params_for_itd_detection )
 def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_output_dir_list ):
     return_value = itd_detection( control_file_list, tumor_file_list, control_output_dir_list, tumor_output_dir_list )
     if not return_value:
-        raise
+        raise Exception( 'stage_9 failed.' )
 
 #####################################################################
 #
@@ -2348,13 +2418,13 @@ def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_
 #   out:    xls or vcf
 #
 @follows( stage_9 )
-@active_if ( 'annotation' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
-@files( generate_params_for_annotation )
+@active_if ( 'annotation' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_annotation )
+@files( generate_params_for_annotation )
 def stage_10(  input_file, output_file ):
     return_value = annotation(  input_file, output_file )
     if not return_value:
-        raise
+        raise Exception( 'stage_10 failed.' )
 
 #####################################################################
 #

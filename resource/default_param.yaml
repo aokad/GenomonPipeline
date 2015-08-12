@@ -11,15 +11,17 @@
 
 ##########
 # cutadapt
+#
 cutadapt:
     adaptor:
                     - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
                     - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 ##########
 # split_fastq
+#
 split_fastq:
     split_fastq_line_number:    16000000
-    fastq_filter:               False
+    fastq_filter:               True
 
 ##########
 # BWA mem
@@ -97,11 +99,13 @@ bwa_mem:
 
 ##########
 # BAM markduplicates
+#
 markduplicates:
     java_memory: '6G'
 
 ##########
 # BAM file statistics
+#
 bam_stats:
 #    For Illumina Nextera Rapid Capture Exome
 #    bed_file:           /home/w3varann/database/Illumina/nexterarapidcapture_exome_targetedregions_v1.2.bed
@@ -118,6 +122,7 @@ bam_stats:
 
 ##########
 # Fisher's exact test mutation call
+#
 fisher_mutation_call:
     min_depth:              9
     max_indel:              2
@@ -128,6 +133,7 @@ fisher_mutation_call:
 
 ##########
 # Genomon-ITDetection
+#
 itd_detection:
     # Specifi inhouse_itd list files and inhouse_breakpoint list files as list.
     # File prefixs need to be either
@@ -162,15 +168,17 @@ itd_detection:
 
 ##########
 # Annotation
+#
 annotation:
     output_in_vcf: False
     use_table_annovar: False
-    summarize_annovar_params: '--remove --buildver hg19 --verdbsnp 131 --ver1000g ALL.sites.2014_10' 
+    summarize_annovar_params: '--remove --buildver hg19 --verdbsnp 131 --ver1000g 1000g2014oct'
     table_annovar_params: '-remove -protocol refGene,genomicSuperDups,snp131,1000g2014oct_all,esp6500siv2_all,popfreq_all_20150413,cosmic70,clinvar_20150330,nci60,exac03,fathmm,cadd,avsift,cg46,HGVD_20131010,ToMMo.v1,HGMD_201403,PanCan.20150615 -operation g,r,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f -otherinfo -buildver hg19'
 
 
 ##########
 # Others
+#
 others:
     use_biobambam:  False
 
@@ -179,12 +187,21 @@ others:
 # RNA
 #
 
+##########
+# tophat2
+#
 tophat2:
     additional_params: '-p 8'
 
+##########
+# cufflinks
+#
 cufflinks:
     additional_params:
 
+##########
+# cuffdiff
+#
 cuffdiff:
     additional_params: '-p 4'
 
@@ -206,6 +223,7 @@ star_genome:
 star:
     additional_params:  '
         --outSAMstrandField intronMotif
+        --outSAMunmapped
         --outFilterIntronMotifs RemoveNoncanonicalUnannotated
         --outReadsUnmapped None
         --chimSegmentMin 15
@@ -213,6 +231,7 @@ star:
         --alignMatesGapMax 200000
         --alignIntronMax 200000
         --outSAMtype BAM SortedByCoordinate
+        --limitBAMsortRAM 34350000000
     '
 
 ##########
@@ -220,5 +239,13 @@ star:
 #
 star_fusion:
     additional_params:  ' '
+
+
+##########
+# fusionfusion detection
+#
+fusionfusion:
+    param_file: /home/w3varann/tools/fusionfusion/param.yaml
+
 
 
