@@ -14,5 +14,5 @@ R_LIBS=/home/w3varann/.R
 R_HOME=/home/w3varann/.R
 
 GENOMON_DIR=`dirname $0`
-/usr/local/package/python2.7/current/bin/python ${GENOMON_DIR}/Genomon --verbose 1 $1 $2 $3 
+/usr/local/package/python2.7/current/bin/python ${GENOMON_DIR}/Genomon $@
 

@@ -59,14 +59,14 @@ def construct_arguments( ):
     
     """
 
-    parser = argparse.ArgumentParser( 'genomon', 'Genomon Pipeline Framework' );
+    parser = argparse.ArgumentParser( 'genomon', "Genomon [DNA|RNA] [output directory] [sample list file]\n\nGenomon Pipeline Framework" );
 
     #
     # Positional argument
     #
-    parser.add_argument( 'analysis_type',       help = "Analysis type [WGS/STAR]", type = str )
+    parser.add_argument( 'analysis_type',       help = "Analysis type [DNA|RNA]", type = str )
     parser.add_argument( 'output_directory',    help = "Output directory", type = str )
-    parser.add_argument( 'sample_file',         help = "Sample list file [CSV/TSV/XLSX]", type = str )
+    parser.add_argument( 'sample_file',         help = "Sample list file [csv/tsv/xlsx]", type = str )
 
 
     #
