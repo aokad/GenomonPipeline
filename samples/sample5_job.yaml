@@ -2,24 +2,14 @@
 # Genomon Project information
 #
 # Mandatory definitions
-#   project_root
-#   sample_name
+#   project_root:   All the data and results are stored under this directory.
+#                   If the directory does not exist, it is going to be created.
 #   analysis_date:  either 'today' or a specific date
-#
-#   project name directory is going to be created at project_root specified below.
-#       {project_root}/data, results
+#   sample_group:   Group name of samples in this file.
 #
 project_root:           ~/tmp
-sample_name:            star_sample
+sample_group:            star_sample
 analysis_date:          today
-
-#
-# Data directory
-#
-#
-# Optional
-#   project_dir_tree:   if not specified, the default directory tree is going to be created.
-#
 
 #
 # Input files
@@ -64,9 +54,6 @@ pair_id:
                             - 1 
                             - 2
 sample_subdir:              s_B1*
-
-fastq_filter:               False # True or False
-
 directory_permission:       owner   # owner, group, all
 
 #

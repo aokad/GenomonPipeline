@@ -4,12 +4,14 @@
 #
 # Mandatory definitions
 #   project_root:   All the data and results are stored under this directory.
+#                   If the directory does not exist, it is going to be created.
 #   analysis_date:  either 'today' or a specific date
+#   sample_group:   Group name of samples in this yaml.
 #
 #
 project_root:           ~/tmp
 analysis_date:          today
-sample_name:            small_SRR330441
+sample_group:           small_SRR330441
 
 ######################################################################
 #
@@ -25,7 +27,7 @@ sample_name:            small_SRR330441
 #   file_ext    we assume that input file extension is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
 #
-#   pair_id     if file_name includes pair_id, need to specify
+#   pair_id     if file_name includes pair_id, need to specify.
 #
 #   sample_subdir   if the input_file_dir includes sub-directories containting data files,
 #                   you can specify.
@@ -34,6 +36,9 @@ sample_name:            small_SRR330441
 #                   sample_subdir:  s_B1N*
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#   The permission of directories created in the analysis can be set by directory_permission.
+#   You can specify owner, group, or all. 
 #
 #
 input_file_dir:             /home/w3varann/samples/SRR330441
@@ -51,7 +56,7 @@ pair_id:
 #
 use_biobambam:      True
 tasks:
-                    WGS:
+                    DNA:
                         - split_fastq
                         - bwa_mem
                         - merge_bam
@@ -59,7 +64,7 @@ tasks:
                         - bam_stats
 
 # tasks type
-#                    WGS:
+#                    DNA:
 #                        - bam2fastq
 #                        - split_fastq
 #                        - cutadapt
@@ -68,6 +73,8 @@ tasks:
 #                        - markduplicate
 #                        - bam_stats
 #                        - fisher_mutation_call
+#                        - itd_detection
+#                        - annotation
 
 #
 # BAM mem read group
@@ -106,24 +113,17 @@ bam_read_group:     '@RG\tID:SRR330441\tSM:SRR330441_sample\tLB:SRR330441\tPL:Il
 #   HGC Shirokane super computer specific parameters
 #
 cmd_options:
-#   For Shirokane2
-                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1'
-                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1'
-                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1'
-                    bwa_mem:                '-l ljob,s_vmem=6G,mem_req=6'
-                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1'
-                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8'
-                    bam_stats:              '-l ljob,s_vmem=2G,mem_req=2'
-                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1'
 #   For Shirokane3
-#                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
-#                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
-#                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1G'
-#                    bwa_mem:                '-l ljob,s_vmem=6G,mem_req=6G'
-#                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1G'
-#                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
-#                    bam_stats:              '-l ljob,s_vmem=2G,mem_req=2G'
-#                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
+                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
+                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
+                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1G'
+                    bwa_mem:                '-l ljob,s_vmem=8G,mem_req=8G'
+                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1G'
+                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
+                    bam_stats:              '-l ljob,s_vmem=6G,mem_req=6G'
+                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
+                    itd_detection:          '-l ljob,s_vmem=6G,mem_req=6G'
+                    annotation:             '-l ljob,s_vmem=8G,mem_req=8G'
 
 #
 # qsub command format
