@@ -301,14 +301,44 @@ def check_file_exists_for_itd_detection(
     return False, "Output files  exits."
 
 
-def check_file_exists_for_sv_parse(*param):
+def check_file_exists_for_sv_parse(target_label, target_bam, target_outdir, match_use, match_bam):
 
-    return True, "always true!"
-    # return False, "always false!"
+    exit_status = get_status_of_this_process('sv_parse', target_label)
+    input = target_bam
+    output = target_outdir + "/" + target_label + ".junction.clustered.bedpe.gz"
 
-def check_file_exists_for_sv_filt(*param):
+    if exit_status != 0 or not os.path.exists(output):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output,
+                            inputfile = input )
  
-    return True, "always true!"
+    else:
+        in_time = os.path.getmtime(input)
+        out_time = os.path.getmtime(output)
+        if in_time > out_time:
+            return True, "{outputfile} is older than {inputfile}.".format(outputfile = output, inputfile = input)
+        else:
+            return False, "File {outputfile} exits for {inputfile}.".format(outputfile = output, inputfile = input)
+
+
+def check_file_exists_for_sv_filt(target_label, target_outdir):
+
+    exit_status = get_status_of_this_process('sv_filt', target_label)
+    input = target_outdir + "/" + target_label + ".junction.clustered.bedpe.gz"
+    output = target_outdir + "/" + target_label + ".genomonSV.result.txt"
+
+    if exit_status != 0 or not os.path.exists(output):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output,
+                            inputfile = input )
+
+    else:
+        in_time = os.path.getmtime(input)
+        out_time = os.path.getmtime(output)
+        if in_time > out_time:
+            return True, "{outputfile} is older than {inputfile}.".format(outputfile = output, inputfile = input)
+        else:
+            return False, "File {outputfile} exits for {inputfile}.".format(outputfile = output, inputfile = input)
 
 
 def check_file_exists_for_annotation(
