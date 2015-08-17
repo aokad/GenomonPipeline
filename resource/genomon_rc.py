@@ -55,6 +55,8 @@ dir_task_list = { 'fastq':          [ 'split_fastq' ],
 
                   'itd':            [ 'itd_detection' ],
 
+                  'sv':             [ 'sv_detection'],
+
                   'star':           [ 'star' ],
                   'star_fusion':    [ 'star_fusion' ],
                   'fusionfusion':   [ 'fusionfusion' ],

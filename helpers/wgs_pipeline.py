@@ -336,6 +336,47 @@ def check_file_exists_for_itd_detection(
 
     return False, "Output files  exits."
 
+
+def check_file_exists_for_sv_parse(target_label, target_bam, target_outdir, match_use, match_bam):
+
+    exit_status = get_status_of_this_process('sv_parse', target_label)
+    input = target_bam
+    output = target_outdir + "/" + target_label + ".junction.clustered.bedpe.gz"
+
+    if exit_status != 0 or not os.path.exists(output):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output,
+                            inputfile = input )
+ 
+    else:
+        in_time = os.path.getmtime(input)
+        out_time = os.path.getmtime(output)
+        if in_time > out_time:
+            return True, "{outputfile} is older than {inputfile}.".format(outputfile = output, inputfile = input)
+        else:
+            return False, "File {outputfile} exits for {inputfile}.".format(outputfile = output, inputfile = input)
+
+
+def check_file_exists_for_sv_filt(target_label, target_outdir):
+
+    exit_status = get_status_of_this_process('sv_filt', target_label)
+    input = target_outdir + "/" + target_label + ".junction.clustered.bedpe.gz"
+    output = target_outdir + "/" + target_label + ".genomonSV.result.txt"
+
+    if exit_status != 0 or not os.path.exists(output):
+        return True, "Missing file {outputfile} for {inputfile}.".format(
+                            outputfile = output,
+                            inputfile = input )
+
+    else:
+        in_time = os.path.getmtime(input)
+        out_time = os.path.getmtime(output)
+        if in_time > out_time:
+            return True, "{outputfile} is older than {inputfile}.".format(outputfile = output, inputfile = input)
+        else:
+            return False, "File {outputfile} exits for {inputfile}.".format(outputfile = output, inputfile = input)
+
+
 def check_file_exists_for_annotation(
         input_file,
         output_file
@@ -811,6 +852,69 @@ def generate_params_for_itd_detection( ):
                disease_file_list,
                normal_outfile_list,
                disease_outfile_list )
+
+
+def generate_params_for_sv_parse():
+
+
+    Sample.make_param( 'sv_detection', 'markduplicates', '.txt', 'sv', 1, 1 )
+    param_list = Sample.param( 'sv_detection' )
+
+    # get the bam-path and output dir (for sv) for each sample
+    sample_name2bampath = {}
+    sample_name2outputdir = {}
+    for input1, input2, output1, output2 in param_list:
+        bam_path = make_bam_filename_for_markdup_result(input1)
+        bam_dirname = os.path.dirname(bam_path)
+        sample_name = os.path.basename(bam_dirname)
+        out_path = os.path.dirname(output1)
+
+        sample_name2bampath[sample_name] = bam_path
+        sample_name2outputdir[sample_name] = out_path
+
+
+    # on tumor-control relationships
+    control2tumor = Geno.job.get_job( 'control_disease_pairs' )
+    # reverse the key-value for ease of treatment
+    tumor2control = dict([(v, k) for k, v in control2tumor.items()])
+
+
+    for sample_name in sample_name2bampath:
+
+        if sample_name in tumor2control:
+            control_bam = sample_name2bampath[tumor2control[sample_name]]
+            yield [sample_name, sample_name2bampath[sample_name], sample_name2outputdir[sample_name], True, control_bam]
+        else:
+            yield [sample_name, sample_name2bampath[sample_name], sample_name2outputdir[sample_name], False, None]
+            
+
+def generate_params_for_sv_filt():
+ 
+    Sample.make_param( 'sv_detection', 'markduplicates', '.txt', 'sv', 1, 1 )
+    param_list = Sample.param( 'sv_detection' )
+    
+    # get the bam-path and output dir (for sv) for each sample
+    sample_name2outputdir = {}
+    for input1, input2, output1, output2 in param_list:
+        bam_path = make_bam_filename_for_markdup_result(input1)
+        bam_dirname = os.path.dirname(bam_path)
+        sample_name = os.path.basename(bam_dirname)
+        out_path = os.path.dirname(output1)
+
+        sample_name2outputdir[sample_name] = out_path
+
+
+
+    # on tumor-control relationships
+    control2tumor = Geno.job.get_job( 'control_disease_pairs' )
+    # reverse the key-value for ease of treatment
+    tumor2control = dict([(v, k) for k, v in control2tumor.items()])
+
+    for sample_name in sample_name2outputdir:
+        print sample_name
+        if sample_name in tumor2control:
+            yield [sample_name, sample_name2outputdir[sample_name]]
+
 
 def generate_params_for_annotation():
     """
@@ -2412,6 +2516,160 @@ def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_
 
 #####################################################################
 #
+# STAGE 10 sv_detection (parse)
+#
+#  in:  bam
+#  out: .gz 
+#
+@follows ( stage_6 )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@check_if_uptodate( check_file_exists_for_sv_parse )
+@parallel( generate_params_for_sv_parse )
+def sv_detection_parse( target_label, target_bam, target_outdir, match_use, match_bam ):
+
+
+    ##########
+    # generate sample config yaml file
+    sv_sampleConf = {"target": {}, "matched_control": {}, "non_matched_control_panel": {}}
+    sv_sampleConf["target"]["label"] = target_label 
+    sv_sampleConf["target"]["path_to_bam"] = target_bam
+    sv_sampleConf["target"]["path_to_output_dir"] = target_outdir
+    sv_sampleConf["matched_control"]["use"] = match_use 
+    sv_sampleConf["matched_control"]["path_to_bam"] = match_bam
+    sv_sampleConf["non_matched_control_panel"]["use"] = False
+    hOUT = open(target_outdir + "/" + target_label + ".yaml", "w")
+    print >> hOUT, yaml.dump(sv_sampleConf, default_flow_style = False)
+    hOUT.close()
+    ##########
+
+    return_code = True
+
+    try:
+        function_name = whoami()
+        log.info( "#{function}".format( function = function_name ) )
+
+        # Make shell script
+        shell_script_full_path = make_script_file_name( function_name, Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.sv_parse_filt.format(
+                                     log = Geno.dir[ 'log' ],
+                                     pythonhome = Geno.conf.get( 'ENV', 'PYTHONHOME' ),
+                                     ld_library_path = Geno.conf.get( 'ENV', 'LD_LIBRARY_PATH'),
+                                     pythonpath = Geno.conf.get( 'ENV', 'PYTHONPATH' ),
+                                     scriptdir = Geno.dir[ 'script' ],
+                                     genomon_sv = Geno.conf.get( 'SOFTWARE', 'genomon_sv' ),
+                                     method = "parse",
+                                     sample_conf = target_outdir + "/" + target_label + ".yaml",
+                                     param_conf = Geno.job.get_param( 'genomon_sv', 'param_file' )
+                                     ) )
+        shell_script_file.close()
+
+        # Run
+        return_code = Geno.RT.runtask(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ "sv_detection" ] )
+
+        if return_code != 0:
+            log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+
+        save_status_of_this_process( "sv_parse", target_label, return_code )
+
+
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        return_value = False
+
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        return_value = False
+
+    else:
+        return_value = True
+
+    return return_value
+
+
+@follows ( sv_detection_parse )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@check_if_uptodate( check_file_exists_for_sv_filt )
+@parallel( generate_params_for_sv_filt )
+def sv_detection_filt( target_label, target_outdir ):
+
+    return_code = True
+
+    try:
+        function_name = whoami()
+        log.info( "#{function}".format( function = function_name ) )
+
+        # Make shell script
+        shell_script_full_path = make_script_file_name( function_name, Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.sv_parse_filt.format(
+                                     log = Geno.dir[ 'log' ],
+                                     pythonhome = Geno.conf.get( 'ENV', 'PYTHONHOME' ),
+                                     ld_library_path = Geno.conf.get( 'ENV', 'LD_LIBRARY_PATH'),
+                                     pythonpath = Geno.conf.get( 'ENV', 'PYTHONPATH' ),
+                                     scriptdir = Geno.dir[ 'script' ],
+                                     genomon_sv = Geno.conf.get( 'SOFTWARE', 'genomon_sv' ),
+                                     method = "filt",
+                                     sample_conf = target_outdir + "/" + target_label + ".yaml",
+                                     param_conf = Geno.job.get_param( 'genomon_sv', 'param_file' )
+                                     ) )
+        shell_script_file.close()
+        
+        # Run
+        return_code = Geno.RT.runtask(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ "sv_detection" ] )
+                            
+        if return_code != 0:
+            log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+            
+        save_status_of_this_process( "sv_filt", target_label, return_code )
+        
+        
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format( function = whoami(), num = errno, error = strerror) )
+        return_value = False
+        
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+        
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        with log_mutex:
+            log.error( "{function}: Unexpected error: {error}".format( function = whoami(), error = sys.exc_info()[0] ) )
+            log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        return_value = False
+
+    else:
+        return_value = True
+
+    return return_value
+
+
+
+
+
+
+#####################################################################
+#
 #   STAGE 10 annotation
 #
 #   in:     txt
@@ -2430,7 +2688,7 @@ def stage_10(  input_file, output_file ):
 #
 #   LAST STAGE 
 #
-@follows( stage_10 )
+@follows( stage_10, sv_detection_filt )
 def last_function():
     with log_mutex:
         log.info( "Genomon pipline has finished successflly!" )
