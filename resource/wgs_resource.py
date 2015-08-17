@@ -866,6 +866,40 @@ check_error $?
 
 """
 
+mutation_filter = \
+"""
+#!/bin/bash
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+source {scriptdir}/utility.sh
+
+{mutfilter} realignment --header {additional_params} \
+{target_list} {target_tumor_bam} {target_normal_bam} \
+{tmp_out_realignment} {ref_fasta} {blat}
+check_error $?
+
+{mutfilter} indel --header {additional_params} \
+{tmp_out_realignment} {target_normal_bam} {tmp_out_indel}
+check_error $?
+
+{mutfilter} breakpoint --header {additional_params} \
+{tmp_out_indel} {target_normal_bam} {tmp_out_breakpoint}
+check_error $?
+
+{mutfilter} simplerepeat --header {additional_params} \
+{tmp_out_breakpoint} {output_list} {simple_repeat_db}
+check_error $?
+
+"""
+
 annotation = \
 """
 #!/bin/bash

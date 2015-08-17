@@ -377,6 +377,27 @@ def check_file_exists_for_sv_filt(target_label, target_outdir):
             return False, "File {outputfile} exits for {inputfile}.".format(outputfile = output, inputfile = input)
 
 
+def check_file_exists_for_mutation_filter(
+        target_list,
+        target_normal_bam,
+        taraget_tumor_bam,
+        output_list,
+        output_dir
+    ):
+
+    exit_status = get_status_of_this_process( 'mutation_filter', output_list )
+
+    if exit_status != 0 or not os.path.exists( output_list ):
+        return True, "Missing file {output} for {input}.".format( output = output_list, input = target_list)
+    else:
+        in_time = os.path.getmtime( target_list )
+        out_time = os.path.getmtime( output_list )
+        if in_time > out_time:
+            return True, "{output} is older than {input}.".format( output = output_list, input = target_list)
+        else:
+            return False, "File {output} exits for {input}.".format( output = output_list, input = target_list)
+
+
 def check_file_exists_for_annotation(
         input_file,
         output_file
@@ -914,6 +935,19 @@ def generate_params_for_sv_filt():
         print sample_name
         if sample_name in tumor2control:
             yield [sample_name, sample_name2outputdir[sample_name]]
+
+
+def generate_params_for_mutation_filter( ):
+
+    ctrl_dis_pairs = Geno.job.get_job( 'control_disease_pairs' )
+    for subdir in ctrl_dis_pairs.keys():
+        in_mutation_txt  =  Geno.dir[ 'mutation' ]  + '/' + ctrl_dis_pairs[subdir]      + '/' + Geno.job.get_job( 'sample_name' ) + '.txt'
+        in_normal_bam    =  Geno.dir[ 'bam' ]       + '/' + str(subdir)                 + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam'
+        in_tumor_bam     =  Geno.dir[ 'bam' ]       + '/' + str(ctrl_dis_pairs[subdir]) + '/' + Geno.job.get_job( 'sample_name' ) + '_markdup.bam'
+        out_mutation_txt =  Geno.dir[ 'mutfilter' ] + '/' + ctrl_dis_pairs[subdir]      + '/' + Geno.job.get_job( 'sample_name' ) + '_mutfilter.txt'
+        out_mutation_dir =  Geno.dir[ 'mutfilter' ] + '/' + ctrl_dis_pairs[subdir] 
+
+        yield (in_mutation_txt, in_tumor_bam, in_normal_bam, out_mutation_txt, out_mutation_dir) 
 
 
 def generate_params_for_annotation():
@@ -2276,6 +2310,84 @@ def itd_detection(
 
     return return_value
 
+
+#
+#  mutation filter
+#
+def mutation_filter(
+        target_list,
+        target_tumor_bam,
+        target_normal_bam,
+        output_list,
+        output_dir
+        ):
+    """
+        mutation filter: 
+
+    """
+    return_value = True
+
+    try:
+        function_name = whoami()
+        log.info( "#{function}".format( function = function_name ) )
+
+        #
+        # Make shell script
+        #
+        shell_script_full_path = make_script_file_name( function_name, Geno )
+        shell_script_file = open( shell_script_full_path, 'w' )
+        shell_script_file.write( wgs_res.mutation_filter.format(
+                                     log = Geno.dir[ 'log' ],
+                                     scriptdir = Geno.dir[ 'script' ],
+                                     mutfilter = Geno.conf.get( 'SOFTWARE', 'mutfilter' ),
+                                     additional_params = Geno.job.get_param( 'mutfilter', 'additional_params' ),
+                                     target_list = target_list,
+                                     target_tumor_bam = target_tumor_bam,
+                                     target_normal_bam = target_normal_bam,
+                                     output_list = output_list,
+                                     ref_fasta = Geno.conf.get( 'REFERENCE', 'ref_fasta' ),
+                                     simple_repeat_db = Geno.conf.get( 'REFERENCE', 'simple_repeat_tabix_db' ),
+                                     blat = Geno.conf.get( 'SOFTWARE', 'blat' ),
+                                     tmp_out_realignment = output_dir + '/' + "tmp_realignment.txt",
+                                     tmp_out_indel =  output_dir + '/' + "tmp_indel.txt",
+                                     tmp_out_breakpoint =  output_dir + '/' + "tmp_breakpoint.txt"
+                                     )  )
+        shell_script_file.close()
+
+        #
+        # Run
+        #
+        return_code = Geno.RT.runtask(
+                            shell_script_full_path,
+                            Geno.job.get_job( 'cmd_options' )[ function_name ] )
+
+        if return_code != 0:
+            log.error( "{function}: runtask failed".format( function = function_name ) )
+            raise
+
+        save_status_of_this_process( function_name, output_list, return_code )
+
+    except IOError as (errno, strerror):
+        with log_mutex:
+            log.error( "{function}: I/O error({num}): {error}".format(function = whoami(), num = errno, error = strerror) )
+        return_value = False
+
+    except ValueError:
+        with log_mutex:
+            log.error( "{function}: ValueError".format( function = whoami() ) )
+        return_value = False
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        log.error( "{function}: Unexpected error: {error}.".format(
+                    function = whoami() , error = sys.exc_info()[0] ) )
+        log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        return_value = False
+
+    return return_value
+
+
 #
 # Stage 10: annotation
 #
@@ -2664,8 +2776,22 @@ def sv_detection_filt( target_label, target_outdir ):
     return return_value
 
 
+#####################################################################
+#
+#   mutation_filter
+#
+#   in:     txt
+#   out:    xls or vcf
+#
+@follows( stage_9 )
+@active_if ( 'mutation_filter' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@files( generate_params_for_mutation_filter )
+@check_if_uptodate( check_file_exists_for_mutation_filter )
+def stage_mutation_filter(target_list, target_normal_bam, taraget_numor_bam, output_list, output_dir):
+    return_value = mutation_filter(target_list, target_normal_bam, taraget_numor_bam, output_list, output_dir)
 
-
+    if not return_value:
+        raise
 
 
 #####################################################################
@@ -2675,7 +2801,7 @@ def sv_detection_filt( target_label, target_outdir ):
 #   in:     txt
 #   out:    xls or vcf
 #
-@follows( stage_9 )
+@follows( stage_mutation_filter )
 @active_if ( 'annotation' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_annotation )
 @files( generate_params_for_annotation )
