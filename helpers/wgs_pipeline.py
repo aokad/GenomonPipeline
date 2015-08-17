@@ -2637,7 +2637,7 @@ def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_
 #  out: .gz 
 #
 @follows ( stage_6 )
-@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_sv_parse )
 @parallel( generate_params_for_sv_parse )
 def sv_detection_parse( target_label, target_bam, target_outdir, match_use, match_bam ):
@@ -2716,7 +2716,7 @@ def sv_detection_parse( target_label, target_bam, target_outdir, match_use, matc
 
 
 @follows ( sv_detection_parse )
-@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_sv_filt )
 @parallel( generate_params_for_sv_filt )
 def sv_detection_filt( target_label, target_outdir ):
@@ -2787,7 +2787,7 @@ def sv_detection_filt( target_label, target_outdir ):
 #   out:    xls or vcf
 #
 @follows( stage_9 )
-@active_if ( 'mutation_filter' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@active_if ( 'mutation_filter' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @files( generate_params_for_mutation_filter )
 @check_if_uptodate( check_file_exists_for_mutation_filter )
 def stage_mutation_filter(target_list, target_normal_bam, taraget_numor_bam, output_list, output_dir):
