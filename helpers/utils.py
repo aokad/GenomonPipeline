@@ -237,3 +237,15 @@ def make_script_file( function_name, string, Geno, **kwargs ):
     shell_script_file.close()
     return shell_script_full_path
 
+def save_status_of_this_process( process_name, output_file, return_code, Geno, use_subdir ):
+
+    Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
+
+def get_status_of_this_process( process_name, output_file, Geno, use_subdir ):
+
+    exit_status = Geno.status.check_exit_status(
+                    process_name,
+                    output_file,
+                    use_subdir = use_subdir ) 
+
+    return exit_status

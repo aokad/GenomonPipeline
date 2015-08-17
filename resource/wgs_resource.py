@@ -636,8 +636,15 @@ echo {disease_input_bam}
 echo {output_txt}
 
 source {scriptdir}/utility.sh
-source {scriptdir}/interval.sh
-source {scriptdir}/interval_list.sh
+
+if [ "{chr_str_in_fa}" = "True" ]
+then
+    source {scriptdir}/interval_chr.sh
+    source {scriptdir}/interval_list_chr.sh
+else
+    source {scriptdir}/interval_no_chr.sh
+    source {scriptdir}/interval_list_no_chr.sh
+fi
 
 CONTROL_INTERVAL_BAM=`echo {control_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}.bam/"`
 DISEASE_INTERVAL_BAM=`echo {disease_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}.bam/"`
@@ -881,20 +888,20 @@ set -xv
 
 source {scriptdir}/utility.sh
 
-{mutfilter} realignment --header {realignment_params} \
+{mutfilter} realignment --header {additional_params} \
 {target_list} {target_tumor_bam} {target_normal_bam} \
 {tmp_out_realignment} {ref_fasta} {blat}
 check_error $?
 
-{mutfilter} indel --header {indel_params} \
+{mutfilter} indel --header {additional_params} \
 {tmp_out_realignment} {target_normal_bam} {tmp_out_indel}
 check_error $?
 
-{mutfilter} breakpoint --header {breakpoint_params} \
+{mutfilter} breakpoint --header {additional_params} \
 {tmp_out_indel} {target_normal_bam} {tmp_out_breakpoint}
 check_error $?
 
-{mutfilter} simplerepeat --header {simplerepeat_params} \
+{mutfilter} simplerepeat --header {additional_params} \
 {tmp_out_breakpoint} {output_list} {simple_repeat_db}
 check_error $?
 

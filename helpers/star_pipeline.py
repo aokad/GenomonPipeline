@@ -26,18 +26,6 @@ use_subdir = ( Geno.job.get_job( 'sample_name' ) != None )
 #
 # Subroutines
 #
-def save_status_of_this_process( process_name, output_file, return_code ):
-
-    Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
-
-def get_status_of_this_process( process_name, output_file ):
-
-    exit_status = Geno.status.check_exit_status(
-                    process_name,
-                    output_file,
-                    use_subdir = use_subdir ) 
-
-    return exit_status
 
 #####################################################################
 #
@@ -54,7 +42,7 @@ def check_file_exists(input_file, output_file):
 
 def check_file_exists_for_star_genome( fasta, gtf, star_genome_dir ):
 
-    exit_status = get_status_of_this_process( 'star_genome', star_genome_dir )
+    exit_status = get_status_of_this_process( 'star_genome', star_genome_dir, Geno, use_subdir )
     if ( not os.path.exists( star_genome_dir + '/Genome' ) or
          not os.path.exists( star_genome_dir + '/SA' ) or
          not os.path.exists( star_genome_dir + '/SAindex' ) or
@@ -64,7 +52,7 @@ def check_file_exists_for_star_genome( fasta, gtf, star_genome_dir ):
         return False, "File %s exists" % star_genome_dir
 
 def check_file_exists_for_star( input_file1, input_file2, output_prefix ):
-    exit_status = get_status_of_this_process( 'star', output_prefix )
+    exit_status = get_status_of_this_process( 'star', output_prefix, Geno, use_subdir )
     if exit_status != 0:
         return True, "Missing file %s" % output_prefix
     else:
@@ -72,7 +60,7 @@ def check_file_exists_for_star( input_file1, input_file2, output_prefix ):
         return check_file_exists( input_file1, output_tmp )
 
 def check_file_exists_for_star_fusion( input_file1, input_file2, output_prefix ):
-    exit_status = get_status_of_this_process( 'star_fusion', output_prefix )
+    exit_status = get_status_of_this_process( 'star_fusion', output_prefix, Geno, use_subdir )
     if exit_status != 0:
         return True, "Missing file %s" % output_prefix
     else:
@@ -81,7 +69,7 @@ def check_file_exists_for_star_fusion( input_file1, input_file2, output_prefix )
         return check_file_exists( input_file1, output_tmp )
 
 def check_file_exists_for_fusionfusion( input_file1, input_file2, output_prefix ):
-    exit_status = get_status_of_this_process( 'fusionfusion', output_prefix )
+    exit_status = get_status_of_this_process( 'fusionfusion', output_prefix, Geno, use_subdir )
     if exit_status != 0:
         return True, "Missing file %s" % output_prefix
     else:
@@ -121,19 +109,8 @@ def generate_params_for_fusionfusion( ):
 
 #####################################################################
 #
-#   STAGE 0 data preparation
+# Functions
 #
-Sample = Sample()
-if Geno.input_file_list:
-    Sample.set_sample_list( Geno.input_file_list )
-
-#####################################################################
-#
-#   STAGE 1 fastq to bam by star
-#
-@active_if( 'star_genome' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@files( generate_params_for_star_genome )
-@check_if_uptodate( check_file_exists_for_star_genome )
 def star_genome(
         fasta,
         gtf,
@@ -143,7 +120,7 @@ def star_genome(
         Stage 1: star_genome: make genome data for star
 
     """
-    return_code = True
+    return_value = True
 
     try:
         function_name = whoami()
@@ -174,7 +151,7 @@ def star_genome(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        save_status_of_this_process( function_name, output_dir, return_code )
+        save_status_of_this_process( function_name, output_dir, return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -182,14 +159,14 @@ def star_genome(
                         num = errno,
                         error = strerror)
                 )
-        return_code = False
+        return_value = False
 
     except ValueError:
         log.error( "{function}: ValueError".format(
                         function = whoami()
                     )
                 )
-        return_code = False
+        return_value = False
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -197,19 +174,11 @@ def star_genome(
         log.error( "{function}: Unexpected error: {error}.".format(
                     function = whoami() , error = sys.exc_info()[0] ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-        return_code = False
+        return_value = False
 
 
-    return return_code
+    return return_value
 
-#####################################################################
-#
-#   STAGE 2 fastq to bam by star
-#
-@follows( star_genome )
-@active_if( 'star' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@files( generate_params_for_star )
-@check_if_uptodate( check_file_exists_for_star )
 def star(
         input_file1,
         input_file2,
@@ -219,7 +188,7 @@ def star(
         Stage 2: star
 
     """
-    return_code = True
+    return_value = True
 
     try:
         function_name = whoami()
@@ -251,7 +220,7 @@ def star(
                           "OUT_FILE=(\n[1]=\"{file1}\"\n[2]=\"{file2}\"\n)\n".format(
                                         file1 = fastq_file1, file2 = fastq_file2 )
 
-            if ( get_status_of_this_process( function_name + '_decomp', output_prefix ) != 0 or
+            if ( get_status_of_this_process( function_name + '_decomp', output_prefix, Geno, use_subdir ) != 0 or
                  not os.path.exists( fastq_file1 ) or
                  ( fastq_file2 != '' and not os.path.exists( fastq_file2 ) ) ):
                 #
@@ -279,7 +248,7 @@ def star(
                     log.error( "{function}: runtask failed".format( function = function_name ) )
                     raise
 
-                save_status_of_this_process( function_name + '_decomp' , output_prefix, return_code )
+                save_status_of_this_process( function_name + '_decomp' , output_prefix, return_code, Geno, use_subdir )
 
         else:
             fastq_file1 = input_file1
@@ -295,7 +264,7 @@ def star(
             'fastq1': fastq_file1,
             'fastq2': fastq_file2,
             'out_prefix': output_prefix + '_',
-            'star': Geno.conf.get( 'SOFTWARE', 'RNA' ),
+            'star': Geno.conf.get( 'SOFTWARE', 'STAR' ),
             'additional_params': Geno.job.get_param( 'star', 'additional_params' ),
             'scriptdir': Geno.dir[ 'script' ]
         }
@@ -312,7 +281,7 @@ def star(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        save_status_of_this_process( function_name, output_prefix, return_code )
+        save_status_of_this_process( function_name, output_prefix, return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -320,14 +289,14 @@ def star(
                         num = errno,
                         error = strerror)
                 )
-        return_code = False
+        return_value = False
 
     except ValueError:
         log.error( "{function}: ValueError".format(
                         function = whoami()
                     )
                 )
-        return_code = False
+        return_value = False
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -335,19 +304,11 @@ def star(
         log.error( "{function}: Unexpected error: {error}.".format(
                     function = whoami() , error = sys.exc_info()[0] ) )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
-        return_code = False
+        return_value = False
 
 
-    return return_code
+    return return_value
 
-#####################################################################
-#
-#   STAGE 3
-#
-@follows( star )
-@active_if( 'star_fusion' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@files( generate_params_for_star_fusion )
-@check_if_uptodate( check_file_exists_for_star_fusion )
 def star_fusion(
         sam,
         junction,
@@ -357,7 +318,7 @@ def star_fusion(
         Stage 3: star_fusion
 
     """
-    return_code = True
+    return_value = True
 
     try:
         function_name = whoami()
@@ -388,7 +349,7 @@ def star_fusion(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        save_status_of_this_process( function_name, output_prefix, return_code )
+        save_status_of_this_process( function_name, output_prefix, return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -396,33 +357,25 @@ def star_fusion(
                         num = errno,
                         error = strerror)
                 )
-        return_code = False
+        return_value = False
 
     except ValueError:
         log.error( "{function}: ValueError".format(
                         function = whoami()
                     )
                 )
-        return_code = False
+        return_value = False
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{function}: Unexpected error: {error}.".format(
                     function = whoami() , error = sys.exc_info()[0] ) )
-        return_code = False
+        return_value = False
 
 
-    return return_code
+    return return_value
 
-#####################################################################
-#
-#   STAGE 4
-#
-@follows( star_fusion )
-@active_if( 'fusionfusion' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
-@files( generate_params_for_fusionfusion )
-@check_if_uptodate( check_file_exists_for_fusionfusion )
 def fusionfusion(
         sam,
         junction,
@@ -432,7 +385,7 @@ def fusionfusion(
         Stage 4: fusion_fusion
 
     """
-    return_code = True
+    return_value = True
 
     try:
         function_name = whoami()
@@ -467,7 +420,7 @@ def fusionfusion(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        save_status_of_this_process( function_name, output_prefix, return_code )
+        save_status_of_this_process( function_name, output_prefix, return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         log.error( "{function}: I/O error({num}): {error}".format(
@@ -475,31 +428,86 @@ def fusionfusion(
                         num = errno,
                         error = strerror)
                 )
-        return_code = False
+        return_value = False
 
     except ValueError:
         log.error( "{function}: ValueError".format(
                         function = whoami()
                     )
                 )
-        return_code = False
+        return_value = False
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         log.error( "{function}: Unexpected error: {error}.".format(
                     function = whoami() , error = sys.exc_info()[0] ) )
-        return_code = False
+        return_value = False
 
 
-    return return_code
+    return return_value
+
+#####################################################################
+#
+#   STAGE 0 data preparation
+#
+Sample = Sample()
+if Geno.input_file_list:
+    Sample.set_sample_list( Geno.input_file_list )
+
+#####################################################################
+#
+#   STAGE 1 fastq to bam by star
+#
+@active_if( 'star_genome' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
+@files( generate_params_for_star_genome )
+@check_if_uptodate( check_file_exists_for_star_genome )
+def stage_1( fasta, gtf, output_dir ):
+    if not star_genome( fasta, gtf, output_dir ):
+        raise Exception( 'stage_1 failed.' )
+
+#####################################################################
+#
+#   STAGE 2 fastq to bam by star
+#
+@follows( stage_1 )
+@active_if( 'star' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
+@files( generate_params_for_star )
+@check_if_uptodate( check_file_exists_for_star )
+def stage_2( input_file1, input_file2, output_prefix ):
+    if not star( input_file1, input_file2, output_prefix ):
+        raise Exception( 'stage_2 failed.' )
+
+#####################################################################
+#
+#   STAGE 3
+#
+@follows( stage_2 )
+@active_if( 'star_fusion' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
+@files( generate_params_for_star_fusion )
+@check_if_uptodate( check_file_exists_for_star_fusion )
+def stage_3( sam, junction, output_prefix ):
+    if not star_fusion( sam, junction, output_prefix ):
+        raise Exception( 'stage_3 failed.' )
+
+#####################################################################
+#
+#   STAGE 4
+#
+@follows( stage_2 )
+@active_if( 'fusionfusion' in Geno.job.get_job( 'tasks' )[ 'RNA' ] )
+@files( generate_params_for_fusionfusion )
+@check_if_uptodate( check_file_exists_for_fusionfusion )
+def stage_4( sam, junction, output_prefix ):
+    if not fusionfusion( sam, junction, output_prefix ):
+        raise Exception( 'stage_4 failed.' )
 
 #####################################################################
 #
 #   LAST STAGE 
 #
 
-@follows( fusionfusion )
+@follows( stage_4 )
 def last_function():
     log.info( "Genomon pipline has finished successflly!" )
     return True

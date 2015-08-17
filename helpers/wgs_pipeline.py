@@ -28,19 +28,6 @@ use_subdir = ( Geno.job.get_job( 'sample_name' ) != None  or
 #
 # Subroutines
 #
-def save_status_of_this_process( process_name, output_file, return_code ):
-
-    Geno.status.save_status( process_name, output_file, return_code, use_subdir = use_subdir )
-
-def get_status_of_this_process( process_name, output_file ):
-
-    exit_status = Geno.status.check_exit_status(
-                    process_name,
-                    output_file,
-                    use_subdir = use_subdir ) 
-
-    return exit_status
-
 def make_sample_name( dir_name = None, filename = None, add_sample_group = False ):
     if use_subdir:
         if filename:
@@ -136,7 +123,7 @@ def check_file_exists_for_split_fastq(
                             outsuffix = output_suffix2,
                             input = input_file2 )
     else:
-        exit_status = get_status_of_this_process( 'split_fastq', output_file1 )
+        exit_status = get_status_of_this_process( 'split_fastq', output_file1, Geno, use_subdir )
 
         in_time1 = os.path.getmtime( input_file1 )
         out_time1 = os.path.getmtime( outfile_list1[ 0 ] )
@@ -191,7 +178,7 @@ def check_file_exists_for_merge(
 
     """
 
-    exit_status = get_status_of_this_process( process_name, output_file )
+    exit_status = get_status_of_this_process( process_name, output_file, Geno, use_subdir )
 
     if not os.path.exists( output_file ) or exit_status != 0:
         return True, "Missing file {outputfile} for input file.".format(
@@ -212,7 +199,7 @@ def check_file_exists_for_bwa_mem(
 
     """
 
-    exit_status = get_status_of_this_process( 'bwa_mem', output_file1 )
+    exit_status = get_status_of_this_process( 'bwa_mem', output_file1, Geno, use_subdir )
     ( output_prefix, output_suffix ) = os.path.splitext( output_file1 )
     if Geno.job.get_param( 'others', 'use_biobambam' ):
         glob_filename = "{prefix}*_bamsorted{suffix}".format( prefix = output_prefix, suffix = output_suffix ) 
@@ -239,7 +226,7 @@ def check_file_exists_for_input_output(
 
     """
 
-    exit_status = get_status_of_this_process( process_name, output_file1 )
+    exit_status = get_status_of_this_process( process_name, output_file1, Geno, use_subdir )
     if exit_status != 0 or not os.path.exists( output_file1 ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
                             outputfile = output_file1,
@@ -263,7 +250,7 @@ def check_file_exists_for_fisher_mutation_call(
     Check if output file exists for fisher_mutation_call
 
     """
-    exit_status = get_status_of_this_process( 'fisher_mutation_call', output_file )
+    exit_status = get_status_of_this_process( 'fisher_mutation_call', output_file, Geno, use_subdir )
 
     if exit_status != 0 or not os.path.exists( output_file ):
         return True, "Missing file {outputfile} for {inputfile}.".format(
@@ -289,8 +276,8 @@ def check_file_exists_for_bam_stats(
     Checks if output file exists for a general input x 2 and output x 1 case
 
     """
-    exit_status = get_status_of_this_process( 'bam_stats_calc', output_file ) + \
-                  get_status_of_this_process( 'bam_stats_merge', output_file )
+    exit_status = get_status_of_this_process( 'bam_stats_calc', output_file, Geno, use_subdir ) + \
+                  get_status_of_this_process( 'bam_stats_merge', output_file, Geno, use_subdir )
 
     summary_dir_name = os.path.dirname( output_file )
     out_sum_file =  summary_dir_name + '/' + make_sample_name( filename = output_file ) + '.txt'
@@ -320,7 +307,7 @@ def check_file_exists_for_itd_detection(
                 tumor_file_list if tumor_file_list != None else []
     out_dir_list = ctrl_output_dir_list if ctrl_output_dir_list != None else [] + \
                 tumor_output_dir_list if tumor_output_dir_list != None else []
-    exit_status = get_status_of_this_process( 'itd_detection', out_dir_list[ 0 ] )
+    exit_status = get_status_of_this_process( 'itd_detection', out_dir_list[ 0 ], Geno, use_subdir )
 
     for in_file, out_dir in zip( in_file_list,  out_dir_list ) :
         if exit_status != 0 or not os.path.exists( out_dir + '/itd_list.tsv' ):
@@ -339,7 +326,7 @@ def check_file_exists_for_itd_detection(
 
 def check_file_exists_for_sv_parse(target_label, target_bam, target_outdir, match_use, match_bam):
 
-    exit_status = get_status_of_this_process('sv_parse', target_label)
+    exit_status = get_status_of_this_process('sv_parse', target_label, Geno, use_subdir)
     input = target_bam
     output = target_outdir + "/" + target_label + ".junction.clustered.bedpe.gz"
 
@@ -359,7 +346,7 @@ def check_file_exists_for_sv_parse(target_label, target_bam, target_outdir, matc
 
 def check_file_exists_for_sv_filt(target_label, target_outdir):
 
-    exit_status = get_status_of_this_process('sv_filt', target_label)
+    exit_status = get_status_of_this_process('sv_filt', target_label, Geno, use_subdir)
     input = target_outdir + "/" + target_label + ".junction.clustered.bedpe.gz"
     output = target_outdir + "/" + target_label + ".genomonSV.result.txt"
 
@@ -385,7 +372,7 @@ def check_file_exists_for_mutation_filter(
         output_dir
     ):
 
-    exit_status = get_status_of_this_process( 'mutation_filter', output_list )
+    exit_status = get_status_of_this_process( 'mutation_filter', output_list, Geno, use_subdir )
 
     if exit_status != 0 or not os.path.exists( output_list ):
         return True, "Missing file {output} for {input}.".format( output = output_list, input = target_list)
@@ -404,7 +391,7 @@ def check_file_exists_for_annotation(
     ):
     """
     """
-    exit_status = get_status_of_this_process( 'annotation', output_file )
+    exit_status = get_status_of_this_process( 'annotation', output_file, Geno, use_subdir )
     if Geno.job.get_param( 'annotation', 'use_table_annovar' ):
         output_tmp = glob( output_file + '.*_multianno.txt' )
         file_exists = output_tmp != []
@@ -1113,7 +1100,7 @@ def bam2fastq(
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, output_file1, runtask_return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1218,7 +1205,7 @@ def split_fastq(
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, output_file1, runtask_return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1328,7 +1315,7 @@ def cutadapt(
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, output_file1, runtask_return_code )
+        save_status_of_this_process( function_name, output_file1, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1446,7 +1433,7 @@ def bwa_mem(
                     log.error( "{function}: runtask failed".format( function = function_name ) )
                 raise Exception( '{0} failed.'.format( function_name ) )
                 
-            save_status_of_this_process( function_name, output_file1, runtask_return_code )
+            save_status_of_this_process( function_name, output_file1, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1542,7 +1529,7 @@ def merge_bam(
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, output_file, runtask_return_code )
+        save_status_of_this_process( function_name, output_file, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1649,7 +1636,7 @@ def markduplicates(
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, output_file, runtask_return_code )
+        save_status_of_this_process( function_name, output_file, runtask_return_code, Geno, use_subdir )
 
         #
         # Delete intermediate files 
@@ -1757,7 +1744,7 @@ def bam_stats(
                                 id_end = 14 )
 
             if calc_return_code == 0:
-                save_status_of_this_process( shell_script_name, output_file, calc_return_code )
+                save_status_of_this_process( shell_script_name, output_file, calc_return_code, Geno, use_subdir )
 
             #
             # Merge results
@@ -1793,7 +1780,7 @@ def bam_stats(
                 raise Exception( '{0} failed.'.format( function_name ) )
 
             if merge_return_code == 0:
-                save_status_of_this_process( shell_script_name, output_file, merge_return_code )
+                save_status_of_this_process( shell_script_name, output_file, merge_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -1955,6 +1942,7 @@ def fisher_mutation_call(
                                         control_input_bam = control_input_bam,
                                         disease_input_bam = disease_input_bam,
                                         output_txt = disease_output_file,
+                                        chr_str_in_fa = Geno.conf.get( 'REFERENCE', 'chr_str_in_fa' ),
                                         remove_intermediate = True,
                                         max_indel = Geno.job.get_param( 'fisher_mutation_call', 'max_indel' ),
                                         max_distance = Geno.job.get_param( 'fisher_mutation_call', 'max_distance' ),
@@ -2006,7 +1994,7 @@ def fisher_mutation_call(
                 log.error( "{function}: runtask failed".format( function = 'merge_fisher_result' ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, disease_output_file, runtask_return_code )
+        save_status_of_this_process( function_name, disease_output_file, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -2285,7 +2273,7 @@ def itd_detection(
                 log.error( "{function}: runtask failed".format( function = tumor_function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, data_list[ 0 ][ 1 ], runtask_return_code )
+        save_status_of_this_process( function_name, data_list[ 0 ][ 1 ], runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -2368,7 +2356,7 @@ def mutation_filter(
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        save_status_of_this_process( function_name, output_list, return_code )
+        save_status_of_this_process( function_name, output_list, return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -2442,7 +2430,7 @@ def annotation(
                 log.error( "{function}: runtask failed".format( function = function_name ) )
             raise Exception( '{0} failed.'.format( function_name ) )
 
-        save_status_of_this_process( function_name, output_file, runtask_return_code )
+        save_status_of_this_process( function_name, output_file, runtask_return_code, Geno, use_subdir )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -2637,7 +2625,7 @@ def stage_9( control_file_list, tumor_file_list, control_output_dir_list, tumor_
 #  out: .gz 
 #
 @follows ( stage_6 )
-@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_sv_parse )
 @parallel( generate_params_for_sv_parse )
 def sv_detection_parse( target_label, target_bam, target_outdir, match_use, match_bam ):
@@ -2688,7 +2676,7 @@ def sv_detection_parse( target_label, target_bam, target_outdir, match_use, matc
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
 
-        save_status_of_this_process( "sv_parse", target_label, return_code )
+        save_status_of_this_process( "sv_parse", target_label, return_code, Geno, use_subdir )
 
 
     except IOError as (errno, strerror):
@@ -2716,7 +2704,7 @@ def sv_detection_parse( target_label, target_bam, target_outdir, match_use, matc
 
 
 @follows ( sv_detection_parse )
-@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@active_if( 'sv_detection' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_sv_filt )
 @parallel( generate_params_for_sv_filt )
 def sv_detection_filt( target_label, target_outdir ):
@@ -2752,7 +2740,7 @@ def sv_detection_filt( target_label, target_outdir ):
             log.error( "{function}: runtask failed".format( function = function_name ) )
             raise
             
-        save_status_of_this_process( "sv_filt", target_label, return_code )
+        save_status_of_this_process( "sv_filt", target_label, return_code, Geno, use_subdir )
         
         
     except IOError as (errno, strerror):
@@ -2787,7 +2775,7 @@ def sv_detection_filt( target_label, target_outdir ):
 #   out:    xls or vcf
 #
 @follows( stage_9 )
-@active_if ( 'mutation_filter' in Geno.job.get_job( 'tasks' )[ 'WGS' ] )
+@active_if ( 'mutation_filter' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @files( generate_params_for_mutation_filter )
 @check_if_uptodate( check_file_exists_for_mutation_filter )
 def stage_mutation_filter(target_list, target_normal_bam, taraget_numor_bam, output_list, output_dir):
