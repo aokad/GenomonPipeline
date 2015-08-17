@@ -17,37 +17,10 @@ file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{mi
 # Misc
 #
 
-#
-# Default directory three
-#
-dir_tree_resource = \
-"""
-project_directory:
-    data:
-        sample_name
-    results:
-        sample_name:
-            - config
-            - script:
-            - log
-            - out:
-                - all_summary
-                - fastq
-                - bam
-                - summary
-                - analysis_date:
-                    - annotation
-                    - mutation
-                    - cufflinks
-                    - cuffdiff
-                    - cummeRbund
-                    - sv
-                    - itd
-                    - star
-                    - star_fusion
-                    - fusionfusion
-"""
 
+#
+# Terminal directory list
+#
 end_dir_list = ( 'config',
                  'script',
                  'log',
@@ -60,51 +33,40 @@ end_dir_list = ( 'config',
                  'cummeRbund',
                  'fusionfusion',
                  'sv',
+                 'mutfilter',
                  'itd',
                  'star',
                  'star_fusion',
                  'summary',
-                 'all_summary'
                  )
+#
+# Directories that need to create subdirs.
+dir_nontask_list = {
+                'config',
+                'script',
+                'log'
+}
 
-subdir_list = ( 'fastq',
-                'bam',
-                'annotation',
-                'mutation',
-                'fusion',
-                'sv',
-                'itd',
-                'cufflinks',
-                'cuffdiff',
-                'cummeRbund',
-                'star',
-                'star_fusion',
-                'fusionfusion',
-                'summary',
-                'all_summary' )
+dir_task_list = { 'fastq':          [ 'split_fastq' ],
+                  'bam':            [ 'bwa_mem', 'merge_bam', 'markduplicates' ],
+                  'summary':        [ 'bam_stats' ],
 
-dir_task_list = { 'fastq':          'split_fastq',
-                  'bam':            'bwa_mem',
-                  'bam':            'merge_bam',
-                  'bam':            'markduplicates',
-                  'summary':        'bam_stats',
-                  'mutation':       'fisher_mutation_call',
-                  'annotation':     'annotation',
-                  'itd':            'itd_detection',
-                  'star':           'star',
-                  'star_fusion':    'star_fusion',
-                  'fusionfusion':   'fusionfusion'
+                  'mutation':       [ 'fisher_mutation_call' ],
+                  'annotation':     [ 'annotation' ],
+
+                  'itd':            [ 'itd_detection' ],
+
+                  'sv':             [ 'sv_detection'],
+                  'mutfilter':      ['mutation_filter'],
+
+                  'star':           [ 'star' ],
+                  'star_fusion':    [ 'star_fusion' ],
+                  'fusionfusion':   [ 'fusionfusion' ],
+                  'cufflinks':      [ 'cufflinks' ],
+                  'cuffdiff':       [ 'cuffdiff' ],
+                  'cummeRbund':     [ 'cummeRbund' ],
 }
                 
-data_ext_list = { 'fastq':          'fastq',
-                  'bam':            'bam',
-                  'itd':            'txt',
-                  'annotation':     'txt',
-                  'fusionfusion':   'txt',
-                  'summary':        'txt',
-                  'all_summary':    'txt'
-}
-
 #
 # script files to copy
 #
@@ -138,5 +100,24 @@ env_list = {
 #
 # Default parameter file name
 #
-default_file_name = 'resource/default_param.yaml'
+default_param   = 'resource/default_param.yaml'
+default_config  = 'resource/default_config.cfg'
+default_job     = 'resource/default_job.yaml'
+job_file_words  = 'resource/job_file_words.yaml'
 
+default_task = """
+DNA:
+    - split_fastq
+    - bwa_mem
+    - merge_bam
+    - markduplicates
+    - bam_stats
+    - fisher_mutation_call
+    - itd_detection
+    - annotation
+
+RNA:
+    - star
+    - star_fusion
+    - fusionfusion
+"""

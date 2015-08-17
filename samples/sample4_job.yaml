@@ -3,14 +3,14 @@
 #
 # Mandatory definitions
 #   project_root
-#   sample_name
+#   sample_group
 #   analysis_date:  either 'today' or a specific date
 #
 #   project name directory is going to be created at project_root specified below.
 #       {project_root}/data, results
 #
 project_root:           ~/tmp
-sample_name:            small_rna
+sample_group:            small_rna
 analysis_date:          today
 
 #
@@ -23,10 +23,10 @@ analysis_date:          today
 project_dir_tree:
     project_directory:
         data:
-            sample_name
+            sample_group
         results:
             - all_summary
-            - sample_name:
+            - sample_group:
                     - config
                     - script
                     - log

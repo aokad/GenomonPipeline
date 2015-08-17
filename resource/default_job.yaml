@@ -1,19 +1,21 @@
 ######################################################################
-#
 # Genomon Project information
 #
 # Mandatory definitions
-#   project_root:   All the data and results are stored under this directory.
-#   sample_group:   Group name of samples in this file.
+#   project_root:        project name
+#   sample_group
 #   analysis_date:  either 'today' or a specific date
 #
-project_root:       ~/tmp
-sample_group:       chr1_data
-analysis_date:      today
+#   project name directory is going to be created at project_root specified below.
+#       {project_root}/{project}/data, results
+#
 
 ######################################################################
 #
 # Data directory
+#
+# Mandatory definitions
+#   project_root
 #
 # Optional
 #   project_dir_tree:   if not specified, the default directory tree is going to be created.
@@ -23,7 +25,7 @@ project_dir_tree:
         data:
             sample_group
         results:
-            - sample_group:
+            sample_group:
                 - config
                 - script
                 - log
@@ -32,9 +34,16 @@ project_dir_tree:
                     - bam
                     - summary
                     - analysis_date:
-                        - annovar
+                        - annotation
                         - mutation
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+                        - sv
                         - itd
+                        - star
+                        - star_fusion
+                        - fusionfusion
 
 ######################################################################
 #
@@ -46,10 +55,10 @@ project_dir_tree:
 #   file_name
 #
 # Optional
-#   file_ext    we assume that input file extension is either '.fastq' or '.bam',
+#   file_ext    we assume that input file extion is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
 #
-#   pair_id     if file_name includes pair_id, need to specify
+#   pair_id     if file_name includes pair_id, need to specify )
 #
 #   sample_subdir   if the input_file_dir includes sub-directories containting data files,
 #                   you can specify.
@@ -60,40 +69,29 @@ project_dir_tree:
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
 #
-input_file_dir:             /home/w3varann/samples/chr1_test
-input_file_type:            paired_fastq
-file_name:                  'chr1_*{pair_id}.fastq'
-sample_subdir:              ???
-control_disease_pairs:
-                            ref:    snv
-pair_id:
-                            - 1
-                            - 2
+directory_permission:       owner   # owner, group, all
 
 ######################################################################
 #
 # Analysis setting
 #
-tasks:
-                    WGS:
-                        - split_fastq
-                        - bwa_mem
-                        - merge_bam
-                        - markduplicates
-                        - fisher_mutation_call
-
 # tasks type
-#                    WGS:
+#                    WES:
+#                    Capture:
+#                    RNA:
+#
 #                        - bamtofastq
 #                        - split_fastq
 #                        - cutadapt
 #                        - bwa_mem
 #                        - merge_bam
-#                        - markduplicate
+#                        - markduplicates
 #                        - bam_stats
 #                        - fisher_mutation_call
-#                        - annotation
-#                        - itd_detection
+#                        - ebcall_mutation_call
+#                        - copy_number
+#                        - sv
+#                        - fusion
 
 #
 # BAM mem read group
@@ -121,18 +119,16 @@ tasks:
 #
 #   <examle>
 # @RG   ID:110701_SN590_0094_AC02UYABXX SM:TCGA-05-4418-10A-01D-1203-02 LB:Homo_sapiens_assembly19  PL:Illumina_HiSeq2000   CN:Harvard_GCC_02 PI: 200
-am_read_group:     '@RG\tID:Chr1\tSM:Chr1_sample\tLB:Chr1\tPL:Illumina\tPU:flowcell-barcode\tCN:HGC\tPI:500'
+bam_read_group:     '@RG\tID:unknown\tSM:unknown\tLB:unknown\tPL:unknown\tPU:unknown\tCN:unknown'
 
 ######################################################################
 #
 # Job submission settings
-#
 
 #
-#   HGC Shirokane super computer specific parameters
+#   HGC Shirokane super computer specific parameters for qsub and DRMAA
 #
 cmd_options:
-#   For Shirokane3
             bam2fastq:              '-l s_vmem=1G,mem_req=1G'
             split_fastq:            '-l s_vmem=1G,mem_req=1G'
             cutadapt:               '-l s_vmem=1G,mem_req=1G'
@@ -143,13 +139,17 @@ cmd_options:
             fisher_mutation_call:   '-l s_vmem=1G,mem_req=1G'
             itd_detection:          '-l s_vmem=6G,mem_req=6G'
             annotation:             '-l s_vmem=8G,mem_req=8G'
+            star_genome:            '-l s_vmem=32G,mem_req=32G'
+            star:                   '-l s_vmem=32G,mem_req=32G'
+            star_fusion:            '-l s_vmem=16G,mem_req=16G'
+            fusionfusion:           '-l s_vmem=8,mem_req=8G'
 
 #
-# qsub command format
+# qsub command and drmaa native specification format
 #
 # allowd parameters:
 #       cmd         Shell script file to run.
-#       cmd_options Options for qsub. The value specified for each task in 'cmd_options:' is goint to be used.
+#       cmd_options Options for qsub.
 qsub_cmd: "qsub -sync yes -now no {cmd_options} {cmd}"
 drmaa_native: "-shell y {cmd_options}"
 

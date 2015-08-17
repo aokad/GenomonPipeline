@@ -18,7 +18,7 @@ date                    # print date
 set -xv
 
 source {scriptdir}/utility.sh
-{bamtofastq}  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
+{biobambam}/bamtofastq  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
             T={tmpfastq}\
             F={outfastq1}\
             collate=1\
@@ -43,7 +43,7 @@ set -xv
 
 source {scriptdir}/utility.sh
 
-{bamtofastq}  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
+{biobambam}/bamtofastq  exclude=QCFAIL,SECONDARY,SUPPLEMENTARY\
             T={tmpfastq}\
             F={outfastq1}\
             F2={outfastq2}\
@@ -453,6 +453,7 @@ echo SGE_TASK_FIRST:$SGE_TASK_FIRST
 echo SGE_TASK_LAST:$SGE_TASK_LAST
 echo SGE_TASK_STEPSIZE:$SGE_TASK_STEPSIZE
 
+{env_variables}
 source {scriptdir}/utility.sh
 
 if [ "$SGE_TASK_ID" = "1" ]
@@ -595,6 +596,7 @@ then
         check_error $?
     else
         {samtools} merge \
+                    -f \
                     {merged_bam_file} \
                     {samtools_input_bam_files};
         check_error $?
@@ -762,7 +764,9 @@ fi
 if [ "{remove_intermediate}" = "True" ]
 then
     rm -f $CONTROL_FILTERED_BAM
+    rm -f ${{CONTROL_FILTERED_BAM}}.bai
     rm -f $DISEASE_FILTERED_BAM
+    rm -f ${{DISEASE_FILTERED_BAM}}.bai
 fi
 
 """
@@ -830,6 +834,68 @@ bash {itd_detector}/detectITD.sh \
         {output_file} \
         {name} \
         {itd_inhouse_dir}
+check_error $?
+
+"""
+
+sv_parse_filt = \
+"""
+#!/bin/bash
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+# set python environment
+export PYTHONHOME={pythonhome}
+export PATH=$PYTHONHOME/bin:$PATH
+export LD_LIBRARY_PATH={ld_library_path}
+export PYTHONPATH={pythonpath}
+
+
+source {scriptdir}/utility.sh
+
+{genomon_sv} {method} {sample_conf} {param_conf}
+
+check_error $?
+
+"""
+
+mutation_filter = \
+"""
+#!/bin/bash
+#
+#$ -S /bin/bash
+#$ -cwd
+#$ -e {log}             # log file directory
+#$ -o {log}             # log file directory
+pwd                     # print current working directory
+hostname                # print hostname
+date                    # print date
+set -xv
+
+source {scriptdir}/utility.sh
+
+{mutfilter} realignment --header {realignment_params} \
+{target_list} {target_tumor_bam} {target_normal_bam} \
+{tmp_out_realignment} {ref_fasta} {blat}
+check_error $?
+
+{mutfilter} indel --header {indel_params} \
+{tmp_out_realignment} {target_normal_bam} {tmp_out_indel}
+check_error $?
+
+{mutfilter} breakpoint --header {breakpoint_params} \
+{tmp_out_indel} {target_normal_bam} {tmp_out_breakpoint}
+check_error $?
+
+{mutfilter} simplerepeat --header {simplerepeat_params} \
+{tmp_out_breakpoint} {output_list} {simple_repeat_db}
 check_error $?
 
 """

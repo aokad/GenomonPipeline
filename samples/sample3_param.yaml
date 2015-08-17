@@ -57,3 +57,51 @@ fisher_mutation_call:
     map_quality:            30
     mismatch_rate:          0.07
 
+##########
+# Genomon-ITDetection
+#
+itd_detection:
+# Specifi inhouse_itd list files and inhouse_breakpoint list files as list.
+# File prefixs need to be either
+#   _itd.list or _breakpoint.list
+#
+# itd_ctrl_panel_files:
+#       - sample1_inhouse_itd.list
+#       - sample2_inhouse_itd.list
+#       - sample1_inhouse_breakpoint.list
+#       - sample2_inhouse_breakpoint.list
+#
+    itd_ctrl_panel_files: ' '
+
+# Set True if create ctrl_panel data (inhouse_itd.list or inhouse_breakpoint.list) and use it for itd detection.
+# If ctrl_panel_normal is specified along with create_ctrl_panel, ctrl_panel data is created on fly
+# from the normal samples specified in ctrl_panel_normal.
+# If ctrl_panel_normal is not set, pipeline looks for the normal samples in normal_tumor_pairs and use the normals
+# to create ctrl_panel data on fly.
+# If either ctrl_panel_normal and normal_tumr_pairs are not set, pipeline uses only the files set
+# in itd_ctrl_panel_files.
+    create_ctrl_panel: False
+
+# Specify the names of sample subdir as list.
+# ctrl_panel data (inhouse_itd.list or inhouse_breakpoint.list) is goint to be created and use it for itd detection.
+#
+# ctrl_panel_normal:
+#   - sample1
+#   - sample2
+    ctrl_panel_normal: ' '
+    additional_params:   ' '
+
+##########
+# Annotation of mutations                   
+annotation:         
+    output_in_vcf: True
+    use_table_annovar: True
+    summarize_annovar_params: '--buildver hg19 --verdbsnp 131 --ver1000g 1000g2014oct'
+    table_annovar_params: '-protocol refGene,genomicSuperDups,snp131,1000g2014oct_all,esp6500siv2_all,popfreq_all_20150413,cosmic70,clinvar_20150330,nci60,exac03,fathmm,cadd,avsift,cg46,HGVD_20131010,ToMMo.v1,HGMD_201403,PanCan.20150615 -operation g,r,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f -otherinfo -buildver hg19'
+
+
+##########
+# Others
+others:
+    use_biobambam: True
+

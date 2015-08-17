@@ -9,14 +9,14 @@ def get_dir ( dir_tree, cwd, dir_name ):
     if isinstance( dir_tree, dict ):
         for dir_tmp in dir_tree.keys():
             cwd_tmp = cwd + '/' + dir_tmp
-            if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
-                return cwd_tmp
-            if ( isinstance( dir_tree[ dir_tmp ], dict ) or
-                 isinstance( dir_tree[ dir_tmp ], list ) ):
-                dir_returned =  get_dir( dir_tree[ dir_tmp ], cwd_tmp, dir_name )
 
-                if None != dir_returned:
-                    return dir_returned
+            if dir_tmp == dir_name:
+                return cwd_tmp
+
+            dir_returned =  get_dir( dir_tree[ dir_tmp ], cwd_tmp, dir_name )
+
+            if None != dir_returned:
+                return dir_returned
             
     elif isinstance( dir_tree, list ):
         n = 0
@@ -37,8 +37,8 @@ def get_dir ( dir_tree, cwd, dir_name ):
                         return dir_returned
             n = n + 1
     else:
-        if isinstance( dir_tmp, str) and dir_tmp  == dir_name:
-            cwd_tmp = cwd + '/' + dir_tmp
+        if isinstance( dir_tree, str) and dir_tree  == dir_name:
+            cwd_tmp = cwd + '/' + dir_tree
             return cwd_tmp
 
     return None
@@ -62,72 +62,13 @@ def Job_file_check( job_yaml, keywords ):
     #
     # Dependency
     #
-    # 1) input_file_dir exists.
-    # 2) project_root exists.
-    # 3) input_file exists.
-    # 4) pair_id check: pair_id is defined, if {pair_id} exists in qsub_cmd.
-    # 5) file_ext check: check if the file_name contains file_ext.
-    # 6) sample_subdir exits in input_file_dir.
-    # 7) cmd_options need to be defined for specified process in 'tasks'.
+    # 1) input_file exists.
+    # 2) pair_id check: pair_id is defined, if {pair_id} exists in qsub_cmd.
+    # 3) file_ext check: check if the file_name contains file_ext.
+    # 4) sample_name exits in input_file_dir.
+    # 5) cmd_options need to be defined for specified process in 'tasks'.
     #
-
-    #
-    # 1), 2)
-    data_dir_list = ( 'input_file_dir', 'project_root' )
-    for dir_tmp in data_dir_list:
-        if not glob( os.path.expanduser( job_yaml[ dir_tmp ] ) ):
-            print( "The directory specified in '{dir}:' does not exist.".format( dir = dir_tmp ) )
-            return False
-
-    #
-    # 3), 4), 5), 6)
-    pair_id_list = None
-    if 'pair_id' in job_yaml:
-        pair_id_list = job_yaml[ 'pair_id' ]
-    elif job_yaml[ 'input_file_type' ] == 'pair_fastq':
-        print( "'pair_id' is not defined, though 'input_file_type' equals 'pair_fastq'."  )
-        return False
-
-    if isinstance( job_yaml[ 'file_name' ], list ):
-        file_name_list = job_yaml[ 'file_name' ]
-    else:
-        file_name_list = [ job_yaml[ 'file_name' ] ]
-
-    for file_name_str in file_name_list: 
-        if pair_id_list != None and -1 == file_name_str.find( 'pair_id' ):
-            print( "'file_name:' does not contain '{pair_id}'." )
-            return False
-
-        if 'file_ext' in job_yaml and -1 == file_name_str.find( job_yaml[ 'file_ext' ] ):
-            print( "'file_name:' does not contain '{file_ext}'.".format( file_ext = job_yaml[ 'file_ext' ] ) )
-            return False
-
-        dir_list = []
-        if 'input_file_dir' in job_yaml:
-            if 'sample_subdir' in job_yaml:
-                if pair_id_list != None:
-                    for pair_id in pair_id_list:
-                        dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
-                                         job_yaml[ 'sample_subdir' ] + '/' +
-                                         file_name_str.format( pair_id = pair_id ) )
-                else:
-                    dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
-                                     job_yaml[ 'sample_subdir' ] + '/' +
-                                     file_name_str )
-
-            else:
-                if pair_id_list != None:
-                    for pair_id in pair_id_list:
-                        dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
-                                         file_name_str.format( pair_id = pair_id ) )
-                else:
-                    dir_list.append( job_yaml[ 'input_file_dir' ] + '/' +
-                                     file_name_str )
-
-        for dir_tmp in dir_list:
-            if not glob( dir_tmp ):
-                print( "Specified input file ( {file_name} ) do not exist.".format( file_name = dir_tmp ) )
-                return False
+    # All removed, because of a specification change.
 
     #
     # 7) cmd_options
@@ -149,6 +90,11 @@ def Job_file_check( job_yaml, keywords ):
         if not dir_tree:
             print( "project_dir_tree is empty." )
             return False
+
+        data_dir_list = get_dir( dir_tree, '', 'data' ).split( '/' )
+        dir_tree_tmp = dir_tree
+        for id in range( 1, len( data_dir_list ) ):
+            dir_tree_tmp = dir_tree_tmp[ data_dir_list[ id ] ]
 
         task_ids = job_yaml[ 'tasks' ]
         for task in task_ids.values()[0]:
@@ -233,3 +179,4 @@ def System_config_file_check( system_config, keyword_file ):
     except:
         print( "Config file: get {type}:{item} failed.".format( type = type, item = item, data = data ) )
         return False
+
