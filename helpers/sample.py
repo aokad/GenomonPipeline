@@ -11,6 +11,7 @@ from utils import *
 
 class Sample():
     def __init__( self ):
+        self.__sample_list = None
         self.__sample_id_list = [ ]
         self.__current_sample_id = 0
         self.__param = []
@@ -19,6 +20,9 @@ class Sample():
 
     def __del__( self ):
         pass
+
+    def set_sample_list( self, sample_list ):
+        self.__sample_list = sample_list
 
     def param ( self, task_id ):
         if len( self.__param ) > 0:
@@ -112,6 +116,8 @@ class Sample():
                     subdir = '/' + os.path.basename( os.path.dirname( tmp_out1 ) ) + '/'
                 elif self.__f_filelist and self.__current_sample_id == 1:
                     subdir = '/' + os.path.split( os.path.split( tmp_out1 )[ 0 ] )[ 1 ] + '_'
+                elif self.__sample_list:
+                    subdir = '/' + os.path.basename( os.path.dirname( tmp_out1 ) ) + '/'
                 else:
                     subdir = '/'
 
@@ -158,7 +164,7 @@ class Sample():
         file_name:
         pair_id
 
-        sample_subdir:
+        sample_name:
         control_disease_pairs:
 
         bed_file
@@ -168,10 +174,16 @@ class Sample():
         file_type = Geno.job.get_job( 'input_file_type' )
 
         try:
+
+            if self.__sample_list:
+                for fastq1_list, fastq2_list in self.__sample_list:
+                    for fastq1, fastq2 in zip ( fastq1_list.split( ',' ), fastq2_list.split( ',' ) ):
+                        self.current().append( ('', '', fastq1, fastq2 ) )
+
             #
             # A) Paired-end fastq files
             #
-            if file_type == 'paired_fastq':
+            elif file_type == 'paired_fastq':
                 pair_id_list = Geno.job.get_job( 'pair_id' )
 
                 glob_file_list = []
@@ -221,7 +233,7 @@ class Sample():
         # Get resoruce from job yaml file
         #
         filename_format_tmp = Geno.job.get_job( 'file_name' )
-        sample_subdir  = Geno.job.get_job( 'sample_subdir' )
+        sample_name  = Geno.job.get_job( 'sample_name' )
 
         if not filename_format_tmp:
             return input_file_list
@@ -247,10 +259,10 @@ class Sample():
             if pair_id:
                 filename_format = filename_format.format( pair_id = pair_id )
 
-            if sample_subdir:
+            if sample_name:
                 self.__f_subdir = True
                 input_type_list.append( "{subdir}/{filename}".format(
-                                            subdir = sample_subdir,
+                                            subdir = sample_name,
                                             filename = filename_format ) )
             else:
                 self.__f_subdir = False

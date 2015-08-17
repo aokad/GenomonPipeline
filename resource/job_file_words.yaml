@@ -1,12 +1,4 @@
 mandatory:
-    - sample_name
-    - analysis_date
-
-    - input_file_dir
-    - input_file_type
-    - file_name
-
-    - tasks
     - qsub_cmd
 
 optional:

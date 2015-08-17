@@ -110,7 +110,7 @@ def replace_reserved_string( dir_tmp, cwd, Geno ):
     Reserved names to replace strings defined in job configuration file
         project_directory   -> defined as project in job configuration file
         sample_date         -> defined sample_date in job configuration file
-        sample_name         -> defined sample_name in job configuration file
+        sample_group        -> defined sample_group in job configuration file
         analysis_date       -> date of the pipeline to run
     """
     #
@@ -121,15 +121,11 @@ def replace_reserved_string( dir_tmp, cwd, Geno ):
         pass
     elif dir_tmp == 'sample_date':
         dir_replace = str( Geno.job.get_job( 'sample_date' ) )
-    elif dir_tmp == 'sample_name':
-        dir_replace = str(Geno.job.get_job( 'sample_name' ))
-    elif dir_tmp == 'sample_date_sample_name':
-        dir_replace = str( Geno.job.get_job( 'sample_date' ) ) + '_' + str(Geno.job.get_job( 'sample_name' ))
-    elif dir_tmp == 'sample_name_sample_date':
-        dir_replace = str( Geno.job.get_job( 'sample_name' ) ) + '_' + str(Geno.job.get_job( 'sample_date' ))
+    elif dir_tmp == 'sample_group':
+        dir_replace = str(Geno.job.get_job( 'sample_group' ))
     elif dir_tmp == 'analysis_date':
         dir_replace = str( Geno.job.get_job( 'analysis_date' ) )
-        if dir_replace == 'today' :
+        if dir_replace == 'today' or Geno.options.sample_file:
             dir_replace = res.date_format.format( 
                         year = Geno.now.year, 
                         month = Geno.now.month, 
@@ -199,26 +195,40 @@ def get_dir ( dir_tree, cwd, dir_name, Geno ):
 
     return None
 
-def make_input_target( subdir, dir_tree, cwd, Geno ):
-    if subdir:
+def make_input_target( dir_tree, cwd, Geno, sample_name = None, sample_list = None ):
+
+    dir = Geno.job.get_job( 'input_file_dir' ),
+    if sample_list:
+        subdir_list = sample_list
+
+    elif dir and sample_name:
         subdir_list = glob( "{dir}/{subdir}".format(
                                 dir = Geno.job.get_job( 'input_file_dir' ),
-                                subdir = subdir ) )
+                                subdir = sample_name ) )
 
     for target_dir in res.end_dir_list:
         tmp_dir = get_dir( dir_tree, cwd, target_dir, Geno )
         if tmp_dir:
             Geno.dir[ target_dir ] = tmp_dir
-            make_dir( Geno.dir[ target_dir ], Geno )
-            if ( target_dir in res.dir_task_list.keys() and
-                 res.dir_task_list[ target_dir ] in Geno.job.get_job( 'tasks' )[ Geno.job_tasks ] ):
-                if subdir and target_dir in res.subdir_list:
+
+            if target_dir in res.dir_nontask_list:
+                make_dir( Geno.dir[ target_dir ], Geno )
+
+            elif ( target_dir in res.dir_task_list and
+                 set( res.dir_task_list[ target_dir ] ).intersection( Geno.job.get_job( 'tasks' )[ Geno.job_tasks ] ) ):
+                make_dir( Geno.dir[ target_dir ], Geno )
+                if sample_list:
+                    for subdir_tmp in subdir_list:
+                        make_dir( "{dir}/{subdir}".format( 
+                                    dir = Geno.dir[ target_dir ],
+                                    subdir = subdir_tmp ),
+                            Geno )
+                elif sample_name :
                     for subdir_tmp in [ x for x in subdir_list if os.path.isdir( x ) ]:
                         make_dir( "{dir}/{subdir}".format(
-                                        dir = Geno.dir[ target_dir ],
-                                        subdir = os.path.basename( subdir_tmp ) ),
-                                 Geno )
-
+                                    dir = Geno.dir[ target_dir ],
+                                    subdir = os.path.basename( subdir_tmp ) ),
+                                  Geno )
 
 def make_script_file( function_name, string, Geno, **kwargs ):
     shell_script_full_path = make_script_file_name( function_name, Geno )

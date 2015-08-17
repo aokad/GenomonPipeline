@@ -4,12 +4,13 @@
 #
 # Mandatory definitions
 #   project_root:   All the data and results are stored under this directory.
+#                   If the directory does not exist, it is going to be created.
 #   analysis_date:  either 'today' or a specific date
-#
+#   sample_group:   Group name of samples in this file.
 #
 project_root:           ~/tmp
 analysis_date:          today
-sample_name:            small
+sample_group:           small
 
 ######################################################################
 #
@@ -18,11 +19,24 @@ sample_name:            small
 # Optional
 #   project_dir_tree:   if not specified, the default directory tree is going to be created.
 #
+#   Necessary directories have to be defined in project_dir_tree.
+#   * A link of input_file_dir is going to be created on sample_group under data directory.
+#     sample_group needs to be place under data directory.
+#   * job log files --> log
+#   * yaml files, config files, status files --> log
+#   * script files --> script
+#   * annotation --> annotation
+#   * fisher_mutation_call --> mutation
+#   * itd_detection --> itd
+#   * bam_stats --> summary
+#   * bwa_mem, merge_bam, markduplicates --> bam
+#
 project_dir_tree:
     project_directory:
         data:
+            sample_group
         results:
-            sample_name:
+            sample_group:
                 - all_summmary
                 - config
                 - script
@@ -49,7 +63,7 @@ project_dir_tree:
 #   file_ext    we assume that input file extension is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
 #
-#   pair_id     if file_name includes pair_id, need to specify
+#   pair_id     if file_name includes pair_id, need to specify.
 #
 #   sample_subdir   if the input_file_dir includes sub-directories containting data files,
 #                   you can specify.
@@ -58,6 +72,9 @@ project_dir_tree:
 #                   sample_subdir:  s_B1N*
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#   The permission of directories created in the analysis can be set by directory_permission.
+#   You can specify owner, group, or all. 
 #
 #
 input_file_dir:             /home/w3varann/samples/small
@@ -75,9 +92,8 @@ directory_permission:       owner   # owner, group, all
 #
 # Analysis setting
 #
-use_biobambam:      False    # True or False. False is set by default, if not specified
 tasks:
-                    WGS:
+                    DNA:
                         - split_fastq
                         - bwa_mem
                         - merge_bam
@@ -85,7 +101,6 @@ tasks:
                         - bam_stats
                         - fisher_mutation_call
                         - annotation
-                        - itd_detection
 
 #
 # BAM mem read group
@@ -124,30 +139,17 @@ bam_read_group:     '@RG\tID:Small\tSM:Small_sample\tLB:Small\tPL:Illumina\tPU:f
 #
 #   HGC Shirokane super computer specific parameters
 #
-#   For Shirokane2
-cmd_options:
-                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1'
-                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1'
-                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1'
-                    bwa_mem:                '-l ljob,s_vmem=6G,mem_req=6'
-                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1'
-                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8'
-                    bam_stats:              '-l ljob,s_vmem=2G,mem_req=2'
-                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1'
-                    itd_detection:          '-l ljob,s_vmem=8G,mem_req=8'
-                    annotation:             '-l ljob,s_vmem=6G,mem_req=6'
-
 #   For Shirokane3
-#                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
-#                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
-#                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1G'
-#                    bwa_mem:                '-l ljob,s_vmem=6G,mem_req=6G'
-#                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1G'
-#                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
-#                    bam_stats:              '-l ljob,s_vmem=2G,mem_req=2G'
-#                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
-#                    itd_detection:          '-l ljob,s_vmem=8G,mem_req=8G'
-#                    annotation:             '-l ljob,s_vmem=6G,mem_req=6G'
+                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
+                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
+                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1G'
+                    bwa_mem:                '-l ljob,s_vmem=8G,mem_req=8G'
+                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1G'
+                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
+                    bam_stats:              '-l ljob,s_vmem=6G,mem_req=6G'
+                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
+                    itd_detection:          '-l ljob,s_vmem=8G,mem_req=8G'
+                    annotation:             '-l ljob,s_vmem=6G,mem_req=6G'
 
 #
 # qsub command format
