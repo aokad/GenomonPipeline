@@ -55,9 +55,8 @@ class input_file_list:
         with open( self.__input_file ) as f:
             mode = ''
             for line in f:
-                line = line.strip().replace( ' ', '' )
-                line_l = line.lower()
-                if line:
+                line_l = line.strip().replace( ' ', '' ).lower()
+                if line_l:
                     if line_l[ 0:7 ] == '[input]': # header
                         mode = 'input'
                         continue
@@ -67,22 +66,24 @@ class input_file_list:
                     elif line_l[ 0:15 ] == '[controlpanel]': # header
                         mode = 'controlpanel'
                         continue
-                    elif line[ 0 ] == '#': # comment
+                    elif line_l[ 0 ] == '#': # comment
                         continue
 
-                if line and mode == 'input':
+                if line_l and mode == 'input':
                     line_split = line.replace( ';', ',' ).split( '\t' )
                     self.input[ line_split[ 0 ].strip() ] = [ line_split[ 1 ].strip(), line_split[ 2 ].strip() ]
 
-                elif mode == 'compare':
+                elif line and mode == 'compare':
                     line_split = line.replace( ';', ',' ).split( '\t' )
+                    line_split = map( str.strip, line_split )
                     normal = line_split[ 0 ].strip() if len( line_split ) >= 1 and line_split[ 0 ] else None
                     tumor = line_split[ 1 ].strip() if len( line_split ) >= 2 and line_split[ 1 ] else None
                     control_panel = line_split[ 2 ].strip() if len( line_split ) == 3  and line_split[ 2 ] else None
+
                     if normal or tumor or control_panel:
                         self.compare.append( ( normal, tumor, control_panel) )
 
-                elif line and mode == 'controlpanel':
+                elif line_l and mode == 'controlpanel':
                     line_split = line.split( '\t' )
                     control_panel_key = line_split[ 0 ].strip()
                     self.control_panel[ control_panel_key ] = []
