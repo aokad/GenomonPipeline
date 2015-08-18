@@ -33,7 +33,6 @@ end_dir_list = ( 'config',
                  'cummeRbund',
                  'fusionfusion',
                  'sv',
-                 'mutfilter',
                  'itd',
                  'star',
                  'star_fusion',
@@ -72,8 +71,10 @@ dir_task_list = { 'fastq':          [ 'split_fastq' ],
 #
 script_files = ( 'shell/utility.sh',
                  'shell/sleep.sh',
-                 'shell/interval.sh',
-                 'shell/interval_list.sh',
+                 'shell/interval_chr.sh',
+                 'shell/interval_list_chr.sh',
+                 'shell/interval_no_chr.sh',
+                 'shell/interval_list_no_chr.sh',
                  'perl/fastqNPadding.pl',
                  'python/bamfilter.py',
                  'python/fisher.py',
@@ -111,8 +112,10 @@ DNA:
     - bwa_mem
     - merge_bam
     - markduplicates
+    - sv_detection
     - bam_stats
     - fisher_mutation_call
+    - mutation_filter
     - itd_detection
     - annotation
 

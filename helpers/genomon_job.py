@@ -82,6 +82,28 @@ class genomon_job:
             self.__log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
             raise Exception, "open_param"
 
+    def compare_list_to_pairs( self, compare_list ):
+        if compare_list:
+            return_data = {}
+            for normal, tumor, list in compare_list:
+                if normal and tumor:
+                    return_data[ normal ] = tumor
+                elif normal:
+                    if 'Normal' in return_data:
+                        return_data[ 'Normal' ].append( normal )
+                    else:
+                        return_data[ 'Normal' ] = [ normal ]
+
+                elif tumor:
+                    if 'Disease' in return_data:
+                        return_data[ 'Disease' ].append( tumor )
+                    else:
+                        return_data[ 'Disease' ] = [ tumor ]
+
+            return return_data
+                
+
+
     def open_job( self, job_file = None ):
         self.__job_file = job_file
 
@@ -98,7 +120,7 @@ class genomon_job:
                 self.__job = None
 
             if self.__compare_list:
-                job_yaml[ 'control_disease_pairs' ] = self.__compare_list
+                job_yaml[ 'control_disease_pairs' ] = self.compare_list_to_pairs( self.__compare_list )
 
             if self.__project_root:
                 job_yaml[ 'project_root' ] = self.__project_root

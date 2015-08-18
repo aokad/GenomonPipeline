@@ -177,6 +177,12 @@ annotation:
 
 
 ##########
+# GenomonSV
+#
+genomon_sv:
+    param_file:     /home/w3varann/tools/GenomonSV/yaml/param.yaml
+
+##########
 # Others
 #
 others:

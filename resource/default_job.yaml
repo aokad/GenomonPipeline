@@ -142,7 +142,7 @@ cmd_options:
             star_genome:            '-l s_vmem=32G,mem_req=32G'
             star:                   '-l s_vmem=32G,mem_req=32G'
             star_fusion:            '-l s_vmem=16G,mem_req=16G'
-            fusionfusion:           '-l s_vmem=8,mem_req=8G'
+            fusionfusion:           '-l s_vmem=8G,mem_req=8G'
 
 #
 # qsub command and drmaa native specification format

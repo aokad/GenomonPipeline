@@ -21,9 +21,11 @@ class input_file_list:
 
             self.__input_file = filename
             self.input = {}
-            self.compare = {}
+            self.compare = []
+            self.control_panel = {}
 
-            self.parse_file()
+            if not self.parse_file():
+                raise Exception( 'Failed to parse input file.' )
 
         except Exception as err:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -43,79 +45,148 @@ class input_file_list:
                 return_value = self.parse_tsv()
             elif file_extension.lower() == '.xlsx':
                 return_value = self.parse_xlsx()
+            else:
+                return_value = False
 
             return return_value
 
     def parse_tsv( self ):
+        return_value = True
         with open( self.__input_file ) as f:
             mode = ''
             for line in f:
-                line = line.strip()
-                if line:
-                    if line[ 0:7 ] == '[Input]': # header
+                line_l = line.strip().replace( ' ', '' ).lower()
+                if line_l:
+                    if line_l[ 0:7 ] == '[input]': # header
                         mode = 'input'
-                    elif line[ 0:9 ] == '[Compare]': # header
-                        mode = 'compare'
-                    elif line[ 0 ] == '#': # comment
                         continue
-                    elif line and mode == 'input':
-                        line_split = line.replace( ';', ',' ).split( '\t' )
-                        self.input[ line_split[ 0 ].strip() ] = [ line_split[ 1 ].strip(), line_split[ 2 ].strip() ]
+                    elif line_l[ 0:9 ] == '[compare]': # header
+                        mode = 'compare'
+                        continue
+                    elif line_l[ 0:15 ] == '[controlpanel]': # header
+                        mode = 'controlpanel'
+                        continue
+                    elif line_l[ 0 ] == '#': # comment
+                        continue
 
-                    elif line and mode == 'compare':
-                        line_split = line.replace( ';', ',' ).split( '\t' )
-                        self.compare[ line_split[ 0 ].strip() ] = line_split[ 1 ].strip()
+                if line_l and mode == 'input':
+                    line_split = line.replace( ';', ',' ).split( '\t' )
+                    self.input[ line_split[ 0 ].strip() ] = [ line_split[ 1 ].strip(), line_split[ 2 ].strip() ]
+
+                elif line and mode == 'compare':
+                    line_split = line.replace( ';', ',' ).split( '\t' )
+                    line_split = map( str.strip, line_split )
+                    normal = line_split[ 0 ].strip() if len( line_split ) >= 1 and line_split[ 0 ] else None
+                    tumor = line_split[ 1 ].strip() if len( line_split ) >= 2 and line_split[ 1 ] else None
+                    control_panel = line_split[ 2 ].strip() if len( line_split ) == 3  and line_split[ 2 ] else None
+
+                    if normal or tumor or control_panel:
+                        self.compare.append( ( normal, tumor, control_panel) )
+
+                elif line_l and mode == 'controlpanel':
+                    line_split = line.split( '\t' )
+                    control_panel_key = line_split[ 0 ].strip()
+                    self.control_panel[ control_panel_key ] = []
+                    for item_tmp in line_split[ 1: ]:
+                        for item in item_tmp.split( ',' ):
+                            self.control_panel[ control_panel_key ].append( item.strip() )
+
+        return return_value
 
 
     def parse_csv( self ):
         import csv
+        return_value = True
         with open( self.__input_file ) as f:
             csv_obj = csv.reader( f )
             mode = ''
             for line in csv_obj:
-                if line:
-                    data_type = line[ 0 ].strip()
-                    if data_type == '[Input]': # header
-                        mode = 'input'
-                    elif data_type == '[Compare]': # header
-                        mode = 'compare'
-                    elif data_type[ 0 ] == '#': # header or comment
-                        continue
-                    elif mode == 'input':
-                        data_type = line[ 0 ].strip().replace( ';', ',' )
-                        fastq1 = line[ 1 ].strip().replace( ';', ',' )
-                        fastq2 = line[ 1 ].strip().replace( ';', ',' )
-                        self.input[ data_type ] = [ fastq1, fastq2 ]
 
-                    elif mode == 'compare':
-                        data_type = line[ 0 ].replace( ';', ',' )
-                        self.compare[ data_type ] = line[ 1 ].strip().replace( ';', ',' )
+                if line:
+                    data_type = line[ 0 ].strip().replace( ' ', '' )
+                    data_type_l = data_type.lower()
+                    if data_type_l == '[input]': # header
+                        mode = 'input'
+                        continue
+                    elif data_type_l == '[compare]': # header
+                        mode = 'compare'
+                        continue
+                    elif data_type_l == '[controlpanel]': # header
+                        mode = 'controlpanel'
+                        continue
+                    elif data_type_l and data_type_l[ 0 ] == '#': # header or comment
+                        continue
+
+                if line and mode == 'input':
+                    data_type = line[ 0 ].strip().replace( ';', ',' )
+                    fastq1 = line[ 1 ].strip().replace( ';', ',' )
+                    fastq2 = line[ 1 ].strip().replace( ';', ',' )
+                    self.input[ data_type ] = [ fastq1, fastq2 ]
+
+                elif mode == 'compare':
+                    normal = line[ 0 ].strip().replace( ';', ',' ) if len ( line ) >= 1 and line[ 0 ] else None
+                    tumor = line[ 1 ].strip().replace( ';', ',' ) if len ( line ) >= 2 and line[ 1 ] else None
+                    controlpanel = line[ 2 ].strip().replace( ';', ',' )  if len ( line ) == 3 and line[ 2 ] else None
+                    if normal or tumor or controlpanel:
+                        self.compare.append( ( normal, tumor, controlpanel) )
+                                         
+
+                elif line and mode == 'controlpanel':
+                    control_panel_key = line[ 0 ].strip()
+                    self.control_panel[ control_panel_key ] = []
+                    for item in line[ 1: ]:
+                        self.control_panel[ control_panel_key ].append( item.strip() )
+
+        return return_value
 
     def parse_xlsx( self ):
         import xlrd
+
+        return_value = True
         mode = ''
+
         workbook = xlrd.open_workbook(  self.__input_file )
         worksheet = workbook.sheet_by_index( 0 )
 
         for rownum in xrange( worksheet.nrows ):
-            x = worksheet.row_values( rownum )
-            data = self.data2str( x[ 0 ].strip() ) if x else None
+            line = worksheet.row_values( rownum )
+            data = self.data2str( line[ 0 ].strip().replace( ' ', '' ) ) if line else None
+            data_l = data.lower()
             if data:
-                if data == '[Input]': # header
+                if data_l == '[input]': # header
                     mode = 'input'
-                elif data == '[Compare]': # header
+                    continue
+                elif data_l == '[compare]': # header
                     mode = 'compare'
+                    continue
+                elif data_l == '[controlpanel]': # header
+                    mode = 'controlpanel'
+                    continue
                 elif data[ 0 ] == '#': # header or comment
                     continue
-                elif mode == 'input':
-                    data = data.replace( ';', ',' )
-                    fastq1 = self.data2str( self.data2str( x[ 1 ].strip().replace( ';', ',' ) ) )
-                    fastq2 = self.data2str( self.data2str( x[ 2 ].strip().replace( ';', ',' ) ) )
-                    self.input[ data ] = [ fastq1, fastq2 ]
 
-                elif mode == 'compare':
-                    data = data.replace( ';', ',' )
-                    self.compare[ data ] = self.data2str( x[ 1 ].strip().replace( ';', ',' ) )
+            if data and mode == 'input':
+                data = data.replace( ';', ',' )
+                fastq1 = self.data2str( self.data2str( line[ 1 ].strip().replace( ';', ',' ) ) )
+                fastq2 = self.data2str( self.data2str( line[ 2 ].strip().replace( ';', ',' ) ) )
+                self.input[ data ] = [ fastq1, fastq2 ]
+
+            elif mode == 'compare':
+                data  = data.replace( ';', ',' ) if data else None
+                data1 = self.data2str( line[ 1 ].strip().replace( ';', ',' ) ) if len( line ) >= 2 and line[ 1 ] else None
+                data2 = self.data2str( line[ 2 ].strip().replace( ';', ',' ) ) if len( line ) == 3 and line[ 2 ]  else None
+                if data or data1 or data2:
+                    self.compare.append( ( data, data1, data2 ) )
+
+            elif data and mode == 'controlpanel':
+                self.control_panel[ data ] = []
+                for item_tmp in line[ 1: ]:
+                    for item in item_tmp.split( ',' ):
+                        if item:
+                            self.control_panel[ data ].append( self.data2str( item.strip() ) )
+
+
+        return return_value
 
 
     def data2str( self, x ):
@@ -134,3 +205,5 @@ class input_file_list:
     def get_compare( self ):
         return self.compare
 
+    def get_control( self ):
+        return self.control_panel

@@ -636,8 +636,15 @@ echo {disease_input_bam}
 echo {output_txt}
 
 source {scriptdir}/utility.sh
-source {scriptdir}/interval.sh
-source {scriptdir}/interval_list.sh
+
+if [ "{chr_str_in_fa}" = "True" ]
+then
+    source {scriptdir}/interval_chr.sh
+    source {scriptdir}/interval_list_chr.sh
+else
+    source {scriptdir}/interval_no_chr.sh
+    source {scriptdir}/interval_list_no_chr.sh
+fi
 
 CONTROL_INTERVAL_BAM=`echo {control_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}.bam/"`
 DISEASE_INTERVAL_BAM=`echo {disease_input_bam} | sed "s/\.bam/_${{INTERVAL[$SGE_TASK_ID]}}.bam/"`
