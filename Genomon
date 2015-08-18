@@ -34,6 +34,7 @@ class Geno(object):
     job_tasks = None
     sample_input    = None
     sample_compare  = None
+    sample_control  = None
     input_file_list = []
 
 
@@ -404,6 +405,7 @@ def main():
             smpl = smpl_list( Geno.options.sample_file )
             Geno.sample_list = smpl.get_sample_list()
             Geno.sample_compare = smpl.get_compare()
+            Geno.sample_control = smpl.get_control()
             del smpl
 
 
