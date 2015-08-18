@@ -888,20 +888,20 @@ set -xv
 
 source {scriptdir}/utility.sh
 
-{mutfilter} realignment --header {additional_params} \
+{mutfilter} realignment {realignment_params} \
 {target_list} {target_tumor_bam} {target_normal_bam} \
 {tmp_out_realignment} {ref_fasta} {blat}
 check_error $?
 
-{mutfilter} indel --header {additional_params} \
+{mutfilter} indel {indel_params} \
 {tmp_out_realignment} {target_normal_bam} {tmp_out_indel}
 check_error $?
 
-{mutfilter} breakpoint --header {additional_params} \
+{mutfilter} breakpoint {breakpoint_params} \
 {tmp_out_indel} {target_normal_bam} {tmp_out_breakpoint}
 check_error $?
 
-{mutfilter} simplerepeat --header {additional_params} \
+{mutfilter} simplerepeat {simplerepeat_params} \
 {tmp_out_breakpoint} {output_list} {simple_repeat_db}
 check_error $?
 
