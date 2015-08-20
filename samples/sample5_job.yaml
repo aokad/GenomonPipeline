@@ -1,52 +1,14 @@
-#
+#######################################################################
 # Genomon Project information
 #
-# Mandatory definitions
-#   project_root:   All the data and results are stored under this directory.
-#                   If the directory does not exist, it is going to be created.
-#   analysis_date:  either 'today' or a specific date
-#   sample_group:   Group name of samples in this file.
-#
 project_root:           ~/tmp
-sample_group:            star_sample
 analysis_date:          today
+sample_group:            star_sample
 
+######################################################################
 #
 # Input files
 #
-# Mandatory definitions
-#   input_file_dir
-#   iput_file_type
-#   file_name
-#
-# Optional
-#   file_ext    we assume that input file extension is either '.fastq' or '.bam',
-#               if the extension is other than those two, need to specify.
-#
-#   pair_id     if file_name includes pair_id, need to specify )
-#
-#   sample_subdir   if the input_file_dir includes sub-directories containting data files,
-#                   you can specify.
-#
-#                   <example>
-#                   sample_subdir:  s_B1N*
-#
-#   Wild cards (*, ?) are allowed in file_name, sample_subdir.
-#
-#   control_disease_pairs:
-#   #           Normal:     Disease
-#               s_B1N:              s_B1T
-#               "s_B2Na, s_B2Nb":   s_B2T
-#               s_B3N:              "s_B3Ta, s_B3Tb"
-#               Normal:  # Normal only
-#                                   - s_B4N
-#                                   - s_B5N
-#               Disease: # Disease only
-#                                   - s_B6T
-#                                   - s_B7T
-#
-#
-
 input_file_dir:             /home/w3varann/samples/DiseaseVsControl
 input_file_type:            paired_fastq
 file_name:                  R{pair_id}.fastq
@@ -54,8 +16,9 @@ pair_id:
                             - 1 
                             - 2
 sample_subdir:              s_B1*
-directory_permission:       owner   # owner, group, all
+directory_permission:       owner
 
+######################################################################
 #
 # Analysis setting
 #
@@ -64,10 +27,12 @@ tasks:
                         - star
                         - star_fusion
 
+######################################################################
 #
-#   HGC Shirokane super computer specific parameters
+# Job submission settings
 #
 cmd_options:
+#   For Shirokane3
             star_genome:      '-l ljob,s_vmem=32G,mem_req=32G'
             star:             '-l ljob,s_vmem=32G,mem_req=32G'
             star_fusion:      '-l ljob,s_vmem=16G,mem_req=16G'
@@ -76,9 +41,6 @@ cmd_options:
 #
 # qsub command format
 #
-# allowd parameters:
-#       cmd         Shell script file to run.
-#       cmd_options Options for qsub.
 qsub_cmd: "qsub -sync yes -now no {cmd_options} {cmd}"
 drmaa_native: "-shell y {cmd_options}"
 

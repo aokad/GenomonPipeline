@@ -1,0 +1,36 @@
+#
+# Analysis parameters
+#
+#   If not defined, default values are going to be used in the pipeline.
+#
+
+##########
+# star_genome
+# Generate Genome data for star from gtf and fasta
+#
+star_genome:
+    additional_params:  '--runThreadN 8 --sjdbOverhang 99'
+
+##########
+# star alignment
+#
+star:
+    additional_params:  '
+        --outSAMstrandField intronMotif
+        --outSAMunmapped
+        --outFilterIntronMotifs RemoveNoncanonicalUnannotated
+        --outReadsUnmapped None
+        --chimSegmentMin 15
+        --chimJunctionOverhangMin 15
+        --alignMatesGapMax 200000
+        --alignIntronMax 200000
+        --outSAMtype BAM SortedByCoordinate
+        --limitBAMsortRAM 34350000000
+    '
+
+##########
+# star fusion detection
+#
+star_fusion:
+    additional_params:  ' '
+
