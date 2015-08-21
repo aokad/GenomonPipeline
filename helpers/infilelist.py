@@ -120,7 +120,7 @@ class input_file_list:
                 if line and mode == 'input':
                     data_type = line[ 0 ].strip().replace( ';', ',' )
                     fastq1 = line[ 1 ].strip().replace( ';', ',' )
-                    fastq2 = line[ 1 ].strip().replace( ';', ',' )
+                    fastq2 = line[ 2 ].strip().replace( ';', ',' )
                     self.input[ data_type ] = [ fastq1, fastq2 ]
 
                 elif mode == 'compare':
