@@ -1,0 +1,85 @@
+######################################################################
+#
+# Genomon Project information
+#
+project_root:           ~/tmp
+analysis_date:          today
+sample_group:           chr1_data
+
+######################################################################
+#
+# Data directory
+#
+project_dir_tree:
+    project_directory:
+        data:
+            sample_group
+        results:
+            sample_group:
+                - config
+                - script
+                - log
+                - out:
+                    - fastq
+                    - bam
+                    - summary
+                    - analysis_date:
+                        - annovar
+                        - mutation
+                        - itd
+
+######################################################################
+#
+# Input files
+#
+input_file_dir:             /home/w3varann/samples/chr1_test
+input_file_type:            paired_fastq
+file_name:                  'chr1_*{pair_id}.fastq'
+sample_subdir:              ???
+control_disease_pairs:
+                            ref:    snv
+pair_id:
+                            - 1
+                            - 2
+
+######################################################################
+#
+# Analysis setting
+#
+tasks:
+                    DNA:
+                        - split_fastq
+                        - bwa_mem
+                        - merge_bam
+                        - markduplicates
+                        - fisher_mutation_call
+
+#
+# BAM mem read group
+#
+am_read_group:     '@RG\tID:Chr1\tSM:Chr1_sample\tLB:Chr1\tPL:Illumina\tPU:flowcell-barcode\tCN:HGC\tPI:500'
+
+######################################################################
+#
+# Job submission settings
+#
+
+cmd_options:
+#   For Shirokane3
+            bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
+            split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
+            cutadapt:               '-l ljob,s_vmem=1G,mem_req=1G'
+            bwa_mem:                '-l ljob,s_vmem=8G,mem_req=8G'
+            merge_bam:              '-l ljob,s_vmem=1G,mem_req=1G'
+            markduplicates:         '-l ljob,s_vmem=8G,mem_req=8G'
+            bam_stats:              '-l ljob,s_vmem=6G,mem_req=6G'
+            fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
+            itd_detection:          '-l ljob,s_vmem=6G,mem_req=6G'
+            annotation:             '-l ljob,s_vmem=8G,mem_req=8G'
+
+#
+# qsub command format
+#
+qsub_cmd: "qsub -sync yes -now no {cmd_options} {cmd}"
+drmaa_native: "-shell y {cmd_options}"
+

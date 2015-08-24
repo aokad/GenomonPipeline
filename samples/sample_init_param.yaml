@@ -1,0 +1,61 @@
+######################################################################
+#
+# Analysis parameters
+#
+#   If not defined, default values are going to be used in the pipeline.
+#
+
+##########
+# cutadapt
+cutadapt:
+    adaptor:
+                    - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+                    - NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+
+##########
+# split fastq
+split_fastq:
+    split_fastq_line_number:    20
+    fastq_filter:               False
+
+##########
+# bwa mem
+bwa_mem:
+    min_score:          0
+    additional_params:  '-t 2'
+
+##########
+# BAM markduplicates
+markduplicates:
+    java_memory: '6G'
+
+##########
+# BAM file statistics
+bam_stats:
+    bed_file:           /home/w3varann/database/hg19.fa/hg19_minus_gap.bed
+    coverage:           '2,10,20,30,40,50,100'
+
+##########
+# Fisher's exact test mutation call
+fisher_mutation_call:
+    min_depth:              9
+    max_indel:              2
+    max_distance:           5
+    base_quality:           15
+    map_quality:            30
+    mismatch_rate:          0.07
+
+##########
+# Annotation
+annotation:
+    output_in_vcf: True
+    use_table_annovar: True
+    summarize_annovar_params: '--buildver hg19 --verdbsnp 131 --ver1000g 1000g2014oct'
+    table_annovar_params: '-protocol refGene,genomicSuperDups,snp131,1000g2014oct_all,esp6500siv2_all,popfreq_all_20150413,cosmic70,clinvar_20150330,nci60,exac03,fathmm,cadd,avsift,cg46,HGVD_20131010,ToMMo.v1,HGMD_201403,PanCan.20150615 -operation g,r,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f,f -otherinfo -buildver hg19'
+
+
+##########
+# Others
+others:
+    use_biobambam: True
+
