@@ -35,40 +35,27 @@ files:
  - sample1_job.yaml
  - sample1_param.yaml
 
-<s>
-[RNA]
- - sample__job.yaml
- - sample__param.yaml
-</s>
-
 ## demo
 
 ### DNA analysis demo 1.
 
 Use bwa_mem, fisher_mutation_call.
 
- - sample2_job.yaml
- - sample2_param.yaml
+ - sample_dna1_job.yaml
+ - sample_dna1_param.yaml
 
 ### DNA analysis demo 2.
 
 Use bwa_mem, bam_stats.
 
- - sample3_job.yaml
- - sample3_param.yaml
+ - sample_dna2_job.yaml
+ - sample_dna2_param.yaml
 
-### RNA analysis demo 1.
-
-Use tophat2, cufflinks, cuffdiff and cummeRbund.
-
- - sample4_job.yaml
- - sample4_param.yaml
-
-### RNA analysis demo 2.
+### RNA analysis demo
 
 Use star.
 
- - sample5_job.yaml
- - sample5_param.yaml
+ - sample_rna1_job.yaml
+ - sample_rna1_param.yaml
 
 
