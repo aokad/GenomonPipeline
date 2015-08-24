@@ -23,7 +23,7 @@ directory_permission:       owner
 # Analysis setting
 #
 tasks:
-                    STAR:
+                    RNA:
                         - star
                         - star_fusion
 

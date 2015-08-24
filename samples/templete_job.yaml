@@ -52,20 +52,27 @@ sample_group:           sample_group
 project_dir_tree:
     project_directory:
         data:
-            sample_name
+            sample_group
         results:
-            sample_name:
-                - all_summmary
+            sample_group:
                 - config
                 - script
                 - log
                 - out:
                     - fastq
                     - bam
+                    - summary
                     - analysis_date:
+                        - annotation
                         - mutation
-                        - summary
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+                        - sv
                         - itd
+                        - star
+                        - star_fusion
+                        - fusionfusion
 
 ######################################################################
 #
@@ -132,37 +139,24 @@ control_disease_pairs:
 #
 # Analysis setting
 #
-tasks:
-                    DNA:
-                        - split_fastq
-                        - bwa_mem
-                        - merge_bam
-                        - markduplicates
-                        - bam_stats
-                        - fisher_mutation_call
-                        - annotation
-                        - itd_detection
-
 ## tasks type
-#                    DNA:
-#                        - bam2fastq
-#                        - split_fastq
-#                        - cutadapt
-#                        - bwa_mem
-#                        - merge_bam
-#                        - markduplicate
-#                        - bam_stats
-#                        - fisher_mutation_call
-#                        - annotation
-#                        - itd_detection
-#                    RNA:
-#                        - tophat2
-#                        - cufflinks
-#                        - cuffdiff
-#                        - cummeRbund
-#                    STAR:
-#                        - star
-#                        - star_fusion
+# tasks:
+#                     DNA:
+#                         - split_fastq
+#                         - bwa_mem
+#                         - merge_bam
+#                         - markduplicates
+#                         - sv_detection
+#                         - bam_stats
+#                         - fisher_mutation_call
+#                         - mutation_filter
+#                         - itd_detection
+#                         - annotation
+# 
+#                     RNA:
+#                         - star
+#                         - star_fusion
+#                         - fusionfusion
 
 #
 # BAM mem read group
@@ -232,7 +226,7 @@ cmd_options:
                     bam_stats:              '-l ljob,s_vmem=6G,mem_req=6G'
                     fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
                     itd_detection:          '-l ljob,s_vmem=8G,mem_req=8G'
-                    annotation:             '-l ljob,s_vmem=6G,mem_req=6G'
+                    annotation:             '-l ljob,s_vmem=8G,mem_req=8G'
 
                     tophat2:                '-l ljob,s_vmem=4G,mem_req=4G'
                     cufflinks:              '-l ljob,s_vmem=4G,mem_req=4G'
