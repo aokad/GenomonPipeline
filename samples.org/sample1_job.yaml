@@ -5,15 +5,12 @@
 # Mandatory definitions
 #   project_root:   All the data and results are stored under this directory.
 #                   If the directory does not exist, it is going to be created.
-#   project name directory is going to be created at project_root specified below.
-#       {project_root}/data, results
-project_root:           ~/tmp
-
 #   analysis_date:  either 'today' or a specific date
-analysis_date:          today
-
 #   sample_group:   Group name of samples in this file.
-sample_group:           sample_group
+#
+project_root:           ~/tmp
+analysis_date:          today
+sample_group:           small
 
 ######################################################################
 #
@@ -23,38 +20,23 @@ sample_group:           sample_group
 #   project_dir_tree:   if not specified, the default directory tree is going to be created.
 #
 #   Necessary directories have to be defined in project_dir_tree.
-#   * A link of input_file_dir is going to be created on sample_name under data directory.
-#     sample_name needs to be place under data directory.
+#   * A link of input_file_dir is going to be created on sample_group under data directory.
+#     sample_group needs to be place under data directory.
+#   * job log files --> log
+#   * yaml files, config files, status files --> log
+#   * script files --> script
+#   * annotation --> annotation
+#   * fisher_mutation_call --> mutation
+#   * itd_detection --> itd
+#   * bam_stats --> summary
+#   * bwa_mem, merge_bam, markduplicates --> bam
 #
-#   * log <-- job log files
-#   * config <-- yaml files, config files, status files
-#   * script <-- script files
-#   * all_summary <-- {description}
-#   * fastq <-- {description}
-#
-# [DNA]
-#   * annotation <-- annotation
-#   * mutation <-- fisher_mutation_call
-#   * itd <-- itd_detection
-#   * summary <-- bam_stats
-#   * bam <-- bwa_mem, merge_bam, markduplicates
-#   * annovar <-- 
-#
-# [RNA]
-#   * cufflinks <-- cufflinks
-#   * cuffdiff <-- cuffdiff
-#   * cummeRbund <-- cummeRbund
-
-# [RNA-star]
-#
-#  * {dir name} <-- {description}
-
 project_dir_tree:
     project_directory:
         data:
-            sample_name
+            sample_group
         results:
-            sample_name:
+            sample_group:
                 - all_summmary
                 - config
                 - script
@@ -71,32 +53,18 @@ project_dir_tree:
 #
 # Input files
 #
-### Mandatory definitions
-#
+# Mandatory definitions
 #   input_file_dir: the original input data file directory. This directory is soft-linked to a directory under 
 #                   somewhere under [project_root].
-input_file_dir:             /home/w3varann/samples/DiseaseVsControl
-
 #   iput_file_type: single_fastq, paired_fastq, or bam.
-input_file_type:            paired_fastq
-
 #   file_name:      fastq or bam file name with wild cards.
-file_name:                  'chr1_*{pair_id}.fastq'
-
-### Optional
 #
+# Optional
 #   file_ext    we assume that input file extension is either '.fastq' or '.bam',
 #               if the extension is other than those two, need to specify.
-file_ext:                    '.fastq'
-
+#
 #   pair_id     if file_name includes pair_id, need to specify.
-pair_id:
-                            - 1
-                            - 2
-
-#   fastq_filter    True or False. Default: False.
-fastq_filter:               False
-
+#
 #   sample_subdir   if the input_file_dir includes sub-directories containting data files,
 #                   you can specify.
 #
@@ -105,28 +73,20 @@ fastq_filter:               False
 #
 #   Wild cards (*, ?) are allowed in file_name, sample_subdir.
 #
-# for example
-# sample_subdir:            s_B* # top starting with s_B
-# sample_subdir:            ???  # any of the three characters
+#   The permission of directories created in the analysis can be set by directory_permission.
+#   You can specify owner, group, or all. 
+#
+#
+input_file_dir:             /home/w3varann/samples/small
+input_file_type:            paired_fastq
+file_name:                  'd_100_{pair_id}.fastq.bz2'
+file_ext:                   .fastq.bz2
+pair_id:
+                            - 1
+                            - 2
+fastq_filter:               False # True or False. Default: False.
 
-#   directory_permission   The permission of directories created in the analysis can be set by directory_permission.
-#                          You can specify owner, group, or all. 
-directory_permission:       owner
-
-#   control_disease_pairs   If you cannot write the file name with Wild cards (*, ?), using this. 
-control_disease_pairs:
-    s_B1N:              s_B1T
-    "s_B2Na,s_B2Nb":    s_B2T
-    s_B3N:              "s_B3Ta,s_B3Tb"
-    
-# If Disease differs from Normal file name pattern, specify down.
-control_disease_pairs:
-    Normal:  # Normal only
-                        - s_B4N
-                        - s_B5N
-    Disease: # Disease only
-                        - s_B6T
-                        - s_B7T
+directory_permission:       owner   # owner, group, all
 
 ######################################################################
 #
@@ -141,28 +101,6 @@ tasks:
                         - bam_stats
                         - fisher_mutation_call
                         - annotation
-                        - itd_detection
-
-## tasks type
-#                    DNA:
-#                        - bam2fastq
-#                        - split_fastq
-#                        - cutadapt
-#                        - bwa_mem
-#                        - merge_bam
-#                        - markduplicate
-#                        - bam_stats
-#                        - fisher_mutation_call
-#                        - annotation
-#                        - itd_detection
-#                    RNA:
-#                        - tophat2
-#                        - cufflinks
-#                        - cuffdiff
-#                        - cummeRbund
-#                    STAR:
-#                        - star
-#                        - star_fusion
 
 #
 # BAM mem read group
@@ -201,27 +139,6 @@ bam_read_group:     '@RG\tID:Small\tSM:Small_sample\tLB:Small\tPL:Illumina\tPU:f
 #
 #   HGC Shirokane super computer specific parameters
 #
-cmd_options:
-#   For Shirokane2
-#                    bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1'
-#                    split_fastq:            '-l ljob,s_vmem=1G,mem_req=1'
-#                    cutadapt:               '-l ljob,s_vmem=1G,mem_req=1'
-#                    bwa_mem:                '-l ljob,s_vmem=6G,mem_req=6'
-#                    merge_bam:              '-l ljob,s_vmem=1G,mem_req=1'
-#                    markduplicates:         '-l ljob,s_vmem=8G,mem_req=8'
-#                    bam_stats:              '-l ljob,s_vmem=2G,mem_req=2'
-#                    fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1'
-#                    itd_detection:          '-l ljob,s_vmem=8G,mem_req=8'
-#                    annotation:             '-l ljob,s_vmem=6G,mem_req=6'
-#
-#                    tophat2:                '-l ljob,s_vmem=4G,mem_req=4'
-#                    cufflinks:              '-l ljob,s_vmem=4G,mem_req=4'
-#                    cuffdiff:               '-l ljob,s_vmem=4G,mem_req=4'
-#                    cummeRbund:             '-l ljob,s_vmem=4G,mem_req=4'
-#                    star_genome:            '-l ljob,s_vmem=32G,mem_req=32'
-#                    star:                   '-l ljob,s_vmem=32G,mem_req=32'
-#                    star_fusion:            '-l ljob,s_vmem=16G,mem_req=16'
-
 #   For Shirokane3
                     bam2fastq:              '-l ljob,s_vmem=1G,mem_req=1G'
                     split_fastq:            '-l ljob,s_vmem=1G,mem_req=1G'
@@ -233,14 +150,6 @@ cmd_options:
                     fisher_mutation_call:   '-l ljob,s_vmem=1G,mem_req=1G'
                     itd_detection:          '-l ljob,s_vmem=8G,mem_req=8G'
                     annotation:             '-l ljob,s_vmem=6G,mem_req=6G'
-
-                    tophat2:                '-l ljob,s_vmem=4G,mem_req=4G'
-                    cufflinks:              '-l ljob,s_vmem=4G,mem_req=4G'
-                    cuffdiff:               '-l ljob,s_vmem=4G,mem_req=4G'
-                    cummeRbund:             '-l ljob,s_vmem=4G,mem_req=4G'
-                    star_genome:            '-l ljob,s_vmem=32G,mem_req=32G'
-                    star:                   '-l ljob,s_vmem=32G,mem_req=32G'
-                    star_fusion:            '-l ljob,s_vmem=16G,mem_req=16G'
 
 #
 # qsub command format

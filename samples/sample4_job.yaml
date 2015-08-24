@@ -1,0 +1,81 @@
+######################################################################
+# Genomon Project information
+#
+project_root:           ~/tmp
+analysis_date:          today
+sample_group:            small_rna
+
+######################################################################
+# Data directory
+#
+project_dir_tree:
+    project_directory:
+        data:
+            sample_group
+        results:
+            - all_summary
+            - sample_group:
+                    - config
+                    - script
+                    - log
+                    - fastq
+                    - bam
+                    - analysis_date:
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+
+######################################################################
+#
+# Input files
+#
+input_file_dir:             /home/w3varann/samples/DiseaseVsControl
+input_file_type:            single_fastq
+file_name:                  R1.fastq
+fastq_filter:               False # True or False
+sample_subdir:              s_B*
+control_disease_pairs:
+#           Normal:     Disease
+    s_B1N:              s_B1T
+    "s_B2Na,s_B2Nb":    s_B2T
+    s_B3N:              "s_B3Ta,s_B3Tb"
+    Normal:  # Normal only
+                        - s_B4N
+                        - s_B5N
+    Disease: # Disease only
+                        - s_B6T
+                        - s_B7T
+directory_permission:       owner   # owner, group, all
+
+######################################################################
+#
+# Analysis setting
+#
+tasks:
+                    RNA:
+                        - tophat2
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+
+######################################################################
+#
+# Job submission settings
+#
+cmd_options:
+#   For Shirokane3
+            tophat2:              '-l ljob,s_vmem=4G,mem_req=4G'
+            cufflinks:            '-l ljob,s_vmem=4G,mem_req=4G'
+            cuffdiff:             '-l ljob,s_vmem=4G,mem_req=4G'
+            cummeRbund:           '-l ljob,s_vmem=4G,mem_req=4G'
+
+
+#
+# qsub command format
+#
+# allowd parameters:
+#       cmd         Shell script file to run.
+#       cmd_options Options for qsub.
+qsub_cmd: "qsub -sync yes -now no {cmd_options} {cmd}"
+drmaa_native: "-shell y {cmd_options}"
+

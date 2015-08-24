@@ -1,0 +1,124 @@
+#
+# Genomon Project information
+#
+# Mandatory definitions
+#   project_root
+#   sample_group
+#   analysis_date:  either 'today' or a specific date
+#
+#   project name directory is going to be created at project_root specified below.
+#       {project_root}/data, results
+#
+project_root:           ~/tmp
+sample_group:            small_rna
+analysis_date:          today
+
+#
+# Data directory
+#
+#
+# Optional
+#   project_dir_tree:   if not specified, the default directory tree is going to be created.
+#
+project_dir_tree:
+    project_directory:
+        data:
+            sample_group
+        results:
+            - all_summary
+            - sample_group:
+                    - config
+                    - script
+                    - log
+                    - fastq
+                    - bam
+                    - analysis_date:
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+
+#
+# Input files
+#
+# Mandatory definitions
+#   input_file_dir
+#   iput_file_type
+#   file_name
+#
+# Optional
+#   file_ext    we assume that input file extension is either '.fastq' or '.bam',
+#               if the extension is other than those two, need to specify.
+#
+#   pair_id     if file_name includes pair_id, need to specify )
+#
+#   sample_subdir   if the input_file_dir includes sub-directories containting data files,
+#                   you can specify.
+#
+#                   <example>
+#                   sample_subdir:  s_B1N*
+#
+#   Wild cards (*, ?) are allowed in file_name, sample_subdir.
+#
+#   control_disease_pairs:  
+#   #           Normal:     Disease
+#               s_B1N:              s_B1T
+#               "s_B2Na, s_B2Nb":   s_B2T
+#               s_B3N:              "s_B3Ta, s_B3Tb"
+#               Normal:  # Normal only
+#                                   - s_B4N
+#                                   - s_B5N
+#               Disease: # Disease only
+#                                   - s_B6T
+#                                   - s_B7T
+#
+#
+
+input_file_dir:             /home/w3varann/samples/DiseaseVsControl
+input_file_type:            single_fastq
+file_name:                  R1.fastq
+fastq_filter:               False # True or False
+sample_subdir:              s_B*
+control_disease_pairs:
+#           Normal:     Disease
+    s_B1N:              s_B1T
+    "s_B2Na,s_B2Nb":    s_B2T
+    s_B3N:              "s_B3Ta,s_B3Tb"
+    Normal:  # Normal only
+                        - s_B4N
+                        - s_B5N
+    Disease: # Disease only
+                        - s_B6T
+                        - s_B7T
+
+directory_permission:       owner   # owner, group, all
+
+#
+# Analysis setting
+#
+use_biobambam:      False
+tasks:
+                    RNA:
+                        - tophat2
+                        - cufflinks
+                        - cuffdiff
+                        - cummeRbund
+
+#
+#   HGC Shirokane super computer specific parameters
+#
+cmd_options:
+            tophat2:              '-l ljob,s_vmem=4G,mem_req=4G'
+            cufflinks:            '-l ljob,s_vmem=4G,mem_req=4G'
+            cuffdiff:             '-l ljob,s_vmem=4G,mem_req=4G'
+            cummeRbund:           '-l ljob,s_vmem=4G,mem_req=4G'
+
+
+#
+# qsub command format
+#
+# allowd parameters:
+#       cmd         Shell script file to run.
+#       cmd_options Options for qsub.
+qsub_cmd: "qsub -sync yes -now no {cmd_options} {cmd}"
+drmaa_native: "-shell y {cmd_options}"
+
