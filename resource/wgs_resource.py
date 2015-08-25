@@ -141,6 +141,10 @@ esac
 
 for FILE in `ls {output_prefix}*`
 do
+    if [ -f $FILE{output_suffix} ]
+    then
+        rm $FILE{output_suffix}
+    fi
     mv $FILE $FILE{output_suffix}
     check_error $?
 done

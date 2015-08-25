@@ -99,46 +99,33 @@ class Sample():
             self.__param.append( [] )
 
             for infile1, infile2, outfile1, outfile2 in param_list:
-                file_ext = Geno.job.get_job( 'file_ext' )
-                if self.__current_sample_id == 1 and file_ext:
-                    file_type = Geno.job.get_job( 'input_file_type' )
-                    if file_type in ( 'paired_fastq', 'single_fastq'):
-                        replace_ext = '.fastq'
-                    if file_type in ( 'bam'):
-                        replace_ext = '.bam'
-                    tmp_out1 = outfile1.replace( file_ext, replace_ext )
-                    tmp_out2 = outfile2.replace( file_ext, replace_ext )
-                else:
-                    tmp_out1 = outfile1
-                    tmp_out2 = outfile2
-
                 if self.__f_subdir:
-                    subdir = '/' + os.path.basename( os.path.dirname( tmp_out1 ) ) + '/'
+                    subdir = '/' + os.path.basename( os.path.dirname( outfile1 ) ) + '/'
                 elif self.__f_filelist and self.__current_sample_id == 1:
-                    subdir = '/' + os.path.split( os.path.split( tmp_out1 )[ 0 ] )[ 1 ] + '_'
+                    subdir = '/' + os.path.split( os.path.split( outfile1 )[ 0 ] )[ 1 ] + '_'
                 elif self.__sample_list:
-                    subdir = '/' + os.path.basename( os.path.dirname( tmp_out1 ) ) + '/'
+                    subdir = '/' + os.path.basename( os.path.dirname( outfile1 ) ) + '/'
                 else:
                     subdir = '/'
 
                 if num_in == 1 and num_out == 2:
-                    real_outfile1 = make_sample_file_name( tmp_out1,
+                    real_outfile1 = make_sample_file_name( outfile1,
                                                          "{dir}{subdir}{base}_1{ext}",
                                                          dir = Geno.dir[ out_type ],
                                                          subdir = subdir,
                                                          ext = out_ext )
-                    real_outfile2 = make_sample_file_name( tmp_out1,
+                    real_outfile2 = make_sample_file_name( outfile1,
                                                          "{dir}{subdir}{base}_2{ext}",
                                                          dir = Geno.dir[ out_type ],
                                                          subdir = subdir,
                                                          ext = out_ext )
                 else:
-                    real_outfile1 = make_sample_file_name( tmp_out1,
+                    real_outfile1 = make_sample_file_name( outfile1,
                                                          "{dir}{subdir}{base}{ext}",
                                                          dir = Geno.dir[ out_type ],
                                                          subdir = subdir,
                                                          ext = out_ext )
-                    real_outfile2 = make_sample_file_name( tmp_out2,
+                    real_outfile2 = make_sample_file_name( outfile2,
                                                          "{dir}{subdir}{base}{ext}",
                                                          dir = Geno.dir[ out_type ],
                                                          subdir = subdir,

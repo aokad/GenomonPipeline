@@ -463,8 +463,8 @@ if Geno.input_file_list:
 @files( generate_params_for_star_genome )
 @check_if_uptodate( check_file_exists_for_star_genome )
 def stage_1( fasta, gtf, output_dir ):
-    if not star_genome( fasta, gtf, output_dir ):
-        raise Exception( 'stage_1 failed.' )
+    if not star_genome( fasta, gtf, output_dir ) and Geno.options.stop_pipeline:
+        raise Exception( 'star_genome failed.' )
 
 #####################################################################
 #
@@ -475,8 +475,8 @@ def stage_1( fasta, gtf, output_dir ):
 @files( generate_params_for_star )
 @check_if_uptodate( check_file_exists_for_star )
 def stage_2( input_file1, input_file2, output_prefix ):
-    if not star( input_file1, input_file2, output_prefix ):
-        raise Exception( 'stage_2 failed.' )
+    if not star( input_file1, input_file2, output_prefix ) and Geno.options.stop_pipeline:
+        raise Exception( 'star failed.' )
 
 #####################################################################
 #
@@ -487,8 +487,8 @@ def stage_2( input_file1, input_file2, output_prefix ):
 @files( generate_params_for_star_fusion )
 @check_if_uptodate( check_file_exists_for_star_fusion )
 def stage_3( sam, junction, output_prefix ):
-    if not star_fusion( sam, junction, output_prefix ):
-        raise Exception( 'stage_3 failed.' )
+    if not star_fusion( sam, junction, output_prefix ) and Geno.options.stop_pipeline:
+        raise Exception( 'star_fusion failed.' )
 
 #####################################################################
 #
@@ -499,8 +499,8 @@ def stage_3( sam, junction, output_prefix ):
 @files( generate_params_for_fusionfusion )
 @check_if_uptodate( check_file_exists_for_fusionfusion )
 def stage_4( sam, junction, output_prefix ):
-    if not fusionfusion( sam, junction, output_prefix ):
-        raise Exception( 'stage_4 failed.' )
+    if not fusionfusion( sam, junction, output_prefix ) and Geno.options.stop_pipeline:
+        raise Exception( 'fusionfusion failed.' )
 
 #####################################################################
 #

@@ -89,6 +89,8 @@ def construct_arguments( ):
     parser.add_argument( '-u', "--use_threads", help = "Use multiple threads rather than processes. Needs --jobs N with N > 1", action = 'store_true', default = False )
 
 
+    parser.add_argument( "--stop_pipeline", help = "Stop pipeline if a job failed.", action = 'store_true', default = False )
+
     parser.add_argument( "--touch_files_only", help = "Don't actually run the pipeline; just 'touch' the output for each tasks to make them appear up to date.",
                                                                                                     type = str )
     parser.add_argument( "--recreate_database", help = "Don't actually run the pipeline; just recreate the checksum database.",
@@ -217,11 +219,11 @@ def make_input_file_link( sample_list = None ):
             for sample_file1, sample_file2 in zip( sample_list[ sample ][ 0 ].split( ',' ),
                                                    sample_list[ sample ][ 1 ].split( ',' ) ):
 #                dest_file_name1 = sample_dir + '/' + os.path.basename( sample_file1 )
-                dest_file_name1 = sample_dir + '/' +  str( id ) + '_1.fastq'
+                dest_file_name1 = sample_dir + '/' +  str( id ) + '_1' + sample_file1[ sample_file1.find( '.' ): ]
                 if not os.path.exists( dest_file_name1 ):
                     os.symlink( sample_file1, dest_file_name1 )
 
-                dest_file_name2 = sample_dir + '/' + str( id ) + '_2.fastq'
+                dest_file_name2 = sample_dir + '/' + str( id ) + '_2' + sample_file2[ sample_file2.find( '.' ): ]
                 if not os.path.exists( dest_file_name2 ):
                     os.symlink( sample_file2, dest_file_name2 )
 
@@ -327,8 +329,8 @@ def set_env_variables():
 ########################################
 def sample_num():
     n = 0
-    file_name_format_tmp = Geno.job.get_job( 'file_name' )
 
+    file_name_format_tmp = Geno.job.get_job( 'file_name' )
     if file_name_format_tmp:
         pair_id_list = Geno.job.get_job( 'pair_id' )
         if pair_id_list:
@@ -344,11 +346,65 @@ def sample_num():
          
         n = len( glob( Geno.dir[ 'data' ] + '/' + file_name ) )
 
+    elif Geno.sample_list:
+        n = len( Geno.sample_list )
+
     return n
 
 
 ########################################
-class InputFileError( Exception ):
+#
+# Error handling
+#
+class ErrorValue(object):
+
+    def __init__( self ):
+        self.TYPE_general = 1
+        self.TYPE_analysis = 2
+
+        self.GENERAL_ERROR = 10
+        self.ANALYSIS_ERROR = 50
+
+        self.string = {
+            self.GENERAL_ERROR + 0: 'System config file contains invalid settings.',
+            self.GENERAL_ERROR + 1: 'Job YAML file contains invalid settings',
+            self.GENERAL_ERROR + 2: 'Necessary value in [ENV] is not set in system configuration file.',
+            self.GENERAL_ERROR + 3: 'Proper task is not set in job configuration file.',
+            self.GENERAL_ERROR + 4: 'set_env_variables failed',
+            self.GENERAL_ERROR + 5: 'Proper task is not set in job configuration file.',
+
+
+            self.ANALYSIS_ERROR + 0: 'bam2fastq failed',
+            self.ANALYSIS_ERROR + 1: 'split_fastq failed',
+            self.ANALYSIS_ERROR + 2: 'merge_bam failed',
+            self.ANALYSIS_ERROR + 3: 'markduplicates failed',
+            self.ANALYSIS_ERROR + 4: 'bam_stats failed',
+            self.ANALYSIS_ERROR + 5: 'fisher_mutation_call failed',
+            self.ANALYSIS_ERROR + 6: 'itd_detection failed',
+            self.ANALYSIS_ERROR + 7: 'sv_detection_parse failed',
+            self.ANALYSIS_ERROR + 8: 'sv_detection_filt failed',
+            self.ANALYSIS_ERROR + 9: 'mutation_filter failed',
+            self.ANALYSIS_ERROR + 10: 'annotation failed',
+
+            self.ANALYSIS_ERROR + 21: 'star_genome failed',
+            self.ANALYSIS_ERROR + 22: 'star failed',
+            self.ANALYSIS_ERROR + 23: 'star_fusion failed',
+            self.ANALYSIS_ERROR + 24: 'fusionfusion failed',
+
+        }
+
+    def get( self, type, id ):
+        if type == self.TYPE_general:
+            return_id = self.GENERAL_ERROR + id
+            return return_id, self.string[ return_id ]
+
+        elif type == self.TYPE_analysis:
+            return_id = self.ANALYSIS_ERROR + id
+            return return_id, self.string[ return_id ]
+
+
+
+class GenomonError( Exception ):
     def __init__( self, value ):
         self.value = value
     def __str__( self ):
@@ -393,6 +449,9 @@ def main():
         log, log_mutex = cmdline.setup_logging( __name__,
                                                 Geno.options.log_file,
                                                 verbose_level)
+
+        EV = ErrorValue()
+
         #
         # Print header in log
         #
@@ -415,7 +474,7 @@ def main():
         if Geno.options.config_file:
             Geno.conf = ge_cfg( config_file = Geno.options.config_file, log = log )
             if not Geno.conf.check_file( Geno.dir[ 'genomon' ] + '/' + res.job_file_words ):
-                raise InputFileError( 'System config file contains invalid settings.' )
+                raise GenomonError( EV.get( EV.TYPE_general, 0 ) )
         else:
             Geno.conf = ge_cfg( config_file = Geno.dir[ 'genomon' ] + '/' + res.default_config )
 
@@ -426,7 +485,7 @@ def main():
                                now = Geno.now,
                                log = log )
             if not Geno.job.check_file( Geno.dir[ 'genomon' ] + '/' + res.job_file_words ):
-                raise InputFileError( 'Job YAML file contains invalid settings.' )
+                raise GenomonError( EV.get( EV.TYPE_general, 1 ) )
         else:
             Geno.job = ge_job( Genomon_dir = Geno.dir[ 'genomon' ],
                                project_root = Geno.options.output_directory,
@@ -453,8 +512,7 @@ def main():
         make_input_file_link( sample_list = Geno.sample_list if hasattr( Geno, 'sample_list') else None )
 
         if not set_env_variables():
-            log.error( "Necesesary value in [ENV] is not set in system configuration file." )
-            raise Exception( 'set_env_variables failed' )
+            raise GenomonError( EV.get( EV.TYPE_general, 2 ) )
             
 
         #
@@ -529,8 +587,7 @@ def main():
             run_flag = True
 
         if not run_flag:
-            log.error( "Proper task is not set in job configuration file." )
-            raise Exception( 'Pipeline failed.' )
+            raise GenomonError( EV.get( EV.TYPE_general, 5 ) )
 
 #
 #       multiprocess
@@ -581,14 +638,11 @@ def main():
         #
         #######################################################################
 
-    except InputFileError, error:
-        log.error( "{name}: Input file error: {error}.".format( name = whoami(), error = error ) )
-
-    except IOError, (errno, strerror):
-        log.error( "{0}: I/O error({1}): {2}".format( whoami(), errno, strerror) )
-
-    except ValueError:
-        log.error( "{0}: ValueError".format( whoami() ) )
+    except GenomonError as error:
+        error_code = error.value[ 0 ]
+        log.error( "{name}: Genomon Error: {id}:{str}.".format( name = whoami(),
+                                                                   id = error.value[ 0 ],
+                                                                   str = error.value[ 1 ] ) )
 
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -596,8 +650,12 @@ def main():
         log.error( "{0}: Unexpected error".format( whoami() ) )
         log.error( e )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
+        error_code = 1
 
-    sys.exit( 0 )
+    else:
+        error_code = 0
+
+    sys.exit( error_code )
 
 
 ################################################################################
