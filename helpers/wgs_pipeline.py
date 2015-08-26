@@ -2117,6 +2117,7 @@ def fisher_mutation_call(
         shell_script_file = open( shell_script_full_path, 'w' )
         shell_script_file.write( wgs_res.merge_fisher_result.format(
                                         log = Geno.dir[ 'log' ],
+                                        chr_str_in_fa = Geno.conf.get( 'REFERENCE', 'chr_str_in_fa' ),
                                         output_txt = disease_output_file,
                                         scriptdir = Geno.dir[ 'script' ] 
                                  ) )
