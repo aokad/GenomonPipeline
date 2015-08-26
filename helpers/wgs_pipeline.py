@@ -55,11 +55,9 @@ def deleteContent( filename ):
     pfile.truncate()
     pfile.close()
 
-def delete_intermediate_files( SM, output_file ):
+def delete_intermediate_files( inter_file_list, output_file ):
 
     try:
-        sample_name = os.path.basename( os.path.split( output_file )[ 0 ] )
-
         #
         # Delete intermediate files 
         #
@@ -96,16 +94,16 @@ def delete_intermediate_files( SM, output_file ):
         # split FASTQ
         #
         if 'split_fastq' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
-            for input_file1, input_file2, output_file1, output_file2 in SM.param( 'split_fastq' ):
-                if output_file1.find( sample_name ) != -1:
-                    ( output_prefix1, output_suffix1 ) = os.path.splitext( output_file1 )
+            if inter_file_list[ 0 ]:
+                for file_pair in inter_file_list[ 0 ]:
+                    ( output_prefix1, output_suffix1 ) = os.path.splitext( file_pair[ 0 ] )
                     outfile_list1 =  glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) )
                     deleteContent( outfile_list1[ 0 ] )
                     for tmp_file in outfile_list1[ 1: ]:
                         if os.path.exists( tmp_file ):
                             os.remove( tmp_file )
 
-                    ( output_prefix2, output_suffix2 ) = os.path.splitext( output_file2 )
+                    ( output_prefix2, output_suffix2 ) = os.path.splitext( file_pair[ 1 ] )
                     outfile_list2 = glob( "{prefix}*{suffix}".format( prefix = output_prefix2, suffix = output_suffix2 ) )
                     deleteContent( outfile_list2[ 0 ] )
                     for tmp_file in outfile_list2[ 1: ]:
@@ -115,15 +113,15 @@ def delete_intermediate_files( SM, output_file ):
         # cutadapt
         #
         if 'cutadapt' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
-            for input_file1, input_file2, output_file1, output_file2 in SM.param( 'cutadapt' ):
-                if output_file1.find( sample_name ) != -1:
-                    ( output_prefix1, output_suffix1 ) = os.path.splitext( output_file1 )
+            if inter_file_list[ 1 ]:
+                for file_pair in inter_file_list[ 1 ]:
+                    ( output_prefix1, output_suffix1 ) = os.path.splitext( file_pair[ 0 ] )
                     outfile_list1 =  glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) )
                     deleteContent( outfile_list1[ 0 ] )
                     for tmp_file in outfile_list1[ 1: ]:
                         os.remove( tmp_file )
 
-                    ( output_prefix2, output_suffix2 ) = os.path.splitext( output_file2 )
+                    ( output_prefix2, output_suffix2 ) = os.path.splitext( file_pair[ 1 ] )
                     outfile_list2 = glob( "{prefix}*{suffix}".format( prefix = output_prefix2, suffix = output_suffix2 ) )
                     deleteContent( outfile_list2[ 0 ] )
                     for tmp_file in outfile_list2[ 1: ]:
@@ -134,27 +132,25 @@ def delete_intermediate_files( SM, output_file ):
         # split BAM
         #
         if 'bwa_mem' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
-            for input_file1, input_file2, output_file1, output_file2 in SM.param( 'bwa_mem' ):
-                if output_file1.find( sample_name ) != -1:
-                    ( output_prefix1, output_suffix1 ) = os.path.splitext( output_file1 )
-                    outfile_list1 =  glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) )
-                    deleteContent( outfile_list1[ 0 ] )
-                    for tmp_file in outfile_list1[ 1: ]:
-                        os.remove( tmp_file )
+            if inter_file_list[ 2 ]:
+                ( output_prefix1, output_suffix1 ) = os.path.splitext( inter_file_list[ 2 ] )
+                outfile_list1 =  glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) )
+                deleteContent( outfile_list1[ 0 ] )
+                for tmp_file in outfile_list1[ 1: ]:
+                    os.remove( tmp_file )
 
         #
         # merged BAM
         #
         if 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
-            for input_file1, input_file2, output_file1, output_file2 in SM.param( 'merge_bam' ):
-                if output_file1.find( sample_name ) != -1:
-                    dir_name = os.path.dirname( input_file1 )
-                    tmp_file = dir_name + '/' + make_sample_name( filename = input_file1 ) + '_merged.bam'
-                    if os.path.exists( tmp_file ):
-                        deleteContent( tmp_file )
-                    tmp_file = dir_name + '/' + make_sample_name( filename = input_file1 ) + '_merged.bam.bai'
-                    if os.path.exists( tmp_file ):
-                        os.remove( tmp_file )
+            if inter_file_list[ 3 ]:
+                dir_name = os.path.dirname( inter_file_list[ 3 ] )
+                tmp_file = dir_name + '/' + make_sample_name( filename = inter_file_list[ 3 ] ) + '_merged.bam'
+                if os.path.exists( tmp_file ):
+                    deleteContent( tmp_file )
+                tmp_file = dir_name + '/' + make_sample_name( filename = inter_file_list[ 3 ] ) + '_merged.bam.bai'
+                if os.path.exists( tmp_file ):
+                    os.remove( tmp_file )
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -260,7 +256,7 @@ def check_file_exists_for_merge_bam(
     return return_code
 
 def check_file_exists_for_markduplicates(
-    SM,
+    inter_file_list,
     input_file_list,
     output_file
     ):
@@ -603,7 +599,7 @@ def generate_params_for_merge_bam():
 #
 # For STAGE 6 markduplicates
 #
-def generate_params_for_markduplicates ():
+def generate_params_for_markduplicates():
     """
     Generate parameter list for markduplicates
 
@@ -611,21 +607,60 @@ def generate_params_for_markduplicates ():
     
     SM.make_param( 'markduplicates', None, '.bam', 'bam', 1, 1 )
     input_file_list = {}
+
+    #
+    # Make input file dict by sample_name
+    #
     for param in SM.param( 'markduplicates' ):
         dir_name = os.path.dirname( param[ 0 ] )
         if not ( dir_name in input_file_list ):
             input_file_list[ dir_name ] = []
         input_file_list[ dir_name ].append( param[ 0 ] )
 
+
+    #
+    # Make list of intermediate files to delete
+    #
+    inter_file_list = {}
+    if 'split_fastq' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+        for input_file1, input_file2, output_file1, output_file2 in SM.param( 'split_fastq' ):
+            sample_name = os.path.basename( os.path.split( output_file1 )[ 0 ] )
+            if sample_name in inter_file_list.keys():
+                inter_file_list[ sample_name ][ 0 ].append( ( output_file1, output_file2 ) )
+            else:
+                inter_file_list[ sample_name ] = [ [ ( output_file1, output_file2 ) ], [], None, None ]
+
+    if 'cutadapt' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+        for input_file1, input_file2, output_file1, output_file2 in SM.param( 'cutadapt' ):
+            sample_name = os.path.basename( os.path.split( output_file1 )[ 0 ] )
+            cutadapt_file_name1 = output_file1
+            cutadapt_file_name2 = output_file2
+            inter_file_list[ sample_name ][ 1 ].append( ( output_file1, output_file2 ) )
+
+    if 'bwa_mem' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+        for input_file1, input_file2, output_file1, output_file2 in SM.param( 'bwa_mem' ):
+            sample_name = os.path.basename( os.path.split( output_file1 )[ 0 ] )
+            inter_file_list[ sample_name ][ 2 ]= output_file1
+
+    if 'merge_bam' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
+        for input_file1, input_file2, output_file1, output_file2 in SM.param( 'merge_bam' ):
+            sample_name = os.path.basename( os.path.split( output_file1 )[ 0 ] )
+            inter_file_list[ sample_name ][ 3 ]= output_file1
+
+    #
+    # Return parameters
+    #
     if Geno.job.get_param( 'others', 'use_biobambam' ):
         for dir_name in input_file_list.keys():
-            return_list = [ SM,
+            sample_name = os.path.basename( dir_name )
+            return_list = [ inter_file_list[ sample_name ],
                             input_file_list[ dir_name ],
                             dir_name + '/' + make_sample_name( dir_name = dir_name ) + '_markdup.bam' ]
             yield return_list
     else:
         for dir_name in input_file_list.keys():
-            return_list = [ SM,
+            sample_name = os.path.basename( dir_name )
+            return_list = [ inter_file_list[ sample_name ],
                             dir_name +'/' + make_sample_name( dir_name = dir_name ) + '_merged.bam',
                             dir_name + '/' + make_sample_name( dir_name = dir_name ) + '_markdup.bam' ]
             yield return_list
@@ -1662,7 +1697,7 @@ def merge_bam(
 # Stage 6: markduplicates
 #
 def markduplicates(
-    SM,
+    inter_file_list,
     input_file_list,
     output_file,
     use_biobambam
@@ -1757,7 +1792,7 @@ def markduplicates(
         # bam_merge:         out/bam/sample_name/sample_name_merged.bam
         #
         if True:
-            delete_intermediate_files( SM, output_file )
+            delete_intermediate_files( inter_file_list, output_file )
 
     except IOError as (errno, strerror):
         with log_mutex:
@@ -2806,8 +2841,8 @@ def stage_5( input_file_list, output_file ):
 @active_if( 'markduplicates' in Geno.job.get_job( 'tasks' )[ 'DNA' ] )
 @check_if_uptodate( check_file_exists_for_markduplicates )
 @files( generate_params_for_markduplicates )
-def stage_6( SM, input_file_list, output_file ):
-    return_value =  markduplicates( SM,
+def stage_6( inter_file_list, input_file_list, output_file ):
+    return_value =  markduplicates( inter_file_list,
                                     input_file_list,
                                     output_file,
                                     Geno.job.get_param( 'others', 'use_biobambam' ) )
