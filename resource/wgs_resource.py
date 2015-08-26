@@ -796,7 +796,13 @@ date                    # print date
 set -xv
 
 source {scriptdir}/utility.sh
-source {scriptdir}/interval_list.sh
+
+if [ "{chr_str_in_fa}" = "True" ]
+then
+    source {scriptdir}/interval_list_chr.sh
+else
+    source {scriptdir}/interval_list_no_chr.sh
+fi
 
 FIRST_INTERVAL=`echo $INTERVAL_LIST | head -1 | sed 's/^\([^ ]\+\) .\+$/\\1/g'`
 INTERVAL_OUT=`echo {output_txt} | sed "s/\.txt/_$FIRST_INTERVAL.txt/"`
