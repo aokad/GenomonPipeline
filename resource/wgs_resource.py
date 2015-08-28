@@ -238,7 +238,8 @@ fi
     {fastq2} | \
 {samtools} view -Sb - \
     > $UNSORTED_BAM;
-check_error $?
+check_error ${{PIPESTATUS[ 0 ] }}
+check_error ${{PIPESTATUS[ 1 ] }}
 
 {samtools} sort $UNSORTED_BAM "$BAM_WITHOUT_SUFFIX"_sorted;
 check_error $?
@@ -326,7 +327,7 @@ then
     check_error $?
 
 else
-    cp {input_bam_files} {output_bam_file}
+    ln {input_bam_files} {output_bam_file}
     check_error $?
 fi
 
@@ -609,10 +610,10 @@ then
         check_error $?
     fi
 else
-    cp {input_bam_file} {merged_bam_file}
+    ln {input_bam_file} {merged_bam_file}
     check_error $?
 
-    cp {input_bam_file}.bai {merged_bam_file}.bai
+    ln {input_bam_file}.bai {merged_bam_file}.bai
     check_error $?
 fi
 """
