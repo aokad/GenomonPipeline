@@ -355,8 +355,9 @@ class InputFileError( Exception ):
         return repr( self.value )
 
 class FileFormatError( Exception ):
-    def __init__( self, value ):
+    def __init__( self, value, message):
         self.value = value
+        self.message = message
     def __str__( self ):
         return repr( self.value )
 
@@ -414,14 +415,14 @@ def main():
 
             smpl = smpl_list( Geno.options.sample_file )
             err_msg = smpl.get_err_msg()
-            print err_msg
+#            print err_msg
             if len(err_msg) > 0:
-                raise FileFormatError( "Sample list parse error. [{0}]\n{1}".format(Geno.options.sample_file, err_msg) )
+                raise FileFormatError( "Sample list parse error. [{0}]".format(Geno.options.sample_file), err_msg )
 
             Geno.sample_list = smpl.get_sample_list()
             Geno.sample_compare = smpl.get_compare()
             Geno.sample_control = smpl.get_control()
-            print Geno.sample_list
+            
             del smpl
 
 
@@ -615,7 +616,7 @@ def main():
     except FileFormatError, error:
         error_code = 11
         print( "[Error{0}] {name}: Input file error: {error}.".format( error_code, name = whoami(), error = error ) )
-
+        print error.message
     except IOError, (errno, strerror):
 	error_code = 12
         log.error( "[Error{0}] {1}: I/O error({2}): {3}".format( error_code, whoami(), errno, strerror) )

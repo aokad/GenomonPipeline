@@ -28,11 +28,6 @@ class input_file_list:
             else:
                 result = self.parse_file()
                 self.err_msg = result
-                print result
-
-#            if (len(result) > 0):
-#                print result
-#                raise FileFormatError(result)
 
         except Exception as err:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -43,15 +38,12 @@ class input_file_list:
                         + "{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno)
 
             self.err_msg = err_text
-#            print err_text
-#            raise InputFileError (err_text)
 
     #
     # each extension, call parse method
     # 
     def parse_file( self ):
         # file_extension is either csv, tsv, or xlsx
-        print "parse..."
         err_msg = self.__input_file + ":"
 
         file_extension = os.path.splitext( self.__input_file )[ 1 ]
