@@ -354,6 +354,11 @@ class InputFileError( Exception ):
     def __str__( self ):
         return repr( self.value )
 
+class FileFormatError( Exception ):
+    def __init__( self, value ):
+        self.value = value
+    def __str__( self ):
+        return repr( self.value )
 
 ###############################################################################
 #
@@ -363,6 +368,8 @@ def main():
     global log
     global log_mutex
     global Geno
+
+    error_code = 0
 
     try:
         #
@@ -376,7 +383,7 @@ def main():
         #
         if len(argvs) < 2:
             arg_parser.print_help()
-            sys.exit( 0 )
+            sys.exit( 10 )
 
         Geno.options = arg_parser.parse_args()
         Geno.dir[ 'genomon' ] = os.path.dirname( os.path.realpath(__file__) )
@@ -402,10 +409,19 @@ def main():
         # Load sample list file
         #
         if Geno.options.sample_file:
+            if not os.path.exists( Geno.options.sample_file ):
+                raise InputFileError( "No such file or directory. [{0}]".format(Geno.options.sample_file) )
+
             smpl = smpl_list( Geno.options.sample_file )
+            err_msg = smpl.get_err_msg()
+            print err_msg
+            if len(err_msg) > 0:
+                raise FileFormatError( "Sample list parse error. [{0}]\n{1}".format(Geno.options.sample_file, err_msg) )
+
             Geno.sample_list = smpl.get_sample_list()
             Geno.sample_compare = smpl.get_compare()
             Geno.sample_control = smpl.get_control()
+            print Geno.sample_list
             del smpl
 
 
@@ -413,13 +429,23 @@ def main():
         # Parse system and job config file
         #
         if Geno.options.config_file:
+            if not os.path.exists( Geno.options.config_file ):
+                raise InputFileError( "No such file or directory. [{0}]".format(Geno.options.config_file) )
+
             Geno.conf = ge_cfg( config_file = Geno.options.config_file, log = log )
             if not Geno.conf.check_file( Geno.dir[ 'genomon' ] + '/' + res.job_file_words ):
-                raise InputFileError( 'System config file contains invalid settings.' )
+                raise InputFileError( 'System config file contains invalid settings. [{0}]'.format(Geno.options.config_file) )
         else:
             Geno.conf = ge_cfg( config_file = Geno.dir[ 'genomon' ] + '/' + res.default_config )
 
+        if Geno.options.param_file:
+            if not os.path.exists( Geno.options.param_file ):
+                raise InputFileError( "No such file or directory. [{0}]".format(Geno.options.param_file) )
+
         if Geno.options.job_file:
+            if not os.path.exists( Geno.options.job_file ):
+                raise InputFileError( "No such file or directory. [{0}]".format(Geno.options.job_file) )
+
             Geno.job = ge_job( job_file = Geno.options.job_file,
                                param_file = Geno.options.param_file if Geno.options.param_file else None,
                                Genomon_dir = Geno.dir[ 'genomon' ],
@@ -448,7 +474,7 @@ def main():
         # Link input_data to project's data directory
         #
         make_directories()
-        copy_config_files()
+        copy_config_files()	
         copy_script_files()
         make_input_file_link( sample_list = Geno.sample_list if hasattr( Geno, 'sample_list') else None )
 
@@ -563,6 +589,7 @@ def main():
         else:
             touch_files_only = False
 
+        
         pipeline_run(   target_tasks = [ pipeline.last_function ],
                multiprocess = num_proc,
                multithread = multithread,
@@ -572,7 +599,7 @@ def main():
                verbose = verbose_level,
                history_file = Geno.options.history_file,
                logger = log )
-                        
+        
 #        pipeline_printout_graph( "flow_{job_type}".format( job_type = job_tasks.keys()[ 0 ] ),
 #                                 "jpg",
 #                                 [ pipeline.last_function ]
@@ -582,22 +609,31 @@ def main():
         #######################################################################
 
     except InputFileError, error:
-        log.error( "{name}: Input file error: {error}.".format( name = whoami(), error = error ) )
+	error_code = 10
+        print( "[Error{0}] {name}: Input file error: {error}.".format( error_code, name = whoami(), error = error ) )
+
+    except FileFormatError, error:
+        error_code = 11
+        print( "[Error{0}] {name}: Input file error: {error}.".format( error_code, name = whoami(), error = error ) )
 
     except IOError, (errno, strerror):
-        log.error( "{0}: I/O error({1}): {2}".format( whoami(), errno, strerror) )
+	error_code = 12
+        log.error( "[Error{0}] {1}: I/O error({2}): {3}".format( error_code, whoami(), errno, strerror) )
 
     except ValueError:
-        log.error( "{0}: ValueError".format( whoami() ) )
+	error_code = 13
+        log.error( "[Error{0}] {1}: ValueError".format( error_code, whoami() ) )
+        log.error( "[Error{0}] {1}: ValueError".format( error_code, whoami() ) )
 
     except Exception, e:
+	error_code = 14
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        log.error( "{0}: Unexpected error".format( whoami() ) )
+        log.error( "[Error{0}] {1}: Unexpected error".format( error_code, whoami() ) )
         log.error( e )
         log.error("{0}: {1}:{2}".format( exc_type, fname, exc_tb.tb_lineno) )
 
-    sys.exit( 0 )
+    sys.exit( error_code )
 
 
 ################################################################################
