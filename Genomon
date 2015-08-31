@@ -462,6 +462,12 @@ def main():
         #
         if Geno.options.sample_file:
             smpl = smpl_list( Geno.options.sample_file )
+            err_msg = smpl.get_err_msg()
+            if len(err_msg) > 0:
+                print err_msg
+                del smpl
+                raise GenomonError( EV.get( EV.TYPE_general, 0 ) )
+            
             Geno.sample_list = smpl.get_sample_list()
             Geno.sample_compare = smpl.get_compare()
             Geno.sample_control = smpl.get_control()
