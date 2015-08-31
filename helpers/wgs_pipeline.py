@@ -134,7 +134,7 @@ def delete_intermediate_files( inter_file_list, output_file ):
         if 'bwa_mem' in Geno.job.get_job( 'tasks' )[ 'DNA' ]:
             if inter_file_list[ 2 ]:
                 ( output_prefix1, output_suffix1 ) = os.path.splitext( inter_file_list[ 2 ] )
-                outfile_list1 =  glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) )
+                outfile_list1 =  sorted( glob( "{prefix}*{suffix}".format( prefix = output_prefix1, suffix = output_suffix1 ) ) )
                 deleteContent( outfile_list1[ 0 ] )
                 for tmp_file in outfile_list1[ 1: ]:
                     os.remove( tmp_file )

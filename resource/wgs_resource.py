@@ -108,7 +108,7 @@ case {input_file} in
 *\.gz)
     if [ "{fastq_filter}" = "True" ]
     then
-        zcat {input_file} | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+        zcat {input_file} | grep -v -A 3 '^@.* [^:]*:Y:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
         check_error $?
     else
         zcat {input_file} | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
@@ -119,7 +119,7 @@ case {input_file} in
 *\.bz2)
     if [ "{fastq_filter}" = "True" ]
     then
-        bzip2 -dc  {input_file} | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+        bzip2 -dc  {input_file} | grep -v -A 3 '^@.* [^:]*:Y:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
         check_error $?
     else
         bzip2 -dc  {input_file} | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
@@ -130,7 +130,7 @@ case {input_file} in
 *)
     if [ "{fastq_filter}" = "True" ]
     then
-        cat {input_file} | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
+        cat {input_file} | grep -v -A 3 '^@.* [^:]*:Y:[^:]*:' | grep -v '^--$' | split -a {suffix_len} -d -l {lines_per_file} - {output_prefix}
         check_error $?
     else
         split -a {suffix_len} -d -l {lines_per_file} {input_file} {output_prefix}
@@ -327,6 +327,10 @@ then
     check_error $?
 
 else
+    if [ -e {output_bam_file} ]
+    then
+        rm {output_bam_file)
+    fi
     ln {input_bam_files} {output_bam_file}
     check_error $?
 fi
@@ -610,9 +614,17 @@ then
         check_error $?
     fi
 else
+    if [ -e {merged_bam_file} ]
+    then
+        rm {merged_bam_file}
+    fi
     ln {input_bam_file} {merged_bam_file}
     check_error $?
 
+    if [ -e {merged_bam_file}.bai ]
+    then
+        rm {merged_bam_file}.bai
+    fi
     ln {input_bam_file}.bai {merged_bam_file}.bai
     check_error $?
 fi
