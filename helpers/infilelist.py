@@ -254,12 +254,12 @@ class input_file_list:
                                 err_msg += "[input] section, No.{0} file is not exits. [{file}]\n".format(num_input+1, file=f)
 
                             file_extension = os.path.splitext(f)[1]
-                            if file_extension.lower() == ".fastq":
-                                chk_fastq = True
-                            elif file_extension.lower() == ".bam":
+                            if file_extension.lower() == ".bam":
                                 chk_bam = True
                             else:
-                                err_msg += "[input] section, No.{0} file is not fastq/bam. [{file}]\n".format(num_input+1, file=f)
+                                chk_fastq = True
+#                            else:
+#                                err_msg += "[input] section, No.{0} file is not fastq/bam. [{file}]\n".format(num_input+1, file=f)
                             
                             # check duplex
                             if f in f_ckeck:
@@ -310,8 +310,8 @@ class input_file_list:
                 err_msg += "[input] section, cannot use bam to pair.\n"
         if num_compare < 1:
             err_msg += "[compare] section, data is none.\n"
-        if num_controlpanel < 1:
-            err_msg += "[controlpanel] section, data is none.\n"
+#        if num_controlpanel < 1:
+#            err_msg += "[controlpanel] section, data is none.\n"
 
         typ = True
         if num_input == 0 and num_compare == 0 and num_controlpanel == 0:
