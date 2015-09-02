@@ -69,12 +69,13 @@ def merge_sequences(input_files, output_file):
     subprocess.call( cmd , shell=True )
 
 
-# ###################
-# # fisher stage
+###################
+# mutation calling stage
+@follows( merge_sequences )
 @transform(originate_bam, suffix(".bammarkdup.bam"), ".candidate_mutations.tsv")
 def identify_mutations(input_files, output_file):
     print "        fisher %s -> %s" % (input_files, output_file)
- 
+  
     # For test run-----------------------------------------------------------------
     inputT_prefix, ext = os.path.splitext(input_files[0])
     inputN_prefix, ext = os.path.splitext(input_files[1])
