@@ -69,29 +69,23 @@ def merge_sequences(input_files, output_file):
     subprocess.call( cmd , shell=True )
 
 
-###################
-# set of starting bam files
-@originate(originate_bam)
-def pair_files(output_file): pass
-
-
-###################
-# fisher stage
-@transform(pair_files, suffix(".bammarkdup.bam"), ".candidate_mutations.tsv")
+# ###################
+# # fisher stage
+@transform(originate_bam, suffix(".bammarkdup.bam"), ".candidate_mutations.tsv")
 def identify_mutations(input_files, output_file):
     print "        fisher %s -> %s" % (input_files, output_file)
-
+ 
     # For test run-----------------------------------------------------------------
     inputT_prefix, ext = os.path.splitext(input_files[0])
     inputN_prefix, ext = os.path.splitext(input_files[1])
     cmd = "samtools view -h -b -o %s %s 17" % (inputT_prefix+".chr17.bam", input_files[0])
-    # subprocess.call( cmd , shell=True)
+    subprocess.call( cmd , shell=True)
     cmd = "samtools view -h -b -o %s %s 17" % (inputN_prefix+".chr17.bam", input_files[1])
-    # subprocess.call( cmd , shell=True)
+    subprocess.call( cmd , shell=True)
     # -----------------------------------------------------------------------------
-
+ 
     output_prefix, ext = os.path.splitext(output_file)
-
+ 
     map_quality = 30
     base_quality = 15
     min_allele = 0.08
