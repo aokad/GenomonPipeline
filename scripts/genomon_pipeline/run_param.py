@@ -6,7 +6,7 @@ date_format = "{year:0>4d}{month:0>2d}{day:0>2d}"
 
 global run_param
 
-class Run_param:
+class Run_param(object):
     """
     class for job related parameters
     """
