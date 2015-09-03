@@ -5,7 +5,7 @@ import os
 
 class Sample_list(object):
 
-    def __init__(self, file_path):
+    def __init__(self):
 
         self.fastq = {}
         self.compare = []
@@ -14,7 +14,6 @@ class Sample_list(object):
         # 
         # should add the file exist check here ?
         #
-        self.parse_file(file_path)
 
 
 
@@ -38,7 +37,10 @@ class Sample_list(object):
 
         file_data_trimmed = []
         for line_data in file_data:
-        
+       
+            # skip empty lines
+            if len(line_data) == 0: continue
+ 
             # line starting with '#' is comment
             if line_data[0].startswith('#'): continue
              
@@ -84,16 +86,15 @@ class Sample_list(object):
         mode = ''
         
         sampleID_list = []
-        for row in data:
+        for row in _data:
             # header
-            if row[0] == '[fastq]':
+            if row[0].lower() == '[fastq]':
                 mode = 'fastq'
-                flg_input = True
                 continue
-            elif row[0] == '[compare]':
+            elif row[0].lower() == '[compare]':
                 mode = 'compare'
                 continue
-            elif row[0] == '[controlpanel]':
+            elif row[0].lower() == '[controlpanel]':
                 mode = 'controlpanel'
                 continue
 
@@ -101,13 +102,18 @@ class Sample_list(object):
             if mode == 'fastq':
 
                 sampleID = row[0]
+                # 'None' is presereved for special string
+                if sampleID == 'None':
+                    err_msg = "None can not be used as sampleID"
+                    raise ValueError(err_msg)
+
                 if sampleID in sampleID_list:
-                    err_msg = sample_ID + " is duplicated."
+                    err_msg = sampleID + " is duplicated."
                     raise ValueError(err_msg)
                 sampleID_list.append(sampleID)
 
                 if len(row) not in [2, 3]:
-                    err_msg = sample_ID + ": the path for read1 (and read2) should be provided"
+                    err_msg = sampleID + ": the path for read1 (and read2) should be provided"
                     raise ValueError(err_msg)
 
                 sequence1 = row[1].split(';')
@@ -115,7 +121,7 @@ class Sample_list(object):
 
                 for seq in sequence1 + sequence2:
                     if not os.path.exists(seq):
-                        err_msg = sample_ID + ": " + seq +  " does not exists" 
+                        err_msg = sampleID + ": " + seq +  " does not exists" 
                         raise ValueError(err_msg)
 
                 self.fastq[sampleID] = [sequence1, sequence2]
@@ -127,8 +133,8 @@ class Sample_list(object):
                     err_msg = "[compare] section, " + tumorID + " is not defined"
                     raise ValueError(err_msg)
 
-                normalID = row[1] if len(row) >= 2 else None
-                controlpanelID = row[2] if len(row) >= 3 else None
+                normalID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
+                controlpanelID = row[2] if len(row) >= 3 and row[2] not in ['', 'None'] else None
 
                 if normalID is not None and normalID not in sampleID_list:
                     err_msg = "[compare] section, " + normalID + " is not defined"
@@ -151,7 +157,7 @@ class Sample_list(object):
                                     "controlpanelID: " + controlpanelID
                         raise ValueError(err_msg)
  
-                self.controlpanel[controlpanelID] = row[1:]
+                self.control_panel[controlpanelID] = row[1:]
 
 
 
@@ -161,4 +167,7 @@ class Sample_list(object):
                 err_msg = "[compare] section, controlpanelID: " + comp[2] + " is not defined"
                 raiseValueError(err_msg)
 
- 
+
+global sample_list 
+sample_list = Sample_list()
+
