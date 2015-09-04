@@ -11,7 +11,11 @@ class Run_param(object):
     class for job related parameters
     """
 
-    def __init__(self, sample_list_file = None, project_root = None, genomon_param_file = None, task_param_file = None):
+    def __init__(self, sample_list_file = None, 
+                        project_root = None, 
+                        analysis_type = None,
+                        genomon_param_file = None, 
+                        task_param_file = None):
 
         self.sample_list_file = sample_list_file
         self.project_root = project_root
