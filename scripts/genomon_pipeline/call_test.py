@@ -8,5 +8,5 @@ def call_test():
     # print run_param.sample_list_file
     print run_param.analysis_date
 
-    print task_param.get("fisher", "man_AF_normal")
+    print task_param.get("fisher_mutation_call", "max_distance")
 
