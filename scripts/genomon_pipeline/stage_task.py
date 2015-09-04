@@ -4,12 +4,11 @@ import datetime
 
 file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
 
-class Stage_task():
+class Stage_task(object):
 
     def __init__(self, qsub_option, script_dir):
         self.qsub_option = qsub_option
         self.script_dir = script_dir
-        self.script_template = None
 
 
     def ruffus_stage_exec(self, **kwargs):
