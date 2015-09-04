@@ -9,7 +9,7 @@ setup(name='genomon_pipeline',
       author_email='genomon_team@gamil.com',
       url='https://github.com/Genomon-Project/Genomon.git',
       package_dir = {'': 'scripts'},
-      packages=['genomon_pipeline'],
+      packages=['genomon_pipeline', 'genomon_pipeline.rna_resource'],
       scripts=['genomon_pipeline'],
       license='GPL-3'
      )
