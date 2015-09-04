@@ -11,7 +11,7 @@ class Stage_task(object):
         self.script_dir = script_dir
 
 
-    def ruffus_stage_exec(self, **kwargs):
+    def task_exec(self, arguments):
         # Make shell script
 
         now = datetime.datetime.now()
@@ -26,9 +26,10 @@ class Stage_task(object):
         
         shell_script_full_path = "{script}/{file}.sh".format(script = self.script_dir, file = shell_script_name)
         shell_script_file = open(shell_script_full_path, 'w')
-        shell_script_file.write(self.script_template.format(**kwargs))
+        shell_script_file.write(self.script_template.format(**arguments))
         shell_script_file.close()
 
+        """
         process = subprocess.Popen('qsub -sync yes -now no {qsub_option} ' + shell_script_file_path,
                                     qsub_option=self.qsub_option,
                                     shell=True,
@@ -36,7 +37,7 @@ class Stage_task(object):
                                     stderr=subprocess.PIPE)
 
         std_out, std_err = process.communicate()
-
-        print process.returncode 
     
+        print process.returncode 
+        """
 
