@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import datetime
+import subprocess
 
 file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
 
@@ -29,15 +30,8 @@ class Stage_task(object):
         shell_script_file.write(self.script_template.format(**arguments))
         shell_script_file.close()
 
-        """
-        process = subprocess.Popen('qsub -sync yes -now no {qsub_option} ' + shell_script_file_path,
-                                    qsub_option=self.qsub_option,
-                                    shell=True,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-
-        std_out, std_err = process.communicate()
-    
-        print process.returncode 
-        """
+        qsub_commands = ['qsub', '-sync', 'yes', '-now', 'no']
+        qsub_options = self.qsub_option.split(' ')
+        returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
+        print returncode 
 

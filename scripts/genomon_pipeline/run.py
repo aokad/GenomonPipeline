@@ -35,12 +35,9 @@ def main(args):
     task_param_check()
     ###
 
-    print sample_list.fastq
-
     if run_param.analysis_type == "dna":
         raise NotImplementedError("DNA pipeline is still in progress")
     elif run_param.analysis_type == "rna":
         rna_pipeline_run()
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")    
-

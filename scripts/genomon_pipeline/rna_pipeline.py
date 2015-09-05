@@ -45,15 +45,17 @@ def rna_pipeline_run():
                   "out_prefix": os.path.dirname(output_file),
                   "log": run_param.project_root + '/log'}
 
-        star_align.task_exec(arguments)
         if not os.path.isdir(dir_name): os.mkdir(dir_name)
-        open(output_file, 'w')
+        star_align.task_exec(arguments)
+        # open(output_file, 'w')
 
+    """
     @transform(task_star_align, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/{subdir[0][0]}.fusion.txt")
     def task_fusionfusion(input_files, output_file):
         dir_name = os.path.dirname(output_file)
         if not os.path.isdir(dir_name): os.mkdir(dir_name)
         open(output_file, 'w')
+    """    
 
-    pipeline_run(verbose = 6)
+    pipeline_run(verbose = 3, multithread = 10)
 
