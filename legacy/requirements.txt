@@ -1,3 +1,0 @@
-drmaa>=0.7.6
-pyyaml>=3.11
-ruffus>=2.6.2

@@ -3,7 +3,7 @@
 import sys
 import os
 
-class Sample_list(object):
+class Sample_conf(object):
 
     def __init__(self):
 
@@ -169,6 +169,6 @@ class Sample_list(object):
 
 
 
-global sample_list 
-sample_list = Sample_list()
+global sample_conf 
+sample_conf = Sample_conf()
 
