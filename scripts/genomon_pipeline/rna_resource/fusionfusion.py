@@ -2,9 +2,9 @@
 
 from genomon_pipeline.stage_task import *
 
-class Star_align(Stage_task):
+class Fusionfusion(Stage_task):
 
-    task_name = "star_align"
+    task_name = "fusionfusion"
 
     script_template = """
 #!/bin/bash
@@ -20,14 +20,14 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-{star} --genomeDir {star_genome} --readFilesIn {fastq1} {fastq2} --outFileNamePrefix {out_prefix} {additional_params} 
+# set python environment
+export PYTHONHOME={pythonhome}
+export PATH=$PYTHONHOME/bin:$PATH
+export LD_LIBRARY_PATH={ld_library_path}
+export PYTHONPATH={pythonpath}
 
-{samtools} sort -T {out_prefix}Aligned.sortedByCoord.out -@ 6 -m 5G {out_prefix}Aligned.out.bam -O bam > {out_prefix}Aligned.sortedByCoord.out.bam 
-
-{samtools} index {out_prefix}Aligned.sortedByCoord.out.bam 
-
-rm -rf {out_prefix}Aligned.out.bam
+{fusionfusion} --star {chimeric_sam} --out {output_prefix} --param {param_file}
 """
 
     def __init__(self, qsub_option, script_dir):
-        super(Star_align, self).__init__(qsub_option, script_dir)
+        super(Fusionfusion, self).__init__(qsub_option, script_dir)

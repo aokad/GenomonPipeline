@@ -40,4 +40,7 @@ def main(args):
     elif run_conf.analysis_type == "rna":
         rna_pipeline_run()
     else:
-        raise NotImplementedError("Just DNA and RNA pipeline is prepared")    
+        raise NotImplementedError("Just DNA and RNA pipeline is prepared")
+
+
+    
