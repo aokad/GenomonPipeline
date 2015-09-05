@@ -20,11 +20,13 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-{star} \
---genomeDir {star_genome} \
---readFilesIn {fastq1} {fastq2} \
---outFileNamePrefix {out_prefix} \
-{additional_params}
+{star} --genomeDir {star_genome} --readFilesIn {fastq1} {fastq2} --outFileNamePrefix {out_prefix} {additional_params} 
+
+{samtools} sort -T {out_prefix}Aligned.sortedByCoord.out -@ 6 {out_prefix}Aligned.out.bam -O bam > {out_prefix}Aligned.sortedByCoord.out.bam 
+
+{samtools} index {out_prefix}Aligned.sortedByCoord.out.bam 
+
+rm -rf {out_prefix}Aligned.out.bam
 """
 
     def __init__(self, qsub_option, script_dir):

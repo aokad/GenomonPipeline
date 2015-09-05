@@ -33,16 +33,17 @@ def rna_pipeline_run():
         os.symlink(sample_list_fastq[sample][0][0], link_dir + '/1_1.fastq')
         os.symlink(sample_list_fastq[sample][1][0], link_dir + '/1_2.fastq')
 
-    @transform(link_input_fastq, formatter(), "{subpath[0][2]}/star/{subdir[0][0]}/{subdir[0][0]}.bam")
+    @transform(link_input_fastq, formatter(), "{subpath[0][2]}/star/{subdir[0][0]}/{subdir[0][0]}.Aligned.sortedByCoord.out.bam")
     def task_star_align(input_files, output_file):
         dir_name = os.path.dirname(output_file)
-
+        sample_name = os.path.basename(dir_name)
         arguments = {"star": genomon_conf.get("SOFTWARE", "STAR"),
                   "star_genome": genomon_conf.get("REFERENCE", "star_genome"),
                   "additional_params": task_conf.get("star_align", "star_params"),
+                  "samtools": genomon_conf.get("SOFTWARE", "samtools"),
                   "fastq1": input_files[0],
                   "fastq2": input_files[1],
-                  "out_prefix": os.path.dirname(output_file),
+                  "out_prefix": dir_name + '/' + sample_name + '.',
                   "log": run_conf.project_root + '/log'}
 
         if not os.path.isdir(dir_name): os.mkdir(dir_name)
