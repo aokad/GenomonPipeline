@@ -30,13 +30,18 @@ def rna_pipeline_run():
     if not os.path.isdir(run_conf.project_root + '/fusion'): os.mkdir(run_conf.project_root + '/fusion')
 
 
+    # link the input fastq files
     @originate(linked_fastq_list, sample_list_fastq)
     def link_input_fastq(output_file, sample_list_fastq):
         sample = os.path.basename(os.path.dirname(output_file[0]))
         link_dir = run_conf.project_root + '/fastq/' + sample
+
+        # Todo
+        # 1. should compare the timestamps between input and linked file
+        # 2. check md5sum ?
         if not os.path.isdir(link_dir): os.mkdir(link_dir)
-        os.symlink(sample_list_fastq[sample][0][0], link_dir + '/1_1.fastq')
-        os.symlink(sample_list_fastq[sample][1][0], link_dir + '/1_2.fastq')
+        if not os.path.exists(link_dir + '/1_1.fastq'): os.symlink(sample_list_fastq[sample][0][0], link_dir + '/1_1.fastq')
+        if not os.path.exists(link_dir + '/1_2.fastq'): os.symlink(sample_list_fastq[sample][1][0], link_dir + '/1_2.fastq')
 
 
     @transform(link_input_fastq, formatter(), "{subpath[0][2]}/star/{subdir[0][0]}/{subdir[0][0]}.Aligned.sortedByCoord.out.bam")
@@ -79,5 +84,7 @@ def rna_pipeline_run():
         fusionfusion.task_exec(arguments)
 
 
-    pipeline_run(verbose = 3, multithread = 10)
+    pipeline_run(verbose = 3, 
+                 multithread = 10,
+                 history_file = run_conf.project_root + '/.ruffus_history.sqlite')
 
