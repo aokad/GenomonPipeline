@@ -76,7 +76,8 @@ class Sample_conf(object):
         _file_data = []
         with open(file_path, 'r') as hIN:
             for line in hIN:
-              _file_data.append(F)
+                F = line.rstrip('\n').split('\t')
+                _file_data.append(F)
 
         return _file_data
 

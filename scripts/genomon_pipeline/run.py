@@ -35,6 +35,7 @@ def main(args):
     task_conf_check()
     ###
 
+
     if run_conf.analysis_type == "dna":
         raise NotImplementedError("DNA pipeline is still in progress")
     elif run_conf.analysis_type == "rna":
