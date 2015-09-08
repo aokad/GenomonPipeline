@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 
+from ruffus import *
 from genomon_pipeline.config.genomon_conf import *
 from genomon_pipeline.config.task_conf import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.sample_conf import *
-from genomon_pipeline.rna_pipeline import rna_pipeline_run
 
 
 def main(args):
@@ -35,13 +35,16 @@ def main(args):
     task_conf_check()
     ###
 
-
     if run_conf.analysis_type == "dna":
-        raise NotImplementedError("DNA pipeline is still in progress")
+        import dna_pipeline
     elif run_conf.analysis_type == "rna":
-        rna_pipeline_run()
+        import rna_pipeline
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")
 
+    pipeline_run(
+                 verbose = 3, 
+                 multiprocess = 10
+                )
 
     
