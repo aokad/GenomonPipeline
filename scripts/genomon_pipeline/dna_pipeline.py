@@ -20,6 +20,11 @@ for sample in sample_conf.fastq:
     linked_fastq_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
                               run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
 
+markdup_bam_list = []
+for complist in sample_conf.compare:
+    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.bammarkdup.bam',
+                             run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.bammarkdup.bam'])
+
 sample_list_fastq = sample_conf.fastq
 
 # prepare output directories
@@ -88,7 +93,7 @@ def map_dna_sequence(input_files, output_file):
 
 ###################
 # merge stage
-@collate(map_dna_sequence, formatter(".+/([0-9]+).bamsorted.bam"), "{path[0]}/ga.bammarkdup.bam")
+@collate(map_dna_sequence, formatter(".+/(?P<SAMPLE>.+)/([0-9]+).bamsorted.bam"), "{path[0]}/{SAMPLE[0]}.bammarkdup.bam")
 def markdup(input_files, output_file):
 
     output_prefix, ext = os.path.splitext(output_file)
@@ -107,6 +112,42 @@ def markdup(input_files, output_file):
 
 
 ###################
+# mutation calling stage
+@follows( markdup )
+@transform(markdup_bam_list, suffix(".bammarkdup.bam"), ".candidate_mutations.tsv")
+def identify_mutations(input_files, output_file):
+    print "        fisher %s -> %s" % (input_files, output_file)
+ 
+    interval_list = genomon_conf.get("REFERENCE", "interval_list")
+    num_lines = sum(1 for line in open(interval_list))
+
+    print num_lines
+
+    # # For test run-----------------------------------------------------------------
+    # inputT_prefix, ext = os.path.splitext(input_files[0])
+    # inputN_prefix, ext = os.path.splitext(input_files[1])
+    # cmd = "samtools view -h -b -o %s %s 17" % (inputT_prefix+".chr17.bam", input_files[0])
+    # subprocess.call( cmd , shell=True)
+    # cmd = "samtools view -h -b -o %s %s 17" % (inputN_prefix+".chr17.bam", input_files[1])
+    # subprocess.call( cmd , shell=True)
+    # # -----------------------------------------------------------------------------
+ 
+    # output_prefix, ext = os.path.splitext(output_file)
+ 
+    # map_quality = 30
+    # base_quality = 15
+    # min_allele = 0.08
+    # max_allele = 0.1
+    # min_depth = 10
+    # min_variant = 4
+    # input_disease_bam = inputT_prefix+".chr17.bam"  # test run
+    # input_ctrl_bam = inputN_prefix+".chr17.bam"     # test run
+    # # input_disease_bam = input_files[0]
+    # # input_ctrl_bam = input_files[1]
+    # cmd ="fisher comparison -o %s --ref_fa %s --mapping_quality %d --base_quality %d --min_allele_freq %f --max_allele_freq %f --min_depth %d -2 %s -1 %s --samtools_path %s" % (output_prefix+"fisher.tmp", ref_fasta, map_quality, base_quality, min_allele, max_allele, min_depth , input_ctrl_bam, input_disease_bam, samtools_path)
+    # subprocess.call( cmd , shell=True)
+
+
 
 
 
