@@ -1,4 +1,4 @@
-# Genomon
+# GenomonPipeline
 Genomon pipeline in 2015
 
 ## Dependency
