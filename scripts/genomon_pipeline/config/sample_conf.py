@@ -2,12 +2,14 @@
 
 import sys
 import os
+from genomon_pipeline.config.run_conf import *
 
 class Sample_conf(object):
 
     def __init__(self):
 
         self.fastq = {}
+        self.bam_import = {}
         self.compare = []
         self.control_panel = {}
 
@@ -88,17 +90,28 @@ class Sample_conf(object):
         
         sampleID_list = []
         for row in _data:
-            # header
-            if row[0].lower() == '[fastq]':
-                mode = 'fastq'
-                continue
-            elif row[0].lower() == '[compare]':
-                mode = 'compare'
-                continue
-            elif row[0].lower() == '[controlpanel]':
-                mode = 'controlpanel'
-                continue
+            if row[0].startswith('['):
 
+                # header
+                if row[0].lower() == '[fastq]':
+                    mode = 'fastq'
+                    continue
+                elif row[0].lower() == '[bam_import]':
+                    mode = 'bam_import'
+                    continue
+                elif row[0].lower() == '[compare]':
+                    mode = 'compare'
+                    continue
+                elif row[0].lower() == '[controlpanel]':
+                    mode = 'controlpanel'
+                    continue
+                else:
+                    err_msg = "Section name should be either of [fastq], [bam_import], " + \
+                              "[compare] or [controlpanel]. " + \
+                              "Also, sample name should not start with '['."
+                    raise ValueError(err_msg)
+            
+            
             # section data
             if mode == 'fastq':
 
@@ -111,6 +124,7 @@ class Sample_conf(object):
                 if sampleID in sampleID_list:
                     err_msg = sampleID + " is duplicated."
                     raise ValueError(err_msg)
+
                 sampleID_list.append(sampleID)
 
                 if len(row) not in [2, 3]:
@@ -126,6 +140,32 @@ class Sample_conf(object):
                         raise ValueError(err_msg)
 
                 self.fastq[sampleID] = [sequence1, sequence2]
+
+            elif mode == 'bam_import':
+
+                sampleID = row[0]
+                # 'None' is presereved for special string
+                if sampleID == 'None':
+                    err_msg = "None can not be used as sampleID"
+                    raise ValueError(err_msg)
+
+                if sampleID in sampleID_list:
+                    err_msg = sampleID + " is duplicated."
+                    raise ValueError(err_msg)
+
+                sampleID_list.append(sampleID)
+
+                if len(row) not in [2, 3]:
+                    err_msg = sampleID + ": only one bam file is allowed"
+                    raise ValueError(err_msg)
+
+                sequence = row[1]
+                if not os.path.exists(sequence):
+                    err_msg = sampleID + ": " + seq +  " does not exists"
+                    raise ValueError(err_msg)
+
+                self.bam_import[sampleID] = sequence
+
 
             elif mode == 'compare':
 
@@ -168,6 +208,14 @@ class Sample_conf(object):
                 err_msg = "[compare] section, controlpanelID: " + comp[2] + " is not defined"
                 raiseValueError(err_msg)
 
+
+    # get the paths where bam files imported from another projects will be located"
+    def get_linked_bam_import_path(self):
+        linked_bam_import_path = []
+        for sample in sample_conf.bam_import:
+            linked_bam_import_path.append(run_conf.project_root + '/bam/' + sample + 
+                                           '/' + sample + '.bam')
+        return linked_bam_import_path
 
 
 global sample_conf 
