@@ -12,7 +12,7 @@ class Stage_task(object):
         self.script_dir = script_dir
 
 
-    def task_exec(self, arguments):
+    def task_exec(self, arguments, max_task=0):
         # Make shell script
 
         now = datetime.datetime.now()
@@ -30,8 +30,10 @@ class Stage_task(object):
         shell_script_file.write(self.script_template.format(**arguments))
         shell_script_file.close()
 
-        qsub_commands = ['qsub', '-sync', 'yes', '-now', 'no']
+        qsub_commands = ['qsub', '-sync', 'yes']
+        if max_task != 0:
+            qsub_commands.extend(['-t', '1-'+str(max_task)+':1'])
+
         qsub_options = self.qsub_option.split(' ')
         returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
-        print returncode 
 
