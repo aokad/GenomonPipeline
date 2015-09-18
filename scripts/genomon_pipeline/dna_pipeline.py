@@ -9,7 +9,6 @@ from genomon_pipeline.dna_resource.fastq_splitter import *
 from genomon_pipeline.dna_resource.bwa_align import *
 from genomon_pipeline.dna_resource.markduplicates import *
 from genomon_pipeline.dna_resource.mutation_call import *
-from genomon_pipeline.dna_resource.annotation import *
 
 
 # set task classes
