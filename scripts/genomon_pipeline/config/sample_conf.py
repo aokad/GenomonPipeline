@@ -12,12 +12,10 @@ class Sample_conf(object):
         self.bam_import = {}
         self.compare = []
         self.control_panel = {}
-
         # 
         # should add the file exist check here ?
         #
-
-
+    
 
     def parse_file(self, file_path):
 
@@ -203,10 +201,10 @@ class Sample_conf(object):
 
 
         # check whether controlpanleID in compare section is defined
-        for comp in self.compare:
-            if comp[2] is not None and comp[2] not in self.controlpanel:
-                err_msg = "[compare] section, controlpanelID: " + comp[2] + " is not defined"
-                raiseValueError(err_msg)
+        # for comp in self.compare:
+        #     if comp[2] is not None and comp[2] not in self.controlpanel:
+        #         err_msg = "[compare] section, controlpanelID: " + comp[2] + " is not defined"
+        #         raiseValueError(err_msg)
 
 
     # get the paths where bam files imported from another projects will be located"
@@ -217,7 +215,17 @@ class Sample_conf(object):
                                            '/' + sample + '.bam')
         return linked_bam_import_path
 
+    def get_control_panel_list(self,panel_name):
+        control_panel_bam = []
+        for sample in self.control_panel[panel_name]:
+            if (self.bam_import.has_key(sample)):
+                control_panel_bam.append(self.bam_import[sample])
+            else:
+                control_panel_bam.append(run_conf.project_root + '/bam/' + sample + '/' + sample + '.markdup.bam')
+        return control_panel_bam
+
 
 global sample_conf 
 sample_conf = Sample_conf()
+
 

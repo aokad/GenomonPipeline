@@ -33,7 +33,8 @@ OUT_REALIGNMENT={out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt
 OUT_INDEL={out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt
 OUT_BREAKPOINT={out_prefix}.breakpoint_mutations.${{SGE_TASK_ID}}.txt
 OUT_SIMPLE_REPEAT={out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt
-OUT_EB={out_prefix}.candidate_mutations.${{SGE_TASK_ID}}.txt
+OUT_EB={out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt
+OUT_MUTATIONS={out_prefix}_mutations_candidate.${{SGE_TASK_ID}}
 
 fisher comparison -R $REGION -o $OUT_FISHER  --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth}  -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} || exit $?
 
@@ -44,8 +45,12 @@ mutfilter indel --search_length {indel_search_length} --neighbor {indel_neighbor
 mutfilter breakpoint --max_depth {bp_max_depth} --min_clip_size {bp_min_clip_size} --junc_num_thres {bp_junc_num_thres} --mapq_thres {bp_map_quality} $OUT_INDEL {control_bam} $OUT_BREAKPOINT || exit $?
 
 mutfilter simplerepeat $OUT_BREAKPOINT $OUT_SIMPLE_REPEAT {simple_repeat_db} || exit $?
-
+ 
 EBFilter -f anno -q {eb_map_quality} -Q {eb_base_quality} $OUT_SIMPLE_REPEAT {disease_bam} {control_bam_list} $OUT_EB || exit $?
+
+if [ _{active_annovar_flag} = "_True" ];then
+    {annovar}/table_annovar.pl --outfile $OUT_MUTATIONS {table_annovar_params} $OUT_EB {annovar}/humandb || exit $?
+fi
 
 """
 
