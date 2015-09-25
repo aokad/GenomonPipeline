@@ -181,12 +181,14 @@ def identify_mutations(input_files, output_files, output_dir):
 
     arguments = {
         # fisher mutation
+        "fisher": genomon_conf.get("SOFTWARE", "fisher"),
         "map_quality": task_conf.get("fisher_mutation_call", "map_quality"),
         "base_quality": task_conf.get("fisher_mutation_call", "base_quality"),
         "min_allele_freq": task_conf.get("fisher_mutation_call", "disease_min_allele_frequency"),
         "max_allele_freq": task_conf.get("fisher_mutation_call", "control_max_allele_frequency"),
         "min_depth": task_conf.get("fisher_mutation_call", "min_depth"),
         # realignment filter
+        "mutfilter": genomon_conf.get("SOFTWARE", "mutfilter"),
         "realign_min_mismatch": task_conf.get("realignment_filter","disease_min_mismatch"),
         "realign_max_mismatch": task_conf.get("realignment_filter","control_max_mismatch"),
         "realign_score_diff": task_conf.get("realignment_filter","score_diff"),
@@ -203,13 +205,14 @@ def identify_mutations(input_files, output_files, output_dir):
         "bp_min_clip_size": task_conf.get("breakpoint_filter","min_clip_size"),
         "bp_junc_num_thres": task_conf.get("breakpoint_filter","junc_num_thres"),
         "bp_map_quality": task_conf.get("breakpoint_filter","map_quality"),
-        # breakpoint filter
+        # eb_filter
+        "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
         "eb_map_quality": task_conf.get("eb_filter","map_quality"),
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
         "control_bam_list": input_files[2],
         # annovar
         "active_annovar_flag": "True",
-        "annovar": "/home/kchiba/work_genomonprj/annovar",
+        "annovar": genomon_conf.get("SOFTWARE", "annovar"),
         "table_annovar_params": task_conf.get("annotation", "table_annovar_params"),
         # commmon
         "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
