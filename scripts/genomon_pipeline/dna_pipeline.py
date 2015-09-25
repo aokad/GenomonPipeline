@@ -9,13 +9,14 @@ from genomon_pipeline.dna_resource.fastq_splitter import *
 from genomon_pipeline.dna_resource.bwa_align import *
 from genomon_pipeline.dna_resource.markduplicates import *
 from genomon_pipeline.dna_resource.mutation_call import *
-
+from genomon_pipeline.dna_resource.bamtofastq import *
 
 # set task classes
 fastq_splitter = Fastq_splitter(task_conf.get("split_fast", "qsub_option"), run_conf.project_root + '/script')
 bwa_align = Bwa_align(task_conf.get("bwa_mem", "qsub_option"), run_conf.project_root + '/script')
 markduplicates = Markduplicates(task_conf.get("markduplicates", "qsub_option"), run_conf.project_root + '/script')
 mutation_call = Mutation_call(task_conf.get("mutation_call", "qsub_option"), run_conf.project_root + '/script')
+bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.project_root + '/script')
 
 # generate list of linked_fastq file path
 linked_fastq_list = []
@@ -26,10 +27,15 @@ for sample in sample_conf.fastq:
 
 markdup_bam_list = []
 for complist in sample_conf.compare:
-    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
-                             run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
+    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
+                             run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
                              run_conf.project_root + '/control_panel/' + complist[2] + ".control_panel.txt"])
 
+
+bam2fastq_output_list = []
+for sample in sample_conf.bam_tofastq:
+    bam2fastq_output_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
+                              run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
 sample_list_fastq = sample_conf.fastq
 control_panel_keys = sample_conf.control_panel.keys()
 
@@ -41,6 +47,29 @@ if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.projec
 if not os.path.isdir(run_conf.project_root + '/bam'): os.mkdir(run_conf.project_root + '/bam')
 if not os.path.isdir(run_conf.project_root + '/mutation'): os.mkdir(run_conf.project_root + '/mutation')
 if not os.path.isdir(run_conf.project_root + '/control_panel'): os.mkdir(run_conf.project_root + '/control_panel')
+
+# bamtofastq
+# @originate(bam2fastq_output_list, bam2fastq_input_list)
+@originate(bam2fastq_output_list)
+def bam2fastq(outputfiles):
+    
+    sample = os.path.basename(os.path.dirname(outputfiles[0]))
+    output_dir = run_conf.project_root + '/fastq/' + sample
+    bam_dir = run_conf.project_root + '/bam/' + sample
+    if not os.path.isdir(output_dir): os.mkdir(output_dir)
+    if not os.path.isdir(bam_dir): os.mkdir(bam_dir)
+            
+    arguments = {"biobambam": genomon_conf.get("SOFTWARE", "biobambam"),
+                 "input_bam": sample_conf.bam_tofastq[sample],
+                 "f1_name": outputfiles[0],
+                 "f2_name": outputfiles[1],
+                 "o1_name": output_dir + '/unmatched_first_output.txt',
+                 "o2_name": output_dir + '/unmatched_second_output.txt',
+                 "t": output_dir + '/temp.txt',
+                 "s": output_dir + '/single_end_output.txt',
+                 "log": run_conf.project_root + '/log'}
+
+    bamtofastq.task_exec(arguments)
 
 # link the input fastq files
 @originate(linked_fastq_list, sample_list_fastq)
@@ -62,7 +91,7 @@ def link_input_fastq(output_file, sample_list_fastq):
 
 ##################
 #  split stage
-@subdivide(link_input_fastq, formatter(), "{path[0]}/*_*.fastq_split", "{path[0]}")
+@subdivide([bam2fastq, link_input_fastq], formatter(), "{path[0]}/*_*.fastq_split", "{path[0]}")
 def split_files(input_files, output_files, output_name_stem):
   
     for oo in output_files:

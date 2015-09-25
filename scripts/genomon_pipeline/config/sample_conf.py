@@ -9,6 +9,7 @@ class Sample_conf(object):
     def __init__(self):
 
         self.fastq = {}
+        self.bam_tofastq = {}
         self.bam_import = {}
         self.compare = []
         self.control_panel = {}
@@ -94,6 +95,9 @@ class Sample_conf(object):
                 if row[0].lower() == '[fastq]':
                     mode = 'fastq'
                     continue
+                elif row[0].lower() == '[bam_tofastq]':
+                    mode = 'bam_tofastq'
+                    continue
                 elif row[0].lower() == '[bam_import]':
                     mode = 'bam_import'
                     continue
@@ -104,7 +108,7 @@ class Sample_conf(object):
                     mode = 'controlpanel'
                     continue
                 else:
-                    err_msg = "Section name should be either of [fastq], [bam_import], " + \
+                    err_msg = "Section name should be either of [fastq], [bam_tofastq], [bam_import], " + \
                               "[compare] or [controlpanel]. " + \
                               "Also, sample name should not start with '['."
                     raise ValueError(err_msg)
@@ -139,6 +143,31 @@ class Sample_conf(object):
 
                 self.fastq[sampleID] = [sequence1, sequence2]
 
+            elif mode == 'bam_tofastq':
+
+                sampleID = row[0]
+                # 'None' is presereved for special string
+                if sampleID == 'None':
+                    err_msg = "None can not be used as sampleID"
+                    raise ValueError(err_msg)
+
+                if sampleID in sampleID_list:
+                    err_msg = sampleID + " is duplicated."
+                    raise ValueError(err_msg)
+
+                sampleID_list.append(sampleID)
+
+                if len(row) not in [2, 3]:
+                    err_msg = sampleID + ": only one bam file is allowed"
+                    raise ValueError(err_msg)
+
+                sequence = row[1]
+                if not os.path.exists(sequence):
+                    err_msg = sampleID + ": " + sequence +  " does not exists"
+                    raise ValueError(err_msg)
+
+                self.bam_tofastq[sampleID] = sequence
+                
             elif mode == 'bam_import':
 
                 sampleID = row[0]
@@ -159,7 +188,7 @@ class Sample_conf(object):
 
                 sequence = row[1]
                 if not os.path.exists(sequence):
-                    err_msg = sampleID + ": " + seq +  " does not exists"
+                    err_msg = sampleID + ": " + sequence +  " does not exists"
                     raise ValueError(err_msg)
 
                 self.bam_import[sampleID] = sequence
