@@ -33,16 +33,16 @@ for sample in sample_conf.fastq:
     linked_fastq_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1' + ext,
                               run_conf.project_root + '/fastq/' + sample + '/1_2' + ext])
 
-markdup_bam_list = []
-for complist in sample_conf.compare:
-    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
-                             run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
-                             run_conf.project_root + '/control_panel/' + complist[2] + ".control_panel.txt"])
-
 bam2fastq_output_list = []
 for sample in sample_conf.bam_tofastq:
     bam2fastq_output_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
                                   run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
+
+markdup_bam_list = []
+for complist in sample_conf.compare:
+    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
+                             run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
+                             run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt"])
 
 parse_bedpe_list = []
 for complist in sample_conf.compare:
@@ -56,8 +56,6 @@ for control_panel_name in sample_conf.control_panel.keys():
        tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
     control_bedpe_list.append(tmp_list)
 
-
-parse_target_list = sample_conf.get_disease_and_control_panel_bam()
 
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
@@ -256,9 +254,8 @@ def identify_mutations(input_files, output_files, output_dir):
         "bp_min_clip_size": task_conf.get("breakpoint_filter","min_clip_size"),
         "bp_junc_num_thres": task_conf.get("breakpoint_filter","junc_num_thres"),
         "bp_map_quality": task_conf.get("breakpoint_filter","map_quality"),
-        # eb_filter
+        # eb filter
         "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
-        # breakpoint filter
         "eb_map_quality": task_conf.get("eb_filter","map_quality"),
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
         "control_bam_list": input_files[2],
@@ -303,7 +300,7 @@ def merge_mutation(input_files, output_file):
 # SV parse
 @follows( link_import_bam )
 @follows( markdup )
-@transform(parse_target_list, formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.junction.clustered.bedpe.gz")
+@transform(sample_conf.get_disease_and_control_panel_bam(), formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.junction.clustered.bedpe.gz")
 def parse_sv(input_file, output_file):
     print "        parse %s -> %s" % (input_file, output_file)
 
@@ -311,29 +308,29 @@ def parse_sv(input_file, output_file):
     sample_name = os.path.basename(dir_name)
 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    idx = 0
+    idx = -1
     sv_sampleConf = {"target": {}, "matched_control": {}, "non_matched_control_panel": {}}
     for complist in sample_conf.compare:
         if sample_name in complist:
             idx = complist.index(sample_name)
 
-        if idx == 1: # is disease
+        if idx == 0: # is disease
             sv_sampleConf["target"]["label"] = sample_name
             sv_sampleConf["target"]["path_to_bam"] = input_file
             sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-            sv_sampleConf["matched_control"]["use"] = "True"
-            sv_sampleConf["matched_control"]["path_to_bam"] = sample_conf.sample2bam(complist[0])
-            sv_sampleConf["non_matched_control_panel"]["use"] = "True"
-            sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = complist[0]
+            sv_sampleConf["matched_control"]["use"] = True
+            sv_sampleConf["matched_control"]["path_to_bam"] = sample_conf.sample2bam(complist[1])
+            sv_sampleConf["non_matched_control_panel"]["use"] = True
+            sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = complist[1]
             sv_sampleConf["non_matched_control_panel"]["data_path"] = run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
             break
 
-    if idx != 1: # are control or non matched control
+    if idx != 0: # are control or non matched control
         sv_sampleConf["target"]["label"] = sample_name
         sv_sampleConf["target"]["path_to_bam"] = input_file
         sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-        sv_sampleConf["matched_control"]["use"] = "False"
-        sv_sampleConf["non_matched_control_panel"]["use"] = "False"
+        sv_sampleConf["matched_control"]["use"] = False
+        sv_sampleConf["non_matched_control_panel"]["use"] = False
 
     sample_yaml = run_conf.project_root + "/sv/config/" + sample_name + ".yaml"
     hOUT = open(sample_yaml, "w")

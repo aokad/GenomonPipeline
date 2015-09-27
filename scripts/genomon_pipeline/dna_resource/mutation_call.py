@@ -50,6 +50,8 @@ OUT_MUTATIONS={out_prefix}_mutations_candidate.${{SGE_TASK_ID}}
 
 if [ _{active_annovar_flag} = "_True" ];then
     {annovar}/table_annovar.pl --outfile $OUT_MUTATIONS {table_annovar_params} $OUT_EB {annovar}/humandb || exit $?
+else:
+    cp $OUT_EB {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multation.txt
 fi
 
 """
