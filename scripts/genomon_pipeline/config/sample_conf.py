@@ -190,6 +190,11 @@ class Sample_conf(object):
                 if not os.path.exists(sequence):
                     err_msg = sampleID + ": " + sequence +  " does not exists"
                     raise ValueError(err_msg)
+                
+                sequence_prefix, ext = os.path.splitext(sequence)
+                if (not os.path.exists(sequence + '.bai')) or (not os.path.exists(sequence_prefix + '.bai')):
+                    err_msg = sampleID + ": " + sequence +  " index does not exists"
+                    raise ValueError(err_msg)
 
                 self.bam_import[sampleID] = sequence
 
@@ -240,19 +245,32 @@ class Sample_conf(object):
     def get_linked_bam_import_path(self):
         linked_bam_import_path = []
         for sample in sample_conf.bam_import:
-            linked_bam_import_path.append(run_conf.project_root + '/bam/' + sample + 
-                                           '/' + sample + '.bam')
+            linked_bam_import_path.append(run_conf.project_root + '/bam/' + sample + '/' + sample + '.bam')
         return linked_bam_import_path
+
+    def sample2bam(self,sample):
+        bam = ''
+        if (self.bam_import.has_key(sample)):
+            bam = run_conf.project_root + '/bam/' + sample + '/' + sample + '.bam'
+        else:
+            bam = run_conf.project_root + '/bam/' + sample + '/' + sample + '.markdup.bam'
+        return bam 
 
     def get_control_panel_list(self,panel_name):
         control_panel_bam = []
         for sample in self.control_panel[panel_name]:
-            if (self.bam_import.has_key(sample)):
-                control_panel_bam.append(self.bam_import[sample])
-            else:
-                control_panel_bam.append(run_conf.project_root + '/bam/' + sample + '/' + sample + '.markdup.bam')
+            control_panel_bam.append(self.sample2bam(sample))
         return control_panel_bam
 
+    def get_disease_and_control_panel_bam(self):
+        unique_bams = []
+        for complist in sample_conf.compare:
+            panel_name = complist[2]
+            unique_bams.extend(self.get_control_panel_list(panel_name))
+            disease_sample = complist[1]
+            unique_bams.append(run_conf.project_root + '/bam/' + disease_sample + '/' + disease_sample + '.markdup.bam')
+        result_list = list(set(unique_bams))       
+        return result_list
 
 global sample_conf 
 sample_conf = Sample_conf()
