@@ -20,7 +20,7 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-{biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename={input_bam} F={f1_name} F2={f2_name} T={t} S={s} O={o1_name} 2={o2_name}
+{biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename={input_bam} F={f1_name} F2={f2_name} T={t} S={s} O={o1_name} O2={o2_name}
 
 """
 
