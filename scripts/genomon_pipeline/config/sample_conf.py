@@ -267,7 +267,7 @@ class Sample_conf(object):
         for complist in sample_conf.compare:
             panel_name = complist[2]
             unique_bams.extend(self.get_control_panel_list(panel_name))
-            disease_sample = complist[1]
+            disease_sample = complist[0]
             unique_bams.append(run_conf.project_root + '/bam/' + disease_sample + '/' + disease_sample + '.markdup.bam')
         result_list = list(set(unique_bams))       
         return result_list
