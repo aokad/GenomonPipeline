@@ -351,7 +351,7 @@ def parse_sv(input_file, output_file):
 # SV merge
 @follows( make_sv_control_panel_file )
 @follows( parse_sv )
-@transform(control_bedpe_list, formatter("(?P<NAME>.+).control.yaml","(.+).junction.clustered.bedpe.gz"), "{NAME[0]}.merged.junction.control.bedpe.gz")
+@transform(control_bedpe_list, formatter(".+/(?P<NAME>.+).control.yaml",".+/(.+).junction.clustered.bedpe.gz"), "{subpath[0][2]}/sv/non_matched_control_panel/{NAME[0]}.merged.junction.control.bedpe.gz")
 def merge_sv(input_files,  output_file):
     print "        merge %s -> %s" % (input_files, output_file)
 
