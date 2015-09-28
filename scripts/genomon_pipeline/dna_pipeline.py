@@ -58,7 +58,7 @@ for control_panel_name in sample_conf.control_panel.keys():
 
 
 # prepare output directories
-if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
+if not os.path.isdir(run_conf.project_root): os.makedirs(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
 if not os.path.isdir(run_conf.project_root + '/log'): os.mkdir(run_conf.project_root + '/log')
 if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.project_root + '/fastq')

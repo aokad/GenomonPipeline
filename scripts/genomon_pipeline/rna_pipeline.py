@@ -22,7 +22,7 @@ for sample in sample_conf.fastq:
 sample_list_fastq = sample_conf.fastq
 
 # prepare output directories
-if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
+if not os.path.isdir(run_conf.project_root): os.makedirs(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
 if not os.path.isdir(run_conf.project_root + '/log'): os.mkdir(run_conf.project_root + '/log')
 if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.project_root + '/fastq')
