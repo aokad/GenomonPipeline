@@ -228,17 +228,18 @@ def link_mutation_bam(input_file, output_files, dir_name):
     for oo in output_files:
         os.unlink(oo)
 
+    abs_input_file = os.path.abspath(input_file)
     sample = os.path.basename(dir_name)
-    input_prefix, ext = os.path.splitext(input_file)
+    input_prefix, ext = os.path.splitext(abs_input_file)
     output_dir = os.path.abspath(dir_name)
-    if not os.path.isdir(output_dir): os.mkdir(output_name)
+    if not os.path.isdir(output_dir): os.mkdir(output_dir)
 
     interval_list_file = genomon_conf.get("REFERENCE", "interval_list")
     num_lines = sum(1 for line in open(interval_list_file))
     for num in range(num_lines):
-        os.symlink(input_file, output_dir +'/'+ sample +'.markdup.'+ str(num+1) +'.bam')
-        if (os.path.exists(input_file +'.bai')):
-            os.symlink(input_file +'.bai', output_dir +'/'+ sample +'.markdup.'+ str(num+1) +'.bam.bai')
+        os.symlink(abs_input_file, output_dir +'/'+ sample +'.markdup.'+ str(num+1) +'.bam')
+        if (os.path.exists(abs_input_file +'.bai')):
+            os.symlink(abs_input_file +'.bai', output_dir +'/'+ sample +'.markdup.'+ str(num+1) +'.bam.bai')
         elif (os.path.exists(input_prefix +'.bai')):
             os.symlink(input_prefix +'.bai', output_dir +'/'+ sample +'.markdup.'+ str(num+1) +'.bam.bai')
 
