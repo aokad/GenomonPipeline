@@ -9,8 +9,6 @@ class Mutation_call(Stage_task):
     script_template = """
 #!/bin/bash
 #
-# Set SGE
-#
 #$ -S /bin/bash         # set shell in UGE
 #$ -cwd                 # execute at the submitted dir
 #$ -e {log}             # log file directory
@@ -26,15 +24,15 @@ export PATH=$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-
-REGION=`head -n $SGE_TASK_ID {interval_list} | tail -n 1`
-OUT_FISHER={out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt
-OUT_REALIGNMENT={out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt
-OUT_INDEL={out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt
-OUT_BREAKPOINT={out_prefix}.breakpoint_mutations.${{SGE_TASK_ID}}.txt
-OUT_SIMPLE_REPEAT={out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt
-OUT_EB={out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt
-OUT_MUTATIONS={out_prefix}_mutations_candidate.${{SGE_TASK_ID}}
+TASK_ID={task_id}
+REGION=`head -n $TASK_ID {interval_list} | tail -n 1`
+OUT_FISHER={out_prefix}.fisher_mutations.${{TASK_ID}}.txt
+OUT_REALIGNMENT={out_prefix}.realignment_mutations.${{TASK_ID}}.txt
+OUT_INDEL={out_prefix}.indel_mutations.${{TASK_ID}}.txt
+OUT_BREAKPOINT={out_prefix}.breakpoint_mutations.${{TASK_ID}}.txt
+OUT_SIMPLE_REPEAT={out_prefix}.simplerepeat_mutations.${{TASK_ID}}.txt
+OUT_EB={out_prefix}.ebfilter_mutations.${{TASK_ID}}.txt
+OUT_MUTATIONS={out_prefix}_mutations_candidate.${{TASK_ID}}
 
 {fisher} comparison -R $REGION -o $OUT_FISHER  --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth}  -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} || exit $?
 
@@ -50,8 +48,8 @@ OUT_MUTATIONS={out_prefix}_mutations_candidate.${{SGE_TASK_ID}}
 
 if [ _{active_annovar_flag} = "_True" ];then
     {annovar}/table_annovar.pl --outfile $OUT_MUTATIONS {table_annovar_params} $OUT_EB {annovar}/humandb || exit $?
-else:
-    cp $OUT_EB {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multation.txt
+else
+    cp $OUT_EB {out_prefix}_mutations_candidate.${{TASK_ID}}.hg19_multation.txt
 fi
 
 """

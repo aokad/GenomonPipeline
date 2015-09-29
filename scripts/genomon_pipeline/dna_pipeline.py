@@ -38,11 +38,19 @@ for sample in sample_conf.bam_tofastq:
     bam2fastq_output_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
                                   run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
 
+subdiv_bam_list = []
+for complist in sample_conf.compare:
+    interval_list_file = genomon_conf.get("REFERENCE", "interval_list")
+    num_lines = sum(1 for line in open(interval_list_file))
+    for num in range(num_lines):
+        subdiv_bam_list.append([run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '.markdup.'+ str(num+1) +'.bam',
+                                run_conf.project_root + '/mutation/' + complist[1] + '/' + complist[1] + '.markdup.'+ str(num+1) +'.bam',
+                                run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt"])
+
 markdup_bam_list = []
 for complist in sample_conf.compare:
-    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
-                             run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
-                             run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt"])
+    markdup_bam_list.append(run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam')
+    markdup_bam_list.append(run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam')
 
 parse_bedpe_list = []
 for complist in sample_conf.compare:
@@ -213,22 +221,42 @@ def markdup(input_files, output_file):
     markduplicates.task_exec(arguments)
 
 
+@follows( markdup )
+@subdivide(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}.markdup.*.bam", "{subpath[0][2]}/mutation/{subdir[0][0]}")
+def link_mutation_bam(input_file, output_files, dir_name):
+
+    for oo in output_files:
+        os.unlink(oo)
+
+    sample = os.path.basename(dir_name)
+    input_prefix, ext = os.path.splitext(input_file)
+
+    if not os.path.isdir(dir_name): os.mkdir(dir_name)
+
+    interval_list_file = genomon_conf.get("REFERENCE", "interval_list")
+    num_lines = sum(1 for line in open(interval_list_file))
+    for num in range(num_lines):
+        os.symlink(input_file, dir_name +'/'+ sample +'.markdup.'+ str(num+1) +'.bam')
+        if (os.path.exists(input_file +'.bai')):
+            os.symlink(input_file +'.bai', dir_name +'/'+ sample +'.markdup.'+ str(num+1) +'.bam.bai')
+        elif (os.path.exists(input_prefix +'.bai')):
+            os.symlink(input_prefix +'.bai', dir_name +'/'+ sample +'.markdup.'+ str(num+1) +'.bam.bai')
+
 
 ###################
 # mutation calling stage
 @follows( link_import_bam )
 @follows( make_control_panel_file )
-@follows( markdup )
-@subdivide(markdup_bam_list, formatter(".+/(?P<SAMPLE>.+).markdup.bam"), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_mutations_candidate.*.hg19_multianno.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
-def identify_mutations(input_files, output_files, output_dir):
-    print "        mutation %s -> %s" % (input_files, output_files)
+@follows(link_mutation_bam)
+@transform(subdiv_bam_list, formatter(".+/(.+).markdup.(?P<NAME>[0-9]+).bam"), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_mutations_candidate.{NAME[0]}.hg19_multianno.txt")
+def identify_mutations(input_file, output_file):
 
-    for oo in output_files:
-       os.unlink(oo)
-
+    task_id = (input_file[0].split("."))[-2]
+    output_dir = os.path.dirname(output_file)
     sample_name = os.path.basename(output_dir)
 
     arguments = {
+        "task_id": task_id,
         # fisher mutation
         "fisher": genomon_conf.get("SOFTWARE", "fisher"),
         "map_quality": task_conf.get("fisher_mutation_call", "map_quality"),
@@ -258,7 +286,7 @@ def identify_mutations(input_files, output_files, output_dir):
         "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
         "eb_map_quality": task_conf.get("eb_filter","map_quality"),
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
-        "control_bam_list": input_files[2],
+        "control_bam_list": input_file[2],
         # annovar
         "active_annovar_flag": "True",
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
@@ -270,23 +298,19 @@ def identify_mutations(input_files, output_files, output_dir):
         "interval_list": genomon_conf.get("REFERENCE", "interval_list"),
         "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
         "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
-        "disease_bam": input_files[0],
-        "control_bam": input_files[1],
+        "disease_bam": input_file[0],
+        "control_bam": input_file[1],
         "out_prefix": output_dir + '/' + sample_name,
         "samtools": genomon_conf.get("SOFTWARE", "samtools"),
         "blat": genomon_conf.get("SOFTWARE", "blat"),
         "log": run_conf.project_root + '/log'}
 
-    interval_list = genomon_conf.get("REFERENCE", "interval_list")
-    num_lines = sum(1 for line in open(interval_list))
-
-    if not os.path.isdir(output_dir): os.mkdir(output_dir)
-    mutation_call.task_exec(arguments, num_lines)
+    mutation_call.task_exec(arguments)
 
 
 ###################
 # merge mutation result
-@collate(identify_mutations, formatter(".+/(?P<SAMPLE>.+)_mutations_candidate.(?P<NAME>[0-9]+).hg19_multianno.txt"), "{path[0]}/{SAMPLE[0]}_genomon_mutations.result.txt")
+@collate(identify_mutations, formatter(".+/(?P<SAMPLE>.+)_mutations_candidate.([0-9]+).hg19_multianno.txt"), "{path[0]}/{SAMPLE[0]}_genomon_mutations.result.txt")
 def merge_mutation(input_files, output_file):
     with open(output_file,  "w") as out_handle:
         for input_file in input_files:
@@ -302,7 +326,6 @@ def merge_mutation(input_files, output_file):
 @follows( markdup )
 @transform(sample_conf.get_disease_and_control_panel_bam(), formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.junction.clustered.bedpe.gz")
 def parse_sv(input_file, output_file):
-    print "        parse %s -> %s" % (input_file, output_file)
 
     dir_name = os.path.dirname(output_file)
     sample_name = os.path.basename(dir_name)
@@ -351,9 +374,8 @@ def parse_sv(input_file, output_file):
 # SV merge
 @follows( make_sv_control_panel_file )
 @follows( parse_sv )
-@transform(control_bedpe_list, formatter(".+/(?P<NAME>.+).control.yaml",".+/(.+).junction.clustered.bedpe.gz"), "{subpath[0][2]}/sv/non_matched_control_panel/{NAME[0]}.merged.junction.control.bedpe.gz")
+@transform(control_bedpe_list, formatter(".+/(?P<NAME>.+).control.yaml"), "{subpath[0][2]}/sv/non_matched_control_panel/{NAME[0]}.merged.junction.control.bedpe.gz")
 def merge_sv(input_files,  output_file):
-    print "        merge %s -> %s" % (input_files, output_file)
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "control_conf": input_files[0],
@@ -369,7 +391,6 @@ def merge_sv(input_files,  output_file):
 @follows( merge_sv )
 @transform(parse_bedpe_list, formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.genomonSV.result.txt")
 def filt_sv(input_files,  output_file):
-    print "        filt %s -> %s" % (input_files, output_file)
 
     dir_name = os.path.dirname(output_file)
     sample_name = os.path.basename(dir_name)
