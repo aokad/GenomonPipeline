@@ -13,7 +13,7 @@ def main(args):
     # set run_conf
     run_conf.sample_conf_file = args.sample_conf_file
     run_conf.analysis_type = args.analysis_type
-    run_conf.project_root = args.project_root
+    run_conf.project_root = os.path.abspath(args.project_root)
     run_conf.genomon_conf_file = args.genomon_conf_file
     run_conf.task_conf_file = args.task_conf_file
     ###
@@ -44,7 +44,7 @@ def main(args):
 
     pipeline_run(
                  verbose = 3, 
-                 multiprocess = 10
+                 multiprocess = 200
                 )
 
     
