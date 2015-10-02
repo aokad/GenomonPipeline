@@ -192,7 +192,7 @@ class Sample_conf(object):
                     raise ValueError(err_msg)
                 
                 sequence_prefix, ext = os.path.splitext(sequence)
-                if (not os.path.exists(sequence + '.bai')) or (not os.path.exists(sequence_prefix + '.bai')):
+                if (not os.path.exists(sequence + '.bai')) and (not os.path.exists(sequence_prefix + '.bai')):
                     err_msg = sampleID + ": " + sequence +  " index does not exists"
                     raise ValueError(err_msg)
 
