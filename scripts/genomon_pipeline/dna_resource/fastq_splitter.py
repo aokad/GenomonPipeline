@@ -20,7 +20,16 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-split -a 3 -d -l {lines} {input_file} {out_name_stem}/{pair_id}_ || exit $?
+case {input_file} in
+*\.gz)
+    zcat {input_file} | split -a 3 -d -l {lines} - {out_name_stem}/{pair_id}_
+    status=("${{PIPESTATUS[@]}}")
+    [ ${{PIPESTATUS[0]}} -ne 0 ] || echo ${{PIPESTATUS[0]}}
+    ;;
+*)
+    split -a 3 -d -l {lines} {input_file} {out_name_stem}/{pair_id}_ || exit $?
+    ;;
+esac
 
 ls -1 {out_name_stem}/{pair_id}_[0-9][0-9][0-9] | while read filename; do
     mv $filename $filename.fastq_split || exit $?

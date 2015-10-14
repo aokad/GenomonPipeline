@@ -34,7 +34,7 @@ OUT_SIMPLE_REPEAT={out_prefix}.simplerepeat_mutations.${{TASK_ID}}.txt
 OUT_EB={out_prefix}.ebfilter_mutations.${{TASK_ID}}.txt
 OUT_MUTATIONS={out_prefix}_mutations_candidate.${{TASK_ID}}
 
-{fisher} comparison -R $REGION -o $OUT_FISHER  --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth}  -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} || exit $?
+{fisher} comparison -R $REGION -o $OUT_FISHER  --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth} --fisher_value {fisher_thres} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} || exit $?
 
 {mutfilter} realignment --tumor_min_mismatch {realign_min_mismatch} --normal_max_mismatch {realign_max_mismatch} --score_difference {realign_score_diff} --window_size {realign_window_size} $OUT_FISHER {disease_bam} {control_bam} $OUT_REALIGNMENT {ref_fa} {blat} || exit $?
 
