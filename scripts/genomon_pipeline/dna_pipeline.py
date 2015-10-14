@@ -25,7 +25,7 @@ sv_parse = SV_parse(task_conf.get("sv_parse", "qsub_option"), run_conf.project_r
 sv_merge = SV_merge(task_conf.get("sv_merge", "qsub_option"), run_conf.project_root + '/script')
 sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.project_root + '/script')
 
-# generate list of linked_fastq file path
+# generate output list of 'linked fastq'
 linked_fastq_list = []
 for sample in sample_conf.fastq:
     if os.path.exists(run_conf.project_root + '/bam/' + sample + '/1.sorted.bam'): continue
@@ -34,7 +34,7 @@ for sample in sample_conf.fastq:
     linked_fastq_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1' + ext,
                               run_conf.project_root + '/fastq/' + sample + '/1_2' + ext])
 
-# generate list of bam2fastq output file path
+# generate output list of 'bam2fastq'
 bam2fastq_output_list = []
 for sample in sample_conf.bam_tofastq:
     if os.path.exists(run_conf.project_root + '/bam/' + sample + '/1.sorted.bam'): continue
@@ -42,7 +42,7 @@ for sample in sample_conf.bam_tofastq:
     bam2fastq_output_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
                                   run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
 
-# generate list of paired bam file path
+# generate input list of 'mutation call'
 markdup_bam_list = []
 mutation_list = []
 for complist in sample_conf.compare:
@@ -60,7 +60,7 @@ for complist in sample_conf.compare:
         tmp_list.append(run_conf.project_root +'/mutation/'+ complist[0] +'/'+ complist[0] + '_mutations_candidate.'+ str(task_id + 1) +'.hg19_multianno.txt')
     mutation_list.append(tmp_list)
 
-# generate list of SV parse bam file path
+# generate input list of 'SV parse'
 parse_sv_bam_list = []
 for bam in sample_conf.get_disease_and_control_panel_bam():
     dir_name = os.path.dirname(bam)
@@ -68,7 +68,7 @@ for bam in sample_conf.get_disease_and_control_panel_bam():
     if os.path.exists(run_conf.project_root + '/sv/' + sample_name + '/' + sample_name + '.junction.clustered.bedpe.gz'): continue
     parse_sv_bam_list.append(bam)
 
-# generate list of SV merge input file path
+# generate input list of 'SV merge'
 merge_bedpe_list = []
 for control_panel_name in sample_conf.control_panel.keys():
     if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
@@ -78,7 +78,7 @@ for control_panel_name in sample_conf.control_panel.keys():
        tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
     merge_bedpe_list.append(tmp_list)
 
-# generate list of paired bam file path
+# generate input list of 'SV filt'
 filt_bedpe_list = []
 for complist in sample_conf.compare:
     if os.path.exists(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt'): continue
@@ -102,23 +102,40 @@ for outputfiles in (bam2fastq_output_list + linked_fastq_list):
     if not os.path.isdir(fastq_dir): os.mkdir(fastq_dir)
     if not os.path.isdir(bam_dir): os.mkdir(bam_dir)
 
-# make mutation sample directory
+# prepare output directory for each sample
 for complist in sample_conf.compare:
     mutation_dir = run_conf.project_root + '/mutation/' + complist[0]
     if not os.path.isdir(mutation_dir): os.mkdir(mutation_dir)
 
-# make control panel txt
+# make SV configuration files
 for control_panel_name in sample_conf.control_panel.keys():
+    # make the control panel text 
     control_panel_file = run_conf.project_root + '/mutation/control_panel/' + control_panel_name + ".control_panel.txt"
     with open(control_panel_file,  "w") as out_handle:
         for bam in sample_conf.get_control_panel_list(control_panel_name):
             out_handle.write(bam + "\n")
+    # make the control yaml file
     control_conf = run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml"
     with open(control_conf,  "w") as out_handle:
         for sample in sample_conf.control_panel[control_panel_name]:
             out_handle.write(sample +": "+run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz\n")
 
-# bamt to fastq
+
+# link the import bam to project directory
+@originate(sample_conf.bam_import.keys())
+def link_import_bam(sample):
+    bam = sample_conf.bam_import[sample]
+    link_dir = run_conf.project_root + '/bam/' + sample
+    bam_prefix, ext = os.path.splitext(bam)
+    
+    if not os.path.isdir(link_dir): os.mkdir(link_dir)
+    if not os.path.exists(link_dir +'/'+ sample +'.bam'): os.symlink(bam, link_dir +'/'+ sample +'.bam')
+    if not os.path.exists(link_dir +'/'+ sample +'.bam.bai'): 
+        if (os.path.exists(bam +'.bai')): os.symlink(bam +'.bai', link_dir +'/'+ sample +'.bam.bai')
+        elif (os.path.exists(bam_prefix +'.bai')): os.symlink(bam_prefix +'.bai', link_dir +'/'+ sample +'.bam.bai')
+
+
+# convert bam to fastq
 @originate(bam2fastq_output_list)
 def bam2fastq(outputfiles):
     sample = os.path.basename(os.path.dirname(outputfiles[0]))
@@ -136,7 +153,7 @@ def bam2fastq(outputfiles):
     bamtofastq.task_exec(arguments)
 
 
-# link the input fastq files
+# link the input fastq to project directory
 @originate(linked_fastq_list, sample_conf.fastq)
 def link_input_fastq(output_file, sample_list_fastq):
     sample = os.path.basename(os.path.dirname(output_file[0]))
@@ -149,7 +166,7 @@ def link_input_fastq(output_file, sample_list_fastq):
     if not os.path.exists(fastq_dir + '/1_2' + ext): os.symlink(sample_list_fastq[sample][1][0], fastq_dir + '/1_2' + ext)
 
 
-#  split fastq stage
+# split fastq
 @subdivide([bam2fastq, link_input_fastq], formatter(".+/(.+).fastq"), "{path[0]}/*_*.fastq_split", "{path[0]}")
 def split_files(input_files, output_files, output_name_stem):
 
@@ -171,7 +188,7 @@ def split_files(input_files, output_files, output_name_stem):
         os.unlink(input_file)
 
 
-# bwa mapping stage
+# map reads with bwa and then sort bam with biobambam
 @transform(split_files, formatter(".+/1_(?P<NAME>[0-9]+).fastq_split"), add_inputs("{path[0]}/2_{NAME[0]}.fastq_split"), "{subpath[0][2]}/bam/{subdir[0][0]}/{NAME[0]}.sorted.bam")
 def map_dna_sequence(input_files, output_file):
    
@@ -194,7 +211,7 @@ def map_dna_sequence(input_files, output_file):
     os.unlink(output_bwa_sam)
 
 
-# bam merge stage
+# merge sorted bams into one and mark duplicate reads with biobambam
 @collate(map_dna_sequence, formatter(".+/(?P<SAMPLE>.+)/([0-9]+).sorted.bam"), "{path[0]}/{SAMPLE[0]}.markdup.bam")
 def markdup(input_files, output_file):
 
@@ -217,21 +234,7 @@ def markdup(input_files, output_file):
         os.unlink(input_file + ".bai")
 
 
-# link the import nonmatched control bam files 
-@originate(sample_conf.bam_import.keys())
-def link_import_bam(sample):
-    bam = sample_conf.bam_import[sample]
-    link_dir = run_conf.project_root + '/bam/' + sample
-    bam_prefix, ext = os.path.splitext(bam)
-    
-    if not os.path.isdir(link_dir): os.mkdir(link_dir)
-    if not os.path.exists(link_dir +'/'+ sample +'.bam'): os.symlink(bam, link_dir +'/'+ sample +'.bam')
-    if not os.path.exists(link_dir +'/'+ sample +'.bam.bai'): 
-        if (os.path.exists(bam +'.bai')): os.symlink(bam +'.bai', link_dir +'/'+ sample +'.bam.bai')
-        elif (os.path.exists(bam_prefix +'.bai')): os.symlink(bam_prefix +'.bai', link_dir +'/'+ sample +'.bam.bai')
-
-
-# mutation calling stage
+# identify mutations
 @follows( markdup )
 @follows( link_import_bam )
 @transform(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_mutations_candidate.*.hg19_multianno.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
@@ -269,7 +272,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "bp_min_clip_size": task_conf.get("breakpoint_filter","min_clip_size"),
         "bp_junc_num_thres": task_conf.get("breakpoint_filter","junc_num_thres"),
         "bp_map_quality": task_conf.get("breakpoint_filter","map_quality"),
-        # eb filter
+        # EB filter
         "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
         "eb_map_quality": task_conf.get("eb_filter","map_quality"),
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
@@ -301,7 +304,7 @@ def identify_mutations(input_file, output_file, output_dir):
     if os.path.exists(output_dir+'/'+sample_name+'.simplerepeat_mutations.'+task_id+'.txt'): os.unlink(output_dir+'/'+sample_name+'.simplerepeat_mutations.'+task_id+'.txt')
     if os.path.exists(output_dir+'/'+sample_name+'.ebfilter_mutations.'+task_id+'.txt'): os.unlink(output_dir+'/'+sample_name+'.ebfilter_mutations.'+task_id+'.txt')
 
-# merge mutation result
+# merge candidate mutations
 @follows(identify_mutations)
 @transform(mutation_list, formatter(".+/(.+)_mutations_candidate.(.+).hg19_multianno.txt"), "{path[0]}/{subdir[0][0]}_genomon_mutations.result.txt")
 def merge_mutation(input_files, output_file):
@@ -313,7 +316,7 @@ def merge_mutation(input_files, output_file):
                     out_handle.write(line)
             os.unlink(input_file)
 
-# parse SV stage
+# parse SV 
 @follows( link_import_bam )
 @follows( markdup )
 @transform(parse_sv_bam_list, formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.junction.clustered.bedpe.gz")
@@ -362,7 +365,7 @@ def parse_sv(input_file, output_file):
     sv_parse.task_exec(arguments)
 
 
-# merge SV stage
+# merge SV
 @follows( parse_sv )
 @transform(merge_bedpe_list, formatter(".+/(?P<NAME>.+).control.yaml"), "{subpath[0][2]}/sv/non_matched_control_panel/{NAME[0]}.merged.junction.control.bedpe.gz")
 def merge_sv(input_files,  output_file):
@@ -378,7 +381,7 @@ def merge_sv(input_files,  output_file):
     sv_merge.task_exec(arguments)
 
 
-# filt SV stage
+# filt SV
 @follows( merge_sv )
 @transform(filt_bedpe_list, formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.genomonSV.result.txt")
 def filt_sv(input_files,  output_file):
