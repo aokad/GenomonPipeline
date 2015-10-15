@@ -260,6 +260,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "realign_max_mismatch": task_conf.get("realignment_filter","control_max_mismatch"),
         "realign_score_diff": task_conf.get("realignment_filter","score_diff"),
         "realign_window_size": task_conf.get("realignment_filter","window_size"),
+        "realign_max_depth": task_conf.get("realignment_filter","max_depth"),
         # indel filter
         "indel_search_length": task_conf.get("indel_filter","search_length"),
         "indel_neighbor": task_conf.get("indel_filter","neighbor"),

@@ -36,7 +36,7 @@ OUT_MUTATIONS={out_prefix}_mutations_candidate.${{TASK_ID}}
 
 {fisher} comparison -R $REGION -o $OUT_FISHER  --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth} --fisher_value {fisher_thres} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} || exit $?
 
-{mutfilter} realignment --tumor_min_mismatch {realign_min_mismatch} --normal_max_mismatch {realign_max_mismatch} --score_difference {realign_score_diff} --window_size {realign_window_size} $OUT_FISHER {disease_bam} {control_bam} $OUT_REALIGNMENT {ref_fa} {blat} || exit $?
+{mutfilter} realignment --tumor_min_mismatch {realign_min_mismatch} --normal_max_mismatch {realign_max_mismatch} --score_difference {realign_score_diff} --window_size {realign_window_size} --max_depth {realign_max_depth} $OUT_FISHER {disease_bam} {control_bam} $OUT_REALIGNMENT {ref_fa} {blat} || exit $?
 
 {mutfilter} indel --search_length {indel_search_length} --neighbor {indel_neighbor} --base_qual {indel_base_quality} --min_depth {indel_min_depth} --min_mismatch {indel_min_mismatch} --af_thres {indel_min_allele_freq} $OUT_REALIGNMENT {control_bam} $OUT_INDEL || exit $?
 
