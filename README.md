@@ -7,7 +7,7 @@ Genomon pipeline in 2015
 ## Install
 
 ```
-git clone https://github.com/Genomon-Project/Genomon.git
+git clone https://github.com/Genomon-Project/GenomonPipeline.git
 cd Genomon
 python setup.py build
 python setup.py install
