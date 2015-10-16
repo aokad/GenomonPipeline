@@ -44,25 +44,39 @@ for sample in sample_conf.bam_tofastq:
 
 # generate input list of 'mutation call'
 markdup_bam_list = []
-mutation_list = []
+merge_mutation_list = []
 for complist in sample_conf.compare:
     if os.path.exists(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'): continue
     interval_dir = genomon_conf.get("REFERENCE", "interval_dir")
     interval_list_file = genomon_conf.get("REFERENCE", "interval_list")
+    tumor_bam  = run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam'
+    normal_bam = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam' if complist[1] != None else None
+    panel = run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt" if complist[2] != None else None
     num_lines = sum(1 for line in open(interval_list_file))
     tmp_list = []
     for task_id in range(num_lines):
-        markdup_bam_list.append([
-            run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
-            run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
-            run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt",
-            interval_dir +"/interval_list."+ str(task_id + 1)])
+        markdup_bam_list.append([tumor_bam, normal_bam, panel, interval_dir +"/interval_list."+ str(task_id + 1)])
         tmp_list.append(run_conf.project_root +'/mutation/'+ complist[0] +'/'+ complist[0] + '_mutations_candidate.'+ str(task_id + 1) +'.hg19_multianno.txt')
-    mutation_list.append(tmp_list)
+    merge_mutation_list.append(tmp_list)
 
 # generate input list of 'SV parse'
 parse_sv_bam_list = []
-for bam in sample_conf.get_disease_and_control_panel_bam():
+all_target_bams = []
+unique_bams = []
+for complist in sample_conf.compare:
+    tumor_sample = complist[0]
+    if tumor_sample != None:
+        all_target_bams.append(run_conf.project_root + '/bam/' + tumor_sample + '/' + tumor_sample + '.markdup.bam')
+    normal_sample = complist[1]
+    if normal_sample != None:
+        all_target_bams.append(run_conf.project_root + '/bam/' + normal_sample + '/' + normal_sample + '.markdup.bam')
+    panel_name = complist[2]
+    if panel_name != None:
+        for panel_sample in sample_conf.control_panel[panel_name]:
+            all_target_bams.append(run_conf.project_root + '/bam/' + panel_sample + '/' + panel_sample + '.markdup.bam')
+    unique_bams = list(set(all_target_bams))       
+    
+for bam in unique_bams:
     dir_name = os.path.dirname(bam)
     sample_name = os.path.basename(dir_name)
     if os.path.exists(run_conf.project_root + '/sv/' + sample_name + '/' + sample_name + '.junction.clustered.bedpe.gz'): continue
@@ -112,14 +126,13 @@ for control_panel_name in sample_conf.control_panel.keys():
     # make the control panel text 
     control_panel_file = run_conf.project_root + '/mutation/control_panel/' + control_panel_name + ".control_panel.txt"
     with open(control_panel_file,  "w") as out_handle:
-        for bam in sample_conf.get_control_panel_list(control_panel_name):
-            out_handle.write(bam + "\n")
+        for panel_sample in sample_conf.control_panel[control_panel_name]:
+            out_handle.write(run_conf.project_root + '/bam/' + panel_sample + '/' + panel_sample + '.markdup.bam' + "\n")
     # make the control yaml file
     control_conf = run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml"
     with open(control_conf,  "w") as out_handle:
         for sample in sample_conf.control_panel[control_panel_name]:
             out_handle.write(sample +": "+run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz\n")
-
 
 # link the import bam to project directory
 @originate(sample_conf.bam_import.keys())
@@ -129,11 +142,12 @@ def link_import_bam(sample):
     bam_prefix, ext = os.path.splitext(bam)
     
     if not os.path.isdir(link_dir): os.mkdir(link_dir)
-    if not os.path.exists(link_dir +'/'+ sample +'.bam'): os.symlink(bam, link_dir +'/'+ sample +'.bam')
-    if not os.path.exists(link_dir +'/'+ sample +'.bam.bai'): 
-        if (os.path.exists(bam +'.bai')): os.symlink(bam +'.bai', link_dir +'/'+ sample +'.bam.bai')
-        elif (os.path.exists(bam_prefix +'.bai')): os.symlink(bam_prefix +'.bai', link_dir +'/'+ sample +'.bam.bai')
-
+    if (not os.path.exists(link_dir +'/'+ sample +'.markdup.bam')) and (not os.path.exists(link_dir +'/'+ sample +'.markdup.bam.bai')): 
+        os.symlink(bam, link_dir +'/'+ sample +'.markdup.bam')
+        if (os.path.exists(bam +'.bai')):
+            os.symlink(bam +'.bai', link_dir +'/'+ sample +'.markdup.bam.bai')
+        elif (os.path.exists(bam_prefix +'.bai')):
+            os.symlink(bam_prefix +'.bai', link_dir +'/'+ sample +'.markdup.bam.bai')
 
 # convert bam to fastq
 @originate(bam2fastq_output_list)
@@ -254,6 +268,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "max_allele_freq": task_conf.get("fisher_mutation_call", "control_max_allele_frequency"),
         "min_depth": task_conf.get("fisher_mutation_call", "min_depth"),
         "fisher_thres": task_conf.get("fisher_mutation_call", "fisher_thres_hold"),
+        "post_10_q": task_conf.get("fisher_mutation_call", "post_10_q"),
         # realignment filter
         "mutfilter": genomon_conf.get("SOFTWARE", "mutfilter"),
         "realign_min_mismatch": task_conf.get("realignment_filter","disease_min_mismatch"),
@@ -305,9 +320,10 @@ def identify_mutations(input_file, output_file, output_dir):
     if os.path.exists(output_dir+'/'+sample_name+'.simplerepeat_mutations.'+task_id+'.txt'): os.unlink(output_dir+'/'+sample_name+'.simplerepeat_mutations.'+task_id+'.txt')
     if os.path.exists(output_dir+'/'+sample_name+'.ebfilter_mutations.'+task_id+'.txt'): os.unlink(output_dir+'/'+sample_name+'.ebfilter_mutations.'+task_id+'.txt')
 
+
 # merge candidate mutations
 @follows(identify_mutations)
-@transform(mutation_list, formatter(".+/(.+)_mutations_candidate.(.+).hg19_multianno.txt"), "{path[0]}/{subdir[0][0]}_genomon_mutations.result.txt")
+@transform(merge_mutation_list, formatter(".+/(.+)_mutations_candidate.(.+).hg19_multianno.txt"), "{path[0]}/{subdir[0][0]}_genomon_mutations.result.txt")
 def merge_mutation(input_files, output_file):
     with open(output_file,  "w") as out_handle:
         for input_file in input_files:
@@ -316,6 +332,7 @@ def merge_mutation(input_files, output_file):
                 for line in in_handle:
                     out_handle.write(line)
             os.unlink(input_file)
+
 
 # parse SV 
 @follows( link_import_bam )
@@ -327,28 +344,54 @@ def parse_sv(input_file, output_file):
     sample_name = os.path.basename(dir_name)
 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    idx = -1
+    yaml_flag = False
     sv_sampleConf = {"target": {}, "matched_control": {}, "non_matched_control_panel": {}}
     for complist in sample_conf.compare:
         if sample_name in complist:
-            idx = complist.index(sample_name)
 
-        if idx == 0: # is disease
-            sv_sampleConf["target"]["label"] = sample_name
-            sv_sampleConf["target"]["path_to_bam"] = input_file
-            sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-            sv_sampleConf["matched_control"]["use"] = True
-            sv_sampleConf["matched_control"]["path_to_bam"] = sample_conf.sample2bam(complist[1])
-            sv_sampleConf["non_matched_control_panel"]["use"] = True
-            sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = complist[1]
-            sv_sampleConf["non_matched_control_panel"]["data_path"] = run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
-            break
+            # tumor:exist, matched_normal:exist, non-matched-normal:exist
+            if complist[0] != None and complist[1] != None and complist[2] != None:
+                sv_sampleConf["target"]["label"] = sample_name
+                sv_sampleConf["target"]["path_to_bam"] = input_file
+                sv_sampleConf["target"]["path_to_output_dir"] = dir_name
+                sv_sampleConf["matched_control"]["use"] = True
+                sv_sampleConf["matched_control"]["path_to_bam"] = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam'
+                sv_sampleConf["non_matched_control_panel"]["use"] = True
+                sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = complist[1]
+                sv_sampleConf["non_matched_control_panel"]["data_path"] = run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
+                yaml_flag = True
+                break
 
-    if idx != 0: # are control or non matched control
+            # tumor:exist, matched_normal:exist, non-matched-normal:none
+            elif complist[0] != None and complist[1] != None and complist[2] == None:
+                sv_sampleConf["target"]["label"] = sample_name
+                sv_sampleConf["target"]["path_to_bam"] = input_file
+                sv_sampleConf["target"]["path_to_output_dir"] = dir_name
+                sv_sampleConf["matched_control"]["use"] = True
+                sv_sampleConf["matched_control"]["path_to_bam"] = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam'
+                sv_sampleConf["non_matched_control_panel"]["use"] = False
+                yaml_flag = True
+                break
+
+            # tumor:exist, matched_normal:none, non-matched-normal:exist
+            elif complist[0] != None and complist[1] == None and complist[2] != None:
+                sv_sampleConf["target"]["label"] = sample_name
+                sv_sampleConf["target"]["path_to_bam"] = input_file
+                sv_sampleConf["target"]["path_to_output_dir"] = dir_name
+                sv_sampleConf["matched_control"]["use"] = False
+                sv_sampleConf["matched_control"]["path_to_bam"] = None
+                sv_sampleConf["non_matched_control_panel"]["use"] = True
+                sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = None
+                sv_sampleConf["non_matched_control_panel"]["data_path"] = run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
+                yaml_flag = True
+                break
+
+    if not yaml_flag:
         sv_sampleConf["target"]["label"] = sample_name
         sv_sampleConf["target"]["path_to_bam"] = input_file
         sv_sampleConf["target"]["path_to_output_dir"] = dir_name
         sv_sampleConf["matched_control"]["use"] = False
+        sv_sampleConf["matched_control"]["path_to_bam"] = None
         sv_sampleConf["non_matched_control_panel"]["use"] = False
 
     sample_yaml = run_conf.project_root + "/sv/config/" + sample_name + ".yaml"
