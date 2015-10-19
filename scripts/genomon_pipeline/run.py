@@ -39,6 +39,8 @@ def main(args):
         import dna_pipeline
     elif run_conf.analysis_type == "rna":
         import rna_pipeline
+    elif run_conf.analysis_type == "fusion":
+        import fusion_pipeline
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")
 
