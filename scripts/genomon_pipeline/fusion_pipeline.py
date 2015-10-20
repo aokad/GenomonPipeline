@@ -7,6 +7,7 @@ from genomon_pipeline.config.sample_conf import *
 from genomon_pipeline.rna_resource.star_align import *
 from genomon_pipeline.rna_resource.mapsplice2_align import *
 from genomon_pipeline.rna_resource.fusionfusion import *
+from genomon_pipeline.rna_resource.star_fusion import *
 
 
 
@@ -14,6 +15,7 @@ from genomon_pipeline.rna_resource.fusionfusion import *
 star_align = Star_align(task_conf.get("star_align", "qsub_option"), run_conf.project_root + '/script')
 mapsplice2_align = Mapsplice2_align(task_conf.get("mapsplice2_align", "qsub_option"), run_conf.project_root + '/script')
 fusionfusion = Fusionfusion(task_conf.get("fusionfusion", "qsub_option"), run_conf.project_root + '/script')
+star_fusion = Star_fusion(task_conf.get("star_fusion", "qsub_option"), run_conf.project_root + '/script')
 
 # generate list of linked_fastq file path
 linked_fastq_list = []
@@ -31,6 +33,7 @@ if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.projec
 if not os.path.isdir(run_conf.project_root + '/star'): os.mkdir(run_conf.project_root + '/star')
 if not os.path.isdir(run_conf.project_root + '/mapsplice2'): os.mkdir(run_conf.project_root + '/mapsplice2')
 if not os.path.isdir(run_conf.project_root + '/fusionfusion'): os.mkdir(run_conf.project_root + '/fusionfusion')
+if not os.path.isdir(run_conf.project_root + '/star_fusion'): os.mkdir(run_conf.project_root + '/star_fusion')
 
 
 # link the input fastq files
@@ -65,27 +68,31 @@ def task_star_align(input_files, output_file):
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
     star_align.task_exec(arguments)
 
-
+"""
 @transform(link_input_fastq, formatter(), "{subpath[0][2]}/mapsplice2/{subdir[0][0]}")
-def task_star_align(input_files, output_file):
+def task_mapsplice2_align(input_files, output_file):
     
     dir_name = os.path.dirname(output_file)
     sample_name = os.path.basename(dir_name)
     
     arguments = {"mapsplice2": genomon_conf.get("SOFTWARE", "mapsplice2"),
                  "ref_gtf": genomon_conf.get("REFERENCE", "ref_gtf"),
-                 "ref_fasta": genomon_conf.get("REFERENCE", "ref_fasta"),
+                 "ref_fasta": genomon_conf.get("REFERENCE", "mapsplice2_ref"),
                  "bow_ind_mp2": genomon_conf.get("REFERENCE", "bowtie_ind_mp2"),
                  "additional_params": task_conf.get("mapsplice2_align", "mapsplice2_params"),
+                 "python": genomon_conf.get("SOFTWARE", "python"), 
                  "fastq1": input_files[0],
                  "fastq2": input_files[1],
                  "out_dir": dir_name,
                  "log": run_conf.project_root + '/log'}
 
+    print "1", arguments 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    star_align.task_exec(arguments)
+    print "2", arguments
+    mapsplice2_align.task_exec(arguments)
+"""
 
-
+"""
 @transform(task_star_align, formatter(), "{subpath[0][2]}/fusionfusion/{subdir[0][0]}/star.fusion.result.txt")
 def task_fusionfusion(input_file, output_file):
 
@@ -105,5 +112,25 @@ def task_fusionfusion(input_file, output_file):
 
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
     fusionfusion.task_exec(arguments)
+"""
+
+@transform(task_star_align, formatter(), "{subpath[0][2]}/star_fusion/{subdir[0][0]}/{subdir[0][0]}.fusion_candidates.txt")
+def task_star_fusion(input_file, output_file):
+
+    input_dir_name = os.path.dirname(input_file)
+    sample_name = os.path.basename(input_dir_name)
+    output_dir_name = os.path.dirname(output_file)
+
+    arguments = {"star_fusion": genomon_conf.get("SOFTWARE", "STAR-Fusion"),
+                 "chimeric_sam": input_dir_name + '/' + sample_name + ".Chimeric.out.sam",
+                 "chimeric_junction": input_dir_name + '/' + sample_name + ".Chimeric.out.junction",
+                 "gtf_file": genomon_conf.get("REFERENCE", "ref_gtf"),
+                 "out_prefix": output_dir_name + '/' + sample_name, 
+                 "additional_params": task_conf.get("star_fusion", "star_fusion_params"),
+                 "environment_variables": genomon_conf.get("ENV", "PERL5LIB"),
+                 "log": run_conf.project_root + '/log'}
+
+    if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
+    star_fusion.task_exec(arguments)
 
 
