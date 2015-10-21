@@ -6,6 +6,7 @@ from genomon_pipeline.config.task_conf import *
 from genomon_pipeline.config.sample_conf import *
 from genomon_pipeline.rna_resource.star_align import *
 from genomon_pipeline.rna_resource.mapsplice2_align import *
+from genomon_pipeline.rna_resource.tophat2_align import *
 from genomon_pipeline.rna_resource.fusionfusion import *
 from genomon_pipeline.rna_resource.star_fusion import *
 
@@ -14,6 +15,7 @@ from genomon_pipeline.rna_resource.star_fusion import *
 # set task classes
 star_align = Star_align(task_conf.get("star_align", "qsub_option"), run_conf.project_root + '/script')
 mapsplice2_align = Mapsplice2_align(task_conf.get("mapsplice2_align", "qsub_option"), run_conf.project_root + '/script')
+tophat2_align = TopHat2_align(task_conf.get("tophat2_align", "qsub_option"), run_conf.project_root + '/script')
 fusionfusion = Fusionfusion(task_conf.get("fusionfusion", "qsub_option"), run_conf.project_root + '/script')
 star_fusion = Star_fusion(task_conf.get("star_fusion", "qsub_option"), run_conf.project_root + '/script')
 
@@ -32,6 +34,7 @@ if not os.path.isdir(run_conf.project_root + '/log'): os.mkdir(run_conf.project_
 if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.project_root + '/fastq')
 if not os.path.isdir(run_conf.project_root + '/star'): os.mkdir(run_conf.project_root + '/star')
 if not os.path.isdir(run_conf.project_root + '/mapsplice2'): os.mkdir(run_conf.project_root + '/mapsplice2')
+if not os.path.isdir(run_conf.project_root + '/tophat2'): os.mkdir(run_conf.project_root + '/tophat2')
 if not os.path.isdir(run_conf.project_root + '/fusionfusion'): os.mkdir(run_conf.project_root + '/fusionfusion')
 if not os.path.isdir(run_conf.project_root + '/star_fusion'): os.mkdir(run_conf.project_root + '/star_fusion')
 
@@ -68,11 +71,11 @@ def task_star_align(input_files, output_file):
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
     star_align.task_exec(arguments)
 
-"""
+
 @transform(link_input_fastq, formatter(), "{subpath[0][2]}/mapsplice2/{subdir[0][0]}")
 def task_mapsplice2_align(input_files, output_file):
     
-    dir_name = os.path.dirname(output_file)
+    dir_name = output_file
     sample_name = os.path.basename(dir_name)
     
     arguments = {"mapsplice2": genomon_conf.get("SOFTWARE", "mapsplice2"),
@@ -86,13 +89,29 @@ def task_mapsplice2_align(input_files, output_file):
                  "out_dir": dir_name,
                  "log": run_conf.project_root + '/log'}
 
-    print "1", arguments 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    print "2", arguments
     mapsplice2_align.task_exec(arguments)
-"""
 
-"""
+@transform(link_input_fastq, formatter(), "{subpath[0][2]}/tophat2/{subdir[0][0]}")
+def task_tophat2_align(input_files, output_file):
+    
+    dir_name = output_file
+    sample_name = os.path.basename(dir_name)
+    
+    arguments = {"tophat2": genomon_conf.get("SOFTWARE", "tophat2"),
+                 "bowtie2_database": genomon_conf.get("REFERENCE", "bowtie2_db"),
+                 "samtools_path": os.path.dirname(genomon_conf.get("SOFTWARE", "samtools")),
+                 "bowtie_path": os.path.dirname(genomon_conf.get("SOFTWARE", "bowtie2")),
+                 "additional_params": task_conf.get("tophat2_align", "tophat2_params"),
+                 "fastq1": input_files[0],
+                 "fastq2": input_files[1],
+                 "output_dir": dir_name,
+                 "log": run_conf.project_root + '/log'}
+
+    if not os.path.isdir(dir_name): os.mkdir(dir_name)
+    tophat2_align.task_exec(arguments)
+
+
 @transform(task_star_align, formatter(), "{subpath[0][2]}/fusionfusion/{subdir[0][0]}/star.fusion.result.txt")
 def task_fusionfusion(input_file, output_file):
 
@@ -112,7 +131,7 @@ def task_fusionfusion(input_file, output_file):
 
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
     fusionfusion.task_exec(arguments)
-"""
+
 
 @transform(task_star_align, formatter(), "{subpath[0][2]}/star_fusion/{subdir[0][0]}/{subdir[0][0]}.fusion_candidates.txt")
 def task_star_fusion(input_file, output_file):
@@ -132,5 +151,4 @@ def task_star_fusion(input_file, output_file):
 
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
     star_fusion.task_exec(arguments)
-
 

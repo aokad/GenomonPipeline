@@ -2,9 +2,9 @@
 
 from genomon_pipeline.stage_task import *
 
-class Mapsplice2_align(Stage_task):
+class TopHat2_align(Stage_task):
 
-    task_name = "mapsplice2_align"
+    task_name = "tophat2_align"
 
     script_template = """
 #!/bin/bash
@@ -20,8 +20,15 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-{python} {mapsplice2} {additional_params} --gene-gtf {ref_gtf} -c {ref_fasta} -x {bow_ind_mp2} -1 {fastq1} -2 {fastq2} -o {out_dir} 
+export PATH={bowtie_path}:$PATH
+export PATH={samtools_path}:$PATH
+
+{tophat2} -o {output_dir} \
+         {additional_params} \
+         {bowtie2_database} \
+         {fastq1} \
+         {fastq2}     
 """
 
     def __init__(self, qsub_option, script_dir):
-        super(Mapsplice2_align, self).__init__(qsub_option, script_dir)
+        super(TopHat2_align, self).__init__(qsub_option, script_dir)
