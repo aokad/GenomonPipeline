@@ -355,7 +355,7 @@ def parse_sv(input_file, output_file):
     yaml_flag = False
     sv_sampleConf = {"target": {}, "matched_control": {}, "non_matched_control_panel": {}}
     for complist in sample_conf.sv_detection:
-        if sample_name in complist:
+        if sample_name == complist[0]:
 
             # tumor:exist, matched_normal:exist, non-matched-normal:exist
             if complist[0] != None and complist[1] != None and complist[2] != None:
