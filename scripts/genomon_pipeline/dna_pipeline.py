@@ -1,6 +1,7 @@
 import os
 import shutil
 import yaml
+import linecache
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
@@ -45,7 +46,7 @@ for sample in sample_conf.bam_tofastq:
 # generate input list of 'mutation call'
 markdup_bam_list = []
 merge_mutation_list = []
-for complist in sample_conf.compare:
+for complist in sample_conf.mutation_call:
     if os.path.exists(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'): continue
     interval_dir = genomon_conf.get("REFERENCE", "interval_dir")
     interval_list_file = genomon_conf.get("REFERENCE", "interval_list")
@@ -63,7 +64,7 @@ for complist in sample_conf.compare:
 parse_sv_bam_list = []
 all_target_bams = []
 unique_bams = []
-for complist in sample_conf.compare:
+for complist in sample_conf.sv_detection:
     tumor_sample = complist[0]
     if tumor_sample != None:
         all_target_bams.append(run_conf.project_root + '/bam/' + tumor_sample + '/' + tumor_sample + '.markdup.bam')
@@ -84,7 +85,8 @@ for bam in unique_bams:
 
 # generate input list of 'SV merge'
 merge_bedpe_list = []
-for control_panel_name in sample_conf.control_panel.keys():
+for complist in sample_conf.sv_detection:
+    control_panel_name = complist[2]
     if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
     tmp_list = []
     tmp_list.append(run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml")
@@ -94,7 +96,7 @@ for control_panel_name in sample_conf.control_panel.keys():
 
 # generate input list of 'SV filt'
 filt_bedpe_list = []
-for complist in sample_conf.compare:
+for complist in sample_conf.sv_detection:
     if os.path.exists(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt'): continue
     filt_bedpe_list.append(run_conf.project_root+ "/sv/"+ complist[0] +"/"+ complist[0] +".junction.clustered.bedpe.gz")
 
@@ -116,19 +118,22 @@ for outputfiles in (bam2fastq_output_list + linked_fastq_list):
     if not os.path.isdir(fastq_dir): os.mkdir(fastq_dir)
     if not os.path.isdir(bam_dir): os.mkdir(bam_dir)
 
-# prepare output directory for each sample
-for complist in sample_conf.compare:
+# prepare output directory for each sample and make mutation control panel file
+for complist in sample_conf.mutation_call:
+    # make dir
     mutation_dir = run_conf.project_root + '/mutation/' + complist[0]
     if not os.path.isdir(mutation_dir): os.mkdir(mutation_dir)
-
-# make SV configuration files
-for control_panel_name in sample_conf.control_panel.keys():
     # make the control panel text 
+    control_panel_name = complist[2]
     control_panel_file = run_conf.project_root + '/mutation/control_panel/' + control_panel_name + ".control_panel.txt"
     with open(control_panel_file,  "w") as out_handle:
         for panel_sample in sample_conf.control_panel[control_panel_name]:
             out_handle.write(run_conf.project_root + '/bam/' + panel_sample + '/' + panel_sample + '.markdup.bam' + "\n")
+
+# make SV configuration file
+for complist in sample_conf.sv_detection:
     # make the control yaml file
+    control_panel_name = complist[2]
     control_conf = run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml"
     with open(control_conf,  "w") as out_handle:
         for sample in sample_conf.control_panel[control_panel_name]:
@@ -258,8 +263,12 @@ def identify_mutations(input_file, output_file, output_dir):
     input_prefix, ext_task_id = os.path.splitext(input_file[3])
     task_id = ext_task_id.replace(".", "") 
 
+    file_path =  genomon_conf.get("REFERENCE", "interval_list")
+    region = linecache.getline(file_path, int(task_id)).rstrip()
+
     arguments = {
         "task_id": task_id,
+        "region": region,
         # fisher mutation
         "fisher": genomon_conf.get("SOFTWARE", "fisher"),
         "map_quality": task_conf.get("fisher_mutation_call", "map_quality"),
@@ -301,7 +310,6 @@ def identify_mutations(input_file, output_file, output_dir):
         "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
         "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
         "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-        "interval_list": genomon_conf.get("REFERENCE", "interval_list"),
         "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
         "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
         "disease_bam": input_file[0],
@@ -346,7 +354,7 @@ def parse_sv(input_file, output_file):
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
     yaml_flag = False
     sv_sampleConf = {"target": {}, "matched_control": {}, "non_matched_control_panel": {}}
-    for complist in sample_conf.compare:
+    for complist in sample_conf.sv_detection:
         if sample_name in complist:
 
             # tumor:exist, matched_normal:exist, non-matched-normal:exist

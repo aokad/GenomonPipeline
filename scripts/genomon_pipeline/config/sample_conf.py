@@ -11,7 +11,8 @@ class Sample_conf(object):
         self.fastq = {}
         self.bam_tofastq = {}
         self.bam_import = {}
-        self.compare = []
+        self.mutation_call = []
+        self.sv_detection = []
         self.control_panel = {}
         # 
         # should add the file exist check here ?
@@ -101,15 +102,18 @@ class Sample_conf(object):
                 elif row[0].lower() == '[bam_import]':
                     mode = 'bam_import'
                     continue
-                elif row[0].lower() == '[compare]':
-                    mode = 'compare'
+                elif row[0].lower() == '[mutation_call]':
+                    mode = 'mutation_call'
+                    continue
+                elif row[0].lower() == '[sv_detection]':
+                    mode = 'sv_detection'
                     continue
                 elif row[0].lower() == '[controlpanel]':
                     mode = 'controlpanel'
                     continue
                 else:
                     err_msg = "Section name should be either of [fastq], [bam_tofastq], [bam_import], " + \
-                              "[compare] or [controlpanel]. " + \
+                              "[mutation_call], [sv_detection] or [controlpanel]. " + \
                               "Also, sample name should not start with '['."
                     raise ValueError(err_msg)
             
@@ -199,21 +203,38 @@ class Sample_conf(object):
                 self.bam_import[sampleID] = sequence
 
 
-            elif mode == 'compare':
+            elif mode == 'mutation_call':
 
                 tumorID = row[0]
                 if tumorID not in sampleID_list:
-                    err_msg = "[compare] section, " + tumorID + " is not defined"
+                    err_msg = "[mutation_call] section, " + tumorID + " is not defined"
                     raise ValueError(err_msg)
 
                 normalID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
                 controlpanelID = row[2] if len(row) >= 3 and row[2] not in ['', 'None'] else None
 
                 if normalID is not None and normalID not in sampleID_list:
-                    err_msg = "[compare] section, " + normalID + " is not defined"
+                    err_msg = "[mutation_call] section, " + normalID + " is not defined"
                     raise ValueError(err_msg)
 
-                self.compare.append((tumorID, normalID, controlpanelID))
+                self.mutation_call.append((tumorID, normalID, controlpanelID))
+
+
+            elif mode == 'sv_detection':
+
+                tumorID = row[0]
+                if tumorID not in sampleID_list:
+                    err_msg = "[sv_detection] section, " + tumorID + " is not defined"
+                    raise ValueError(err_msg)
+
+                normalID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
+                controlpanelID = row[2] if len(row) >= 3 and row[2] not in ['', 'None'] else None
+
+                if normalID is not None and normalID not in sampleID_list:
+                    err_msg = "[sv_detection] section, " + normalID + " is not defined"
+                    raise ValueError(err_msg)
+
+                self.sv_detection.append((tumorID, normalID, controlpanelID))
 
 
             elif mode == 'controlpanel':
@@ -233,44 +254,12 @@ class Sample_conf(object):
                 self.control_panel[controlpanelID] = row[1:]
 
 
-
         # check whether controlpanleID in compare section is defined
         # for comp in self.compare:
         #     if comp[2] is not None and comp[2] not in self.controlpanel:
         #         err_msg = "[compare] section, controlpanelID: " + comp[2] + " is not defined"
         #         raiseValueError(err_msg)
 
-
-    # get the paths where bam files imported from another projects will be located"
-    def get_linked_bam_import_path(self):
-        linked_bam_import_path = []
-        for sample in sample_conf.bam_import:
-            linked_bam_import_path.append(run_conf.project_root + '/bam/' + sample + '/' + sample + '.bam')
-        return linked_bam_import_path
-
-    def sample2bam(self,sample):
-        bam = ''
-        if (self.bam_import.has_key(sample)):
-            bam = run_conf.project_root + '/bam/' + sample + '/' + sample + '.bam'
-        else:
-            bam = run_conf.project_root + '/bam/' + sample + '/' + sample + '.markdup.bam'
-        return bam 
-
-    def get_control_panel_list(self,panel_name):
-        control_panel_bam = []
-        for sample in self.control_panel[panel_name]:
-            control_panel_bam.append(self.sample2bam(sample))
-        return control_panel_bam
-
-    def get_disease_and_control_panel_bam(self):
-        unique_bams = []
-        for complist in sample_conf.compare:
-            panel_name = complist[2]
-            unique_bams.extend(self.get_control_panel_list(panel_name))
-            disease_sample = complist[0]
-            unique_bams.append(run_conf.project_root + '/bam/' + disease_sample + '/' + disease_sample + '.markdup.bam')
-        result_list = list(set(unique_bams))       
-        return result_list
 
 global sample_conf 
 sample_conf = Sample_conf()
