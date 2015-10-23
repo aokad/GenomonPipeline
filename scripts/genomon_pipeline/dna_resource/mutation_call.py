@@ -38,9 +38,9 @@ else
 
     {mutfilter} indel --search_length {indel_search_length} --neighbor {indel_neighbor} --base_qual {indel_base_quality} --min_depth {indel_min_depth} --min_mismatch {indel_min_mismatch} --af_thres {indel_min_allele_freq} --target_mutation_file {out_prefix}.realignment_mutations.{task_id}.txt -2 {control_bam} --output {out_prefix}.indel_mutations.{task_id}.txt || exit $?
 
-    {mutfilter} breakpoint --max_depth {bp_max_depth} --min_clip_size {bp_min_clip_size} --junc_num_thres {bp_junc_num_thres} --mapq_thres {bp_map_quality} --target_mutation_file {out_prefix}.indel_mutations.{task_id}.txt -2 {control_bam} --output {out_prefix}.simplerepeat_mutations.{task_id}.txt || exit $?
+    {mutfilter} breakpoint --max_depth {bp_max_depth} --min_clip_size {bp_min_clip_size} --junc_num_thres {bp_junc_num_thres} --mapq_thres {bp_map_quality} --target_mutation_file {out_prefix}.indel_mutations.{task_id}.txt -2 {control_bam} --output {out_prefix}.breakpoint_mutations.{task_id}.txt || exit $?
 
-    {mutfilter} simplerepeat --target_mutation_file {out_prefix}.simplerepeat_mutations.{task_id}.txt --output {out_prefix}.simplerepeat_mutations.{task_id}.txt --simple_repeat_db {simple_repeat_db} || exit $?
+    {mutfilter} simplerepeat --target_mutation_file {out_prefix}.breakpoint_mutations.{task_id}.txt --output {out_prefix}.simplerepeat_mutations.{task_id}.txt --simple_repeat_db {simple_repeat_db} || exit $?
 fi
 
 if [ _{control_bam_list} != "_None" ]; then 

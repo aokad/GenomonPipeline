@@ -87,12 +87,13 @@ for bam in unique_bams:
 merge_bedpe_list = []
 for complist in sample_conf.sv_detection:
     control_panel_name = complist[2]
-    if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
-    tmp_list = []
-    tmp_list.append(run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml")
-    for sample in sample_conf.control_panel[control_panel_name]:
-       tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
-    merge_bedpe_list.append(tmp_list)
+    if control_panel_name != None:
+        if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
+        tmp_list = []
+        tmp_list.append(run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml")
+        for sample in sample_conf.control_panel[control_panel_name]:
+            tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
+        merge_bedpe_list.append(tmp_list)
 
 # generate input list of 'SV filt'
 filt_bedpe_list = []
@@ -125,19 +126,21 @@ for complist in sample_conf.mutation_call:
     if not os.path.isdir(mutation_dir): os.mkdir(mutation_dir)
     # make the control panel text 
     control_panel_name = complist[2]
-    control_panel_file = run_conf.project_root + '/mutation/control_panel/' + control_panel_name + ".control_panel.txt"
-    with open(control_panel_file,  "w") as out_handle:
-        for panel_sample in sample_conf.control_panel[control_panel_name]:
-            out_handle.write(run_conf.project_root + '/bam/' + panel_sample + '/' + panel_sample + '.markdup.bam' + "\n")
+    if control_panel_name != None:
+        control_panel_file = run_conf.project_root + '/mutation/control_panel/' + control_panel_name + ".control_panel.txt"
+        with open(control_panel_file,  "w") as out_handle:
+            for panel_sample in sample_conf.control_panel[control_panel_name]:
+                out_handle.write(run_conf.project_root + '/bam/' + panel_sample + '/' + panel_sample + '.markdup.bam' + "\n")
 
 # make SV configuration file
 for complist in sample_conf.sv_detection:
     # make the control yaml file
     control_panel_name = complist[2]
-    control_conf = run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml"
-    with open(control_conf,  "w") as out_handle:
-        for sample in sample_conf.control_panel[control_panel_name]:
-            out_handle.write(sample +": "+run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz\n")
+    if control_panel_name != None:
+        control_conf = run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml"
+        with open(control_conf,  "w") as out_handle:
+            for sample in sample_conf.control_panel[control_panel_name]:
+                out_handle.write(sample +": "+run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz\n")
 
 # link the import bam to project directory
 @originate(sample_conf.bam_import.keys())
