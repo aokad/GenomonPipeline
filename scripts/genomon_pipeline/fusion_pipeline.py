@@ -99,6 +99,7 @@ def task_tophat2_align(input_files, output_file):
     sample_name = os.path.basename(dir_name)
     
     arguments = {"tophat2": genomon_conf.get("SOFTWARE", "tophat2"),
+                 "ref_gtf": genomon_conf.get("REFERENCE", "ref_gtf"),
                  "bowtie2_database": genomon_conf.get("REFERENCE", "bowtie2_db"),
                  "samtools_path": os.path.dirname(genomon_conf.get("SOFTWARE", "samtools")),
                  "bowtie_path": os.path.dirname(genomon_conf.get("SOFTWARE", "bowtie2")),

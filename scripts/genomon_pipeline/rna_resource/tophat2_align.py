@@ -24,6 +24,7 @@ export PATH={bowtie_path}:$PATH
 export PATH={samtools_path}:$PATH
 
 {tophat2} -o {output_dir} \
+          --GTF {ref_gtf} \
          {additional_params} \
          {bowtie2_database} \
          {fastq1} \
