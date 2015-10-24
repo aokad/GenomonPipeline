@@ -61,6 +61,7 @@ def task_star_align(input_files, output_file):
 
     arguments = {"star": genomon_conf.get("SOFTWARE", "STAR"),
                  "star_genome": genomon_conf.get("REFERENCE", "star_genome"),
+                 "ref_gtf": genomon_conf.get("REFERENCE", "ref_gtf"),
                  "additional_params": task_conf.get("star_align", "star_params"),
                  "samtools": genomon_conf.get("SOFTWARE", "samtools"),
                  "fastq1": input_files[0],
