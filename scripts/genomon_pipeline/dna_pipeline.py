@@ -310,7 +310,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
         "control_bam_list": input_file[2],
         # annovar
-        "active_annovar_flag": "True",
+        "active_annovar_flag": "False",
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
         "table_annovar_params": task_conf.get("annotation", "table_annovar_params"),
         # commmon
