@@ -84,16 +84,20 @@ for bam in unique_bams:
     parse_sv_bam_list.append(bam)
 
 # generate input list of 'SV merge'
+unique_complist = []
 merge_bedpe_list = []
 for complist in sample_conf.sv_detection:
     control_panel_name = complist[2]
-    if control_panel_name != None:
-        if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
-        tmp_list = []
-        tmp_list.append(run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml")
-        for sample in sample_conf.control_panel[control_panel_name]:
-            tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
-        merge_bedpe_list.append(tmp_list)
+    if control_panel_name != None and control_panel_name not in unique_complist:
+        unique_complist.append(control_panel_name)
+
+for control_panel_name in unique_complist:
+    if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
+    tmp_list = []
+    tmp_list.append(run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml")
+    for sample in sample_conf.control_panel[control_panel_name]:
+        tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
+    merge_bedpe_list.append(tmp_list)
 
 # generate input list of 'SV filt'
 filt_bedpe_list = []
