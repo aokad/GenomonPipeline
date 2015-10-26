@@ -52,7 +52,7 @@ fi
 if [ _{active_annovar_flag} = "_True" ];then
     {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.{task_id} {table_annovar_params} {out_prefix}.ebfilter_mutations.{task_id}.txt {annovar}/humandb || exit $?
 else
-    cp {out_prefix}.ebfilter_mutations.{task_id}.txt {out_prefix}_mutations_candidate.{task_id}.hg19_multation.txt
+    cp {out_prefix}.ebfilter_mutations.{task_id}.txt {out_prefix}_mutations_candidate.{task_id}.hg19_multianno.txt
 fi
 
 """
