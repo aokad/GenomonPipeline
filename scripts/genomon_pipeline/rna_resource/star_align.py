@@ -22,7 +22,7 @@ set -xv
 
 {star} --genomeDir {star_genome} --readFilesIn {fastq1} {fastq2} --outFileNamePrefix {out_prefix} {additional_params} 
 
-{samtools} sort -T {out_prefix}Aligned.sortedByCoord.out -@ 6 -m 4G {out_prefix}Aligned.out.bam -O bam > {out_prefix}Aligned.sortedByCoord.out.bam 
+{samtools} sort -T {out_prefix}Aligned.sortedByCoord.out -@ 6 -m 3G {out_prefix}Aligned.out.bam -O bam > {out_prefix}Aligned.sortedByCoord.out.bam 
 
 {samtools} index {out_prefix}Aligned.sortedByCoord.out.bam 
 
