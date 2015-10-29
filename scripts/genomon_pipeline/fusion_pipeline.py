@@ -118,7 +118,7 @@ def task_tophat2_align(input_files, output_file):
     tophat2_align.task_exec(arguments)
 
 
-@transform([task_mapsplice2_align, task_star_align, task_tophat2_align], formatter(), "{subpath[0][2]}/fusionfusion/{subdir[0][0]}/star.fusion.result.txt")
+@collate([task_mapsplice2_align, task_star_align, task_tophat2_align], formatter(), "{subpath[0][2]}/fusionfusion/{subdir[0][0]}/star.fusion.result.txt")
 def task_fusionfusion(input_files, output_file):
 
     input_dir_name = os.path.dirname(input_files[1])

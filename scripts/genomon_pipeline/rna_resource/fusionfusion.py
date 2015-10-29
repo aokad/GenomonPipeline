@@ -26,7 +26,7 @@ export PATH=$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-{fusionfusion} --ms2 {ms2_bam} --star {chimeric_sam} --th2 {th2_bam} --out {output_prefix} --param {param_file}
+{fusionfusion} --ms2 {ms2_bam} --star {star_chimeric_sam} --th2 {th2_bam} --out {output_prefix} --param {param_file}
 """
 
     def __init__(self, qsub_option, script_dir):
