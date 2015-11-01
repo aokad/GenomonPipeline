@@ -118,7 +118,7 @@ def task_tophat2_align(input_files, output_file):
     tophat2_align.task_exec(arguments)
 
 
-@collate([task_mapsplice2_align, task_star_align, task_tophat2_align], formatter(), "{subpath[0][2]}/fusionfusion/{subdir[0][0]}/star.fusion.result.txt")
+@collate([task_mapsplice2_align, task_star_align, task_tophat2_align], formatter(), "{subpath[0][2]}/fusionfusion/{subdir[0][0]}/fusion_fusion.result.txt")
 def task_fusionfusion(input_files, output_file):
 
     input_dir_name = os.path.dirname(input_files[1])
@@ -168,13 +168,10 @@ def task_tophat2_align(input_files, output_file):
     sample_name = os.path.basename(dir_name)
     
     arguments = {"tophat2_dir": genomon_conf.get("SOFTWARE", "tophat2_dir"),
-                 "ref_gtf": genomon_conf.get("REFERENCE", "ref_gtf"),
                  "bowtie2_database": genomon_conf.get("REFERENCE", "bowtie2_db"),
                  "samtools_path": os.path.dirname(genomon_conf.get("SOFTWARE", "samtools")),
                  "bowtie_path": os.path.dirname(genomon_conf.get("SOFTWARE", "bowtie2")),
                  "additional_params": task_conf.get("tophat2_align", "tophat2_params"),
-                 "fastq1": input_files[0],
-                 "fastq2": input_files[1],
                  "output_dir": dir_name,
                  "log": run_conf.project_root + '/log'}
     

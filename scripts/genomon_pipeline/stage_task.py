@@ -37,7 +37,8 @@ class Stage_task(object):
         qsub_options = self.qsub_option.split(' ')
         returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
 
-        if returncode != 0:
-            raise
+        return returncode
+        # if returncode != 0:
+        #     raise
 
 
