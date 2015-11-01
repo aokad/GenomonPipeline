@@ -160,23 +160,25 @@ def task_star_fusion(input_file, output_file):
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
     star_fusion.task_exec(arguments)
 
-"""
-@transform(link_input_fastq, formatter(), "{subpath[0][2]}/tophat2/{subdir[0][0]}")
-def task_tophat2_align(input_files, output_file):
+@transform(task_tophat2_align, formatter(), "{subpath[0][2]}/tophat_fusion/{subdir[0][0]}/tophatfusion_out/result.txt")
+def task_tophat_fusion(input_files, output_file):
     
-    dir_name = output_file
+    dir_name_tmp = os.path.dirname(output_file)
+    dir_name = os.path.dirname(dir_name_tmp)
     sample_name = os.path.basename(dir_name)
     
     arguments = {"tophat2_dir": genomon_conf.get("SOFTWARE", "tophat2_dir"),
-                 "bowtie2_database": genomon_conf.get("REFERENCE", "bowtie2_db"),
-                 "samtools_path": os.path.dirname(genomon_conf.get("SOFTWARE", "samtools")),
-                 "bowtie_path": os.path.dirname(genomon_conf.get("SOFTWARE", "bowtie2")),
-                 "additional_params": task_conf.get("tophat2_align", "tophat2_params"),
+                 "tophat_result": run_conf.project_root + '/tophat2/' + sample_name,
                  "output_dir": dir_name,
+                 "bowtie1_db": genomon_conf.get("REFERENCE", "bowtie1_db"),
+                 "samtools_path": os.path.dirname(genomon_conf.get("SOFTWARE", "samtools")),
+                 "bowtie_path": os.path.dirname(genomon_conf.get("SOFTWARE", "bowtie1")),
+                 "blast_path": genomon_conf.get("SOFTWARE", "blast_path"), 
+                 "tophatfusion_db": genomon_conf.get("REFERENCE", "tophatfusion_db"),
+                 "additional_params": task_conf.get("tophat_fusion", "tophat_fusion_params"),
                  "log": run_conf.project_root + '/log'}
-    
+
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    tophat2_align.task_exec(arguments)
-"""
+    tophat_fusion.task_exec(arguments)
 
 

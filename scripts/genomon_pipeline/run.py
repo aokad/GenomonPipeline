@@ -46,7 +46,7 @@ def main(args):
 
     pipeline_run(
                  verbose = 3, 
-                 multiprocess = 150 
+                 multiprocess = 120 
                  # multithread = 100 
                 )
 

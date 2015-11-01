@@ -22,9 +22,18 @@ set -xv
 
 export PATH={bowtie_path}:$PATH
 export PATH={samtools_path}:$PATH
+export PATH={blast_path}:$PATH
 
-{tophat2_dir}/tophat-fusion-post -o {output_dir} \
-                     {additional_params} 
+cd {output_dir}
+
+ln -s {tophatfusion_db}/refGene.txt ./
+ln -s {tophatfusion_db}/ensGene.txt ./
+ln -s {tophatfusion_db}/blast ./
+
+sample_dir_name=`basename {tophat_result}`
+ln -s {tophat_result} tophat_$sample_dir_name
+
+{tophat2_dir}/tophat-fusion-post {additional_params} {bowtie1_db} 
 """
 
     def __init__(self, qsub_option, script_dir):
