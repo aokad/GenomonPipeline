@@ -14,7 +14,7 @@ class Stage_task(object):
         self.qsub_option = qsub_option
         self.script_dir = script_dir
         self.drmaa = run_conf.drmaa
-        self.retry_count = 3
+        self.retry_count = 2
 
 
     def task_exec(self, arguments, max_task=0):
@@ -88,7 +88,7 @@ class Stage_task(object):
                         
                         if retval.exitStatus != 0:
                             returncode = retval.exitStatus
-                            if var == retry: break
+                            if var == self.retry_count: break
                             jobId_list = ((retval.jobId).encode('utf-8')).split(".")
                             taskId = int(jobId_list[1])
                             all_jobids.extend(s.runBulkJobs(jt,taskId,taskId,1))
