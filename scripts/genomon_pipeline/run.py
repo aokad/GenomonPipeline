@@ -16,6 +16,7 @@ def main(args):
     run_conf.project_root = os.path.abspath(args.project_root)
     run_conf.genomon_conf_file = args.genomon_conf_file
     run_conf.task_conf_file = args.task_conf_file
+    run_conf.drmaa = args.drmaa
     ###
 
     ###
@@ -44,7 +45,7 @@ def main(args):
 
     pipeline_run(
                  verbose = 3, 
-                 multiprocess = 200
+                 multiprocess = 100
                 )
 
     

@@ -20,9 +20,12 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-{bwa} mem {bwa_params} {ref_fa} {fastq1} {fastq2}  > {sam} || exit $?
+tmp_num=`expr ${{SGE_TASK_ID}} - 1`
+num=`printf "%04d" ${{tmp_num}}`
 
-{biobambam}/bamsort index=1 level=1 inputthreads=2 outputthreads=2 calmdnm=1 calmdnmrecompindentonly=1 calmdnmreference={ref_fa} tmpfile={bam}.tmp inputformat=sam indexfilename={bam}.bai I={sam} O={bam}
+{bwa} mem {bwa_params} {ref_fa} {input_dir}/1_${{num}}.fastq_split {input_dir}/2_${{num}}.fastq_split > {output_dir}/{sample_name}_${{num}}.bwa.sam || exit $?
+
+{biobambam}/bamsort index=1 level=1 inputthreads=2 outputthreads=2 calmdnm=1 calmdnmrecompindentonly=1 calmdnmreference={ref_fa} tmpfile={output_dir}/{sample_name}_${{num}}.sorted.bam.tmp inputformat=sam indexfilename={output_dir}/{sample_name}_${{num}}.sorted.bam.bai I={output_dir}/{sample_name}_${{num}}.bwa.sam O={output_dir}/{sample_name}_${{num}}.sorted.bam
 
 """
 

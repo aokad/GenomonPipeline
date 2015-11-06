@@ -20,20 +20,18 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-case {input_file} in
-*\.gz)
-    zcat {input_file} | split -a 3 -d -l {lines} - {out_name_stem}/{pair_id}_
+if [ -f {target_dir}/1_${{SGE_TASK_ID}}.gz ]; then
+    zcat {target_dir}/1_${{SGE_TASK_ID}}.gz | split -a 4 -d -l {lines} - {target_dir}/${{SGE_TASK_ID}}_
     status=("${{PIPESTATUS[@]}}")
     [ ${{PIPESTATUS[0]}} -ne 0 ] || echo ${{PIPESTATUS[0]}}
-    ;;
-*)
-    split -a 3 -d -l {lines} {input_file} {out_name_stem}/{pair_id}_ || exit $?
-    ;;
-esac
+else
+    split -a 4 -d -l {lines} {target_dir}/1_${{SGE_TASK_ID}}.fastq {target_dir}/${{SGE_TASK_ID}}_ || exit $?
+fi
 
-ls -1 {out_name_stem}/{pair_id}_[0-9][0-9][0-9] | while read filename; do
+ls -1 {target_dir}/${{SGE_TASK_ID}}_[0-9][0-9][0-9][0-9] | while read filename; do
     mv $filename $filename.fastq_split || exit $?
 done
+
 
 """
 
