@@ -7,21 +7,23 @@ from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
 from genomon_pipeline.config.task_conf import *
 from genomon_pipeline.config.sample_conf import *
+from genomon_pipeline.dna_resource.bamtofastq import *
 from genomon_pipeline.dna_resource.fastq_splitter import *
 from genomon_pipeline.dna_resource.bwa_align import *
 from genomon_pipeline.dna_resource.markduplicates import *
 from genomon_pipeline.dna_resource.mutation_call import *
-from genomon_pipeline.dna_resource.bamtofastq import *
+from genomon_pipeline.dna_resource.mutation_merge import *
 from genomon_pipeline.dna_resource.sv_parse import *
 from genomon_pipeline.dna_resource.sv_merge import *
 from genomon_pipeline.dna_resource.sv_filt import *
 
 # set task classes
+bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.project_root + '/script')
 fastq_splitter = Fastq_splitter(task_conf.get("split_fast", "qsub_option"), run_conf.project_root + '/script')
 bwa_align = Bwa_align(task_conf.get("bwa_mem", "qsub_option"), run_conf.project_root + '/script')
 markduplicates = Markduplicates(task_conf.get("markduplicates", "qsub_option"), run_conf.project_root + '/script')
 mutation_call = Mutation_call(task_conf.get("mutation_call", "qsub_option"), run_conf.project_root + '/script')
-bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.project_root + '/script')
+mutation_merge = Mutation_merge(task_conf.get("mutation_merge", "qsub_option"), run_conf.project_root + '/script')
 sv_parse = SV_parse(task_conf.get("sv_parse", "qsub_option"), run_conf.project_root + '/script')
 sv_merge = SV_merge(task_conf.get("sv_merge", "qsub_option"), run_conf.project_root + '/script')
 sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.project_root + '/script')
@@ -304,7 +306,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
         "control_bam_list": input_file[2],
         # annovar
-        "active_annovar_flag": "True",
+        "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
         "table_annovar_params": task_conf.get("annotation", "table_annovar_params"),
         # commmon
@@ -350,17 +352,18 @@ def merge_mutation(input_files, output_file, output_dir):
     interval_list = genomon_conf.get("REFERENCE", "interval_list")
     max_task_id = sum(1 for line in open(interval_list))
 
-    with open(output_file,  "w") as out_handle:
-        for task_id in range(1,(max_task_id + 1)):
-            input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
-            with open(input_file) as in_handle:
-                next(in_handle)
-                for line in in_handle:
-                    out_handle.write(line)
+    arguments = {
+        "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
+        "filecount": max_task_id,
+        "out_prefix": output_dir + '/' + sample_name,
+        "log": run_conf.project_root + '/log'}
 
+    mutation_merge.task_exec(arguments)
+     
     for task_id in range(1,(max_task_id + 1)):
         input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
         os.unlink(input_file)
+
 
 # parse SV 
 @follows( link_import_bam )
