@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import os
+import sys
 import datetime
 import subprocess
 from genomon_pipeline.config.run_conf import *
@@ -55,12 +56,12 @@ class Stage_task(object):
                     returncode = 0
                     now = datetime.datetime.now()
                     date = now.strftime("%Y-%m-%d %H:%M")
-                    print "Date/Time: " + date 
+                    print >> sys.stderr, "Date/Time: " + date 
                     print "Job has been submitted with id: " + jobid + " at Date/Time: " + date
                     retval = s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
                     now = datetime.datetime.now()
                     date = now.strftime("%Y-%m-%d %H:%M")
-                    print "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
+                    print >> sys.stderr, "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
                     returncode = retval.exitStatus
                     if returncode == 0: break
                 s.deleteJobTemplate(jt)
@@ -76,15 +77,15 @@ class Stage_task(object):
                     returncode = 0
                     now = datetime.datetime.now()
                     date = now.strftime("%Y-%m-%d %H:%M")
-                    print "Date/Time: " + date 
-                    print 'Your job has been submitted with id ' + str(joblist)
+                    print >> sys.stderr, "Date/Time: " + date 
+                    print >> sys.stderr, 'Your job has been submitted with id ' + str(joblist)
                     s.synchronize(joblist, drmaa.Session.TIMEOUT_WAIT_FOREVER, False)
                     for curjob in joblist:
-                        print 'Collecting job ' + curjob
+                        print >> sys.stderr, 'Collecting job ' + curjob
                         retval = s.wait(curjob, drmaa.Session.TIMEOUT_WAIT_FOREVER)
                         now = datetime.datetime.now()
                         date = now.strftime("%Y-%m-%d %H:%M")
-                        print "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
+                        print >> sys.stderr, "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
                         
                         if retval.exitStatus != 0:
                             returncode = retval.exitStatus
