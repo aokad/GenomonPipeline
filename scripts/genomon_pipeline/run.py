@@ -43,9 +43,10 @@ def main(args):
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")
 
-    pipeline_run(
-                 verbose = 3, 
-                 multiprocess = 100
-                )
+    if not (args.param_check):
+        pipeline_run(
+                     verbose = args.verbose, 
+                     multiprocess = args.multiprocess
+                    )
 
-    
+        
