@@ -31,6 +31,6 @@ echo "Parameters check is complete."
 mkdir -p ${project_dir}/log || exit $?
 echo "Genomon created the '${project_dir}/log' directory"
 
-qsub -o ${project_dir}/log -e ${project_dir}/log -l s_vmem=64G,mem_req=64G ${TARGET_PATH}/qsub_genomon_pipeline.sh $target_pipeline $sample_conf $project_dir $genomon_conf $task_param_conf ${TARGET_PATH}
+qsub -o ${project_dir}/log -e ${project_dir}/log -l s_vmem=64G,mem_req=64G ${TARGET_PATH}/qsub_genomon_pipeline_HGC.sh $target_pipeline $sample_conf $project_dir $genomon_conf $task_param_conf ${TARGET_PATH}
 
 
