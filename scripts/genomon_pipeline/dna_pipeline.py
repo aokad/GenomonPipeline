@@ -49,10 +49,12 @@ for sample in sample_conf.bam_tofastq:
 markdup_bam_list = []
 merge_mutation_list = []
 for complist in sample_conf.mutation_call:
-    if os.path.exists(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'): continue
-    markdup_bam_list.append([run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam',
-                             run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam',
-                             run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt"])
+     if os.path.exists(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'): continue
+     tumor_bam  = run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam'
+     normal_bam = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam' if complist[1] != None else None
+     panel = run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt" if complist[2] != None else None
+     markdup_bam_list.append([tumor_bam, normal_bam, panel])
+
 
 # generate input list of 'SV parse'
 parse_sv_bam_list = []
