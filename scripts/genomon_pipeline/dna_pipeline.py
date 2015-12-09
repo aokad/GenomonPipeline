@@ -16,6 +16,9 @@ from genomon_pipeline.dna_resource.mutation_merge import *
 from genomon_pipeline.dna_resource.sv_parse import *
 from genomon_pipeline.dna_resource.sv_merge import *
 from genomon_pipeline.dna_resource.sv_filt import *
+from genomon_pipeline.dna_resource.bam_stats import *
+from genomon_pipeline.dna_resource.coverage import *
+from genomon_pipeline.dna_resource.merge import *
 
 # set task classes
 bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.project_root + '/script')
@@ -27,6 +30,9 @@ mutation_merge = Mutation_merge(task_conf.get("mutation_merge", "qsub_option"), 
 sv_parse = SV_parse(task_conf.get("sv_parse", "qsub_option"), run_conf.project_root + '/script')
 sv_merge = SV_merge(task_conf.get("sv_merge", "qsub_option"), run_conf.project_root + '/script')
 sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.project_root + '/script')
+r_bamstats = Res_Bamstats(task_conf.get("bam_stats", "qsub_option"), run_conf.project_root + '/script')
+r_coverage = Res_Coverage(task_conf.get("coverage", "qsub_option"), run_conf.project_root + '/script')
+r_merge = Res_Merge(task_conf.get("merge", "qsub_option"), run_conf.project_root + '/script')
 
 # generate output list of 'linked fastq'
 linked_fastq_list = []
@@ -101,6 +107,11 @@ for complist in sample_conf.sv_detection:
     if os.path.exists(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt'): continue
     filt_bedpe_list.append(run_conf.project_root+ "/sv/"+ complist[0] +"/"+ complist[0] +".junction.clustered.bedpe.gz")
 
+# generate input list of 'summary'
+summary_bam_list = []
+for sample in sample_conf.summary:
+    summary_bam_list.append(run_conf.project_root + '/bam/' + sample +'/'+ sample +'.markdup.bam')
+
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
@@ -112,6 +123,7 @@ if not os.path.isdir(run_conf.project_root + '/mutation/control_panel'): os.mkdi
 if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_root + '/sv')
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.project_root + '/sv/config')
+if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
 for outputfiles in (bam2fastq_output_list + linked_fastq_list):
     sample = os.path.basename(os.path.dirname(outputfiles[0]))
     fastq_dir = run_conf.project_root + '/fastq/' + sample
@@ -198,8 +210,9 @@ def split_files(input_files, output_files, target_dir):
     arguments = {"lines": task_conf.get("split_fast", "split_fastq_line_number"),
                  "target_dir": target_dir,
                  "log": run_conf.project_root + '/log'}
-    fastq_splitter.task_exec(arguments, 2)
     
+    fastq_splitter.task_exec(arguments, 2)
+
     all_line_num = sum(1 for line in open(input_files[0]))
     with open(target_dir + "/fastq_line_num.txt",  "w") as out_handle:
         out_handle.write(str(all_line_num))
@@ -268,10 +281,26 @@ def markdup(input_files, output_file):
 # identify mutations
 @follows( markdup )
 @follows( link_import_bam )
-@subdivide(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_mutations_candidate.*.hg19_multianno.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
+@subdivide(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_genomon_mutations.result.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
 def identify_mutations(input_file, output_file, output_dir):
 
     sample_name = os.path.basename(output_dir)
+
+    active_inhouse_normal_flag = False
+    inhouse_normal_tabix_db = ""
+    try:
+        active_inhouse_normal_flag = task_conf.get("annotation", "active_inhouse_normal_flag")
+        inhouse_normal_tabix_db = genomon_conf.get("REFERENCE", "inhouse_normal_tabix_db")
+    except ConfigParser.NoOptionError:
+        print "assumed cause: [inhouse normal] is not defined"
+
+    active_inhouse_tumor_flag = False
+    inhouse_tumor_tabix_db = ""
+    try:
+        active_inhouse_tumor_flag = task_conf.get("annotation", "active_inhouse_tumor_flag")
+        inhouse_tumor_tabix_db = genomon_conf.get("REFERENCE", "inhouse_tumor_tabix_db")
+    except ConfigParser.NoOptionError:
+        print "assumed cause: [inhouse tumor] is not defined"
 
     arguments = {
         # fisher mutation
@@ -302,11 +331,21 @@ def identify_mutations(input_file, output_file, output_dir):
         "bp_min_clip_size": task_conf.get("breakpoint_filter","min_clip_size"),
         "bp_junc_num_thres": task_conf.get("breakpoint_filter","junc_num_thres"),
         "bp_map_quality": task_conf.get("breakpoint_filter","map_quality"),
+        # simplerepeat filter
+        "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
         # EB filter
         "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
         "eb_map_quality": task_conf.get("eb_filter","map_quality"),
         "eb_base_quality": task_conf.get("eb_filter","base_quality"),
         "control_bam_list": input_file[2],
+        # original_annotations
+        "mutanno": genomon_conf.get("SOFTWARE", "mutanno"),
+        "active_inhouse_normal_flag": active_inhouse_normal_flag,
+        "inhouse_normal_database":inhouse_normal_tabix_db,
+        "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
+        "inhouse_tumor_database":inhouse_tumor_tabix_db,
+        "active_HGVD_flag": task_conf.get("annotation", "active_HGVD_flag"),
+        "HGVD_database":genomon_conf.get("REFERENCE", "HGVD_tabix_db"),
         # annovar
         "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
@@ -317,7 +356,6 @@ def identify_mutations(input_file, output_file, output_dir):
         "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
         "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
         "interval_list": genomon_conf.get("REFERENCE", "interval_list"),
-        "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
         "disease_bam": input_file[0],
         "control_bam": input_file[1],
         "out_prefix": output_dir + '/' + sample_name,
@@ -329,7 +367,24 @@ def identify_mutations(input_file, output_file, output_dir):
     max_task_id = sum(1 for line in open(interval_list))
 
     mutation_call.task_exec(arguments, max_task_id)
+    
+    arguments = {
+        "control_bam": input_file[1],
+        "control_bam_list": input_file[2],
+        "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
+        "active_HGVD_flag": task_conf.get("annotation", "active_HGVD_flag"),
+        "active_inhouse_normal_flag": active_inhouse_normal_flag,
+        "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
+        "filecount": max_task_id,
+        "out_prefix": output_dir + '/' + sample_name,
+        "log": run_conf.project_root + '/log'}
+
+    mutation_merge.task_exec(arguments)
      
+    for task_id in range(1,(max_task_id + 1)):
+        input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
+        os.unlink(input_file)
+
     for task_id in range(1,(max_task_id + 1)):
         if os.path.exists(output_dir+'/'+sample_name+'.fisher_mutations.'+str(task_id)+'.txt'):
             os.unlink(output_dir+'/'+sample_name+'.fisher_mutations.'+str(task_id)+'.txt')
@@ -343,28 +398,89 @@ def identify_mutations(input_file, output_file, output_dir):
             os.unlink(output_dir+'/'+sample_name+'.simplerepeat_mutations.'+str(task_id)+'.txt')
         if os.path.exists(output_dir+'/'+sample_name+'.ebfilter_mutations.'+str(task_id)+'.txt'):
             os.unlink(output_dir+'/'+sample_name+'.ebfilter_mutations.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.inhouse_normal.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.inhouse_normal.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.inhouse_tumor.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.inhouse_tumor.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.HGVD.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.HGVD.'+str(task_id)+'.txt')
 
 
-# merge candidate mutations
-@collate(identify_mutations, formatter(".+/(.+)_mutations_candidate.(.+).hg19_multianno.txt"), "{path[0]}/{subdir[0][0]}_genomon_mutations.result.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
-def merge_mutation(input_files, output_file, output_dir):
+# summary
+@follows( link_import_bam )
+@follows( markdup )
+@transform(summary_bam_list, formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.bamstats")
+def bam_stats(input_file, output_file):
+    print input_file
+    print output_file
+    dir_name = os.path.dirname(output_file)
+    if not os.path.exists(dir_name): os.makedirs(dir_name)
+      
+    arguments = {"PCAP": genomon_conf.get("SOFTWARE", "PCAP"),
+                 "PERL5LIB": genomon_conf.get("ENV", "PERL5LIB"),
+                 "input": input_file,
+                 "output": output_file,
+                 "log": run_conf.project_root + '/log'}
+    
+    r_bamstats.task_exec(arguments)
 
-    sample_name = os.path.basename(output_dir)
 
-    interval_list = genomon_conf.get("REFERENCE", "interval_list")
-    max_task_id = sum(1 for line in open(interval_list))
+@follows( link_import_bam )
+@follows( markdup )
+@transform(summary_bam_list, formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.depth")
+def coverage(input_file, output_file):
 
-    arguments = {
-        "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
-        "filecount": max_task_id,
-        "out_prefix": output_dir + '/' + sample_name,
-        "log": run_conf.project_root + '/log'}
+    dir_name = os.path.dirname(output_file)
+    if not os.path.exists(dir_name): os.makedirs(dir_name)
 
-    mutation_merge.task_exec(arguments)
-     
-    for task_id in range(1,(max_task_id + 1)):
-        input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
-        os.unlink(input_file)
+    incl_bed_file = ""
+    genome_file = ""
+    data_type = ""
+    if task_conf.get("coverage", "wgs_flag") == "True":
+        genome_file = genomon_conf.get("REFERENCE", "hg19_genome")
+        incl_bed_file = output_file + "genome.bed"
+        incl_bed_w = task_conf.get("coverage", "wgs_incl_bed_width")
+        r_coverage.create_incl_bed_wgs(genome_file, incl_bed_file, long(incl_bed_w), "")
+        data_type = "wgs"
+
+    arguments = {"data_type": data_type,
+                 "i_bed_lines": task_conf.get("coverage", "wgs_i_bed_lines"),
+                 "i_bed_size": task_conf.get("coverage", "wgs_i_bed_width"),
+                 "incl_bed_file": incl_bed_file,
+                 "genome_file": genome_file,
+                 "gaptxt": genomon_conf.get("REFERENCE", "gaptxt"),
+                 "sureselect": genomon_conf.get("REFERENCE", "sureselect"),
+                 "BEDTOOLS": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "SAMTOOLS": genomon_conf.get("SOFTWARE", "samtools"),
+                 "LD_LIBRARY_PATH": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "input": input_file,
+                 "output": output_file,
+                 "log": run_conf.project_root + '/log'}
+
+    r_coverage.task_exec(arguments)
+
+@transform(coverage, suffix(".depth"), ".coverage")
+def coverage_calc(input_file, output_file):
+    r_coverage.calc_coverage(input_file, task_conf.get("coverage", "coverage"), output_file)
+
+
+###################
+# merge stage
+@collate([bam_stats, coverage_calc], formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.tsv")
+def merge(input_files, output_file):
+
+    for f in input_files:
+        if not os.path.exists(f):
+            raise
+
+    input_split = os.path.splitext(input_files[0])
+    output_split = os.path.splitext(output_file)
+    files = []
+    files.append(input_split[0] + ".bamstats")
+    files.append(input_split[0] + ".coverage")
+    excel_file = output_split[0] + ".xls"
+    r_merge.mkxls(files, excel_file)
+    r_merge.Excel2TSV(excel_file, output_file)
 
 
 # parse SV 
@@ -475,4 +591,7 @@ def filt_sv(input_files,  output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "log": run_conf.project_root + '/log'}
     sv_filt.task_exec(arguments)
+
+
+
 
