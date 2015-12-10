@@ -20,15 +20,11 @@ genomon_pipeline [-h] {dna,rna} sample_conf.txt project_root_dir genomon_conf_fi
 ```
 
 For DNA sample
-
-example.
 ```
 genomon_pipeline dna ./sample_conf.txt ~/tmp ./genomon.cfg ./dna_task_param.cfg
 ```
 
 For RNA sample
-
-example.
 ```
 genomon_pipeline rna ./sample_conf.txt ~/tmp ./genomon.cfg ./rna_task_param.cfg
 ```

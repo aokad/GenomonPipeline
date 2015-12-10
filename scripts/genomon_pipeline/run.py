@@ -16,6 +16,7 @@ def main(args):
     run_conf.project_root = os.path.abspath(args.project_root)
     run_conf.genomon_conf_file = args.genomon_conf_file
     run_conf.task_conf_file = args.task_conf_file
+    run_conf.drmaa = args.drmaa
     ###
 
     ###
@@ -44,10 +45,10 @@ def main(args):
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")
 
-    pipeline_run(
-                 verbose = 3, 
-                 multiprocess = 120 
-                 # multithread = 100 
-                )
+    if not (args.param_check):
+        pipeline_run(
+                     verbose = args.verbose, 
+                     multiprocess = args.multiprocess
+                    )
 
-    
+        
