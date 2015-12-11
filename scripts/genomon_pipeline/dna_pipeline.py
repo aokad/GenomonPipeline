@@ -411,8 +411,6 @@ def identify_mutations(input_file, output_file, output_dir):
 @follows( markdup )
 @transform(summary_bam_list, formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.bamstats")
 def bam_stats(input_file, output_file):
-    print input_file
-    print output_file
     dir_name = os.path.dirname(output_file)
     if not os.path.exists(dir_name): os.makedirs(dir_name)
       
@@ -427,11 +425,13 @@ def bam_stats(input_file, output_file):
 
 @follows( link_import_bam )
 @follows( markdup )
-@transform(summary_bam_list, formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.depth")
+@transform(summary_bam_list, formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.coverage")
 def coverage(input_file, output_file):
 
     dir_name = os.path.dirname(output_file)
     if not os.path.exists(dir_name): os.makedirs(dir_name)
+    sample_name = os.path.basename(dir_name)
+    depth_output_file = dir_name+'/'+sample_name+'.depth'
 
     incl_bed_file = ""
     genome_file = ""
@@ -449,24 +449,25 @@ def coverage(input_file, output_file):
                  "incl_bed_file": incl_bed_file,
                  "genome_file": genome_file,
                  "gaptxt": genomon_conf.get("REFERENCE", "gaptxt"),
-                 "sureselect": genomon_conf.get("REFERENCE", "sureselect"),
+                 "bait_file": genomon_conf.get("REFERENCE", "bait_file"),
                  "BEDTOOLS": genomon_conf.get("SOFTWARE", "bedtools"),
                  "SAMTOOLS": genomon_conf.get("SOFTWARE", "samtools"),
                  "LD_LIBRARY_PATH": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "input": input_file,
-                 "output": output_file,
+                 "output": depth_output_file,
                  "log": run_conf.project_root + '/log'}
 
     r_coverage.task_exec(arguments)
-
-@transform(coverage, suffix(".depth"), ".coverage")
-def coverage_calc(input_file, output_file):
-    r_coverage.calc_coverage(input_file, task_conf.get("coverage", "coverage"), output_file)
+    
+    r_coverage.calc_coverage(depth_output_file, task_conf.get("coverage", "coverage"), output_file)
+    
+    os.unlink(dir_name+'/'+sample_name+'.depth')
+    os.unlink(dir_name+'/'+sample_name+'.depth.input_bed')
 
 
 ###################
 # merge stage
-@collate([bam_stats, coverage_calc], formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.tsv")
+@collate([bam_stats, coverage], formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.tsv")
 def merge(input_files, output_file):
 
     for f in input_files:

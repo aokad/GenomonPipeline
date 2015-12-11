@@ -22,7 +22,7 @@ set -xv
 
 export PERL5LIB={PERL5LIB}
 
-{PCAP}/bin/bam_stats.pl -i {input} -o {output}.tmp
+{PCAP}/bin/bam_stats.pl -i {input} -o {output}.tmp || exit $?
 mv {output}.tmp {output}
 """
 

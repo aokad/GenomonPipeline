@@ -126,40 +126,40 @@ set -xv
             else:
                 ws.write(1, i, bamstats_string[0][i])
     
-        # write bamstats data, each read group
-        for i in range(0, num_readgroup):
-            for j in range(0, len(bamstats_string[i])):
-                if bamstats_header[j] in [
-                                      'read_length_r1',
-                                      'read_length_r2',
-                                      '#_mapped_bases',
-                                      '#_mapped_bases_r1',
-                                      '#_mapped_bases_r2',
-                                      '#_divergent_bases',
-                                      '#_divergent_bases_r1',
-                                      '#_divergent_bases_r2',
-                                      '#_total_reads',
-                                      '#_total_reads_r1',
-                                      '#_total_reads_r2',
-                                      '#_mapped_reads',
-                                      '#_mapped_reads_r1',
-                                      '#_mapped_reads_r2',
-                                      '#_mapped_reads_properly_paired',
-                                      '#_gc_bases_r1',
-                                      '#_gc_bases_r2',
-                                      '#_duplicate_reads'
-                                      ]:
-                    ws.write(i + 2, j, int(bamstats_string[i][j]))
-    
-                elif bamstats_header[j] in [
-                                      'mean_insert_size',
-                                      'insert_size_sd',
-                                      'median_insert_size',
-                                      ]:
-                    ws.write(i + 2, j, float(bamstats_string[i][j]))
-    
-                else:
-                    ws.write(i + 2, j, bamstats_string[i][j])
+#        # write bamstats data, each read group
+#        for i in range(0, num_readgroup):
+#            for j in range(0, len(bamstats_string[i])):
+#                if bamstats_header[j] in [
+#                                      'read_length_r1',
+#                                      'read_length_r2',
+#                                      '#_mapped_bases',
+#                                      '#_mapped_bases_r1',
+#                                      '#_mapped_bases_r2',
+#                                      '#_divergent_bases',
+#                                      '#_divergent_bases_r1',
+#                                      '#_divergent_bases_r2',
+#                                      '#_total_reads',
+#                                      '#_total_reads_r1',
+#                                      '#_total_reads_r2',
+#                                      '#_mapped_reads',
+#                                      '#_mapped_reads_r1',
+#                                      '#_mapped_reads_r2',
+#                                      '#_mapped_reads_properly_paired',
+#                                      '#_gc_bases_r1',
+#                                      '#_gc_bases_r2',
+#                                      '#_duplicate_reads'
+#                                      ]:
+#                    ws.write(i + 2, j, int(bamstats_string[i][j]))
+#    
+#                elif bamstats_header[j] in [
+#                                      'mean_insert_size',
+#                                      'insert_size_sd',
+#                                      'median_insert_size',
+#                                      ]:
+#                    ws.write(i + 2, j, float(bamstats_string[i][j]))
+#    
+#                else:
+#                    ws.write(i + 2, j, bamstats_string[i][j])
                 
         # write coverage data
         x_pos = len(bamstats_header)
