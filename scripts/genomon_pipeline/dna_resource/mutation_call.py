@@ -51,10 +51,28 @@ else
     cp {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt
 fi
 
-if [ _{active_annovar_flag} = "_True" ];then
-    {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.${{SGE_TASK_ID}} {table_annovar_params} {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt {annovar}/humandb || exit $?
+if [ _{active_inhouse_normal_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt -o {out_prefix}.inhouse_normal.${{SGE_TASK_ID}}.txt -d {inhouse_normal_database} || exit $?
 else
-    cp {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multianno.txt
+    cp {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt {out_prefix}.inhouse_normal.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_inhouse_tumor_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.inhouse_normal.${{SGE_TASK_ID}}.txt -o {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt -d {inhouse_tumor_database} || exit $?
+else
+    cp {out_prefix}.inhouse_normal.${{SGE_TASK_ID}}.txt {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_HGVD_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt -d {HGVD_database} -c 15 || exit $?
+else
+    cp {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_annovar_flag} = "_True" ];then
+    {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.${{SGE_TASK_ID}} {table_annovar_params} {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {annovar}/humandb || exit $?
+else
+    cp {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multianno.txt
 fi
 
 """

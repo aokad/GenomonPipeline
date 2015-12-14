@@ -13,6 +13,7 @@ class Sample_conf(object):
         self.bam_import = {}
         self.mutation_call = []
         self.sv_detection = []
+        self.summary = []
         self.control_panel = {}
         # 
         # should add the file exist check here ?
@@ -108,6 +109,9 @@ class Sample_conf(object):
                 elif row[0].lower() == '[sv_detection]':
                     mode = 'sv_detection'
                     continue
+                elif row[0].lower() == '[summary]':
+                    mode = 'summary'
+                    continue
                 elif row[0].lower() == '[controlpanel]':
                     mode = 'controlpanel'
                     continue
@@ -165,12 +169,13 @@ class Sample_conf(object):
                     err_msg = sampleID + ": only one bam file is allowed"
                     raise ValueError(err_msg)
 
-                sequence = row[1]
-                if not os.path.exists(sequence):
-                    err_msg = sampleID + ": " + sequence +  " does not exists"
-                    raise ValueError(err_msg)
+                sequences = row[1]
+                for seq in sequences.split(";"):
+                    if not os.path.exists(seq):
+                        err_msg = sampleID + ": " + seq +  " does not exists"
+                        raise ValueError(err_msg)
 
-                self.bam_tofastq[sampleID] = sequence
+                self.bam_tofastq[sampleID] = sequences
                 
             elif mode == 'bam_import':
 
@@ -235,6 +240,15 @@ class Sample_conf(object):
                     raise ValueError(err_msg)
 
                 self.sv_detection.append((tumorID, normalID, controlpanelID))
+
+
+            elif mode == 'summary':
+                sampleID = row[0]
+                if sampleID not in sampleID_list:
+                    err_msg = "[summary] section, " + sampleID + " is not defined"
+                    raise ValueError(err_msg)
+
+                self.summary.append(sampleID)
 
 
             elif mode == 'controlpanel':
