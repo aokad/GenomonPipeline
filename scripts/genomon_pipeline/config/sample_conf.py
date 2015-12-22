@@ -88,8 +88,12 @@ class Sample_conf(object):
     def parse_data(self, _data ):
     
         mode = ''
-        
+       
         sampleID_list = []
+        mut_tumor_sampleID_list = []
+        sv_tumor_sampleID_list = []
+        summary_sampleID_list = []
+        
         for row in _data:
             if row[0].startswith('['):
 
@@ -215,12 +219,18 @@ class Sample_conf(object):
                     err_msg = "[mutation_call] section, " + tumorID + " is not defined"
                     raise ValueError(err_msg)
 
+                if tumorID in mut_tumor_sampleID_list:
+                    err_msg = "[mutation_call] section, " + tumorID + " is duplicated"
+                    raise ValueError(err_msg)
+
                 normalID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
                 controlpanelID = row[2] if len(row) >= 3 and row[2] not in ['', 'None'] else None
 
                 if normalID is not None and normalID not in sampleID_list:
                     err_msg = "[mutation_call] section, " + normalID + " is not defined"
                     raise ValueError(err_msg)
+
+                mut_tumor_sampleID_list.append(tumorID)
 
                 self.mutation_call.append((tumorID, normalID, controlpanelID))
 
@@ -232,6 +242,10 @@ class Sample_conf(object):
                     err_msg = "[sv_detection] section, " + tumorID + " is not defined"
                     raise ValueError(err_msg)
 
+                if tumorID in sv_tumor_sampleID_list:
+                    err_msg = "[sv_detection] section, " + tumorID + " is duplicated"
+                    raise ValueError(err_msg)
+
                 normalID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
                 controlpanelID = row[2] if len(row) >= 3 and row[2] not in ['', 'None'] else None
 
@@ -239,14 +253,23 @@ class Sample_conf(object):
                     err_msg = "[sv_detection] section, " + normalID + " is not defined"
                     raise ValueError(err_msg)
 
+                sv_tumor_sampleID_list.append(tumorID)
+
                 self.sv_detection.append((tumorID, normalID, controlpanelID))
 
 
             elif mode == 'summary':
+
                 sampleID = row[0]
                 if sampleID not in sampleID_list:
                     err_msg = "[summary] section, " + sampleID + " is not defined"
                     raise ValueError(err_msg)
+
+                if sampleID in summary_sampleID_list:
+                    err_msg = "[summary] section, " + sampleID + " is duplicated"
+                    raise ValueError(err_msg)
+
+                summary_sampleID_list.append(sampleID)
 
                 self.summary.append(sampleID)
 
