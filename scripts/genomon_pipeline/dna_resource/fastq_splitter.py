@@ -20,7 +20,11 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-input_files=`ls {target_dir}/*_${{SGE_TASK_ID}}{ext}`
+to_val=`ls {target_dir}/*_${{SGE_TASK_ID}}{ext} | wc -l`
+input_files=""
+for i in `seq 1 ${{to_val}}`; do
+    input_files="${{input_files}} {target_dir}/${{i}}_${{SGE_TASK_ID}}{ext}"
+done    
 
 if [ "_{fastq_filter}" = "_True" ]; then
 
