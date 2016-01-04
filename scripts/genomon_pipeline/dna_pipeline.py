@@ -214,7 +214,7 @@ def link_input_fastq(output_file):
 
 
 # split fastq
-@subdivide([bam2fastq, link_input_fastq], formatter(".+/(.+).fastq",".+/(.+).gz",".+/(.+).filt",".+/(.+).fq",".+/(.+).txt"), "{path[0]}/*_*.fastq_split", "{path[0]}")
+@subdivide([bam2fastq, link_input_fastq], formatter(), "{path[0]}/*_*.fastq_split", "{path[0]}")
 def split_files(input_files, output_files, target_dir):
 
     for oo in output_files:
@@ -322,6 +322,14 @@ def identify_mutations(input_file, output_file, output_dir):
     except ConfigParser.NoOptionError:
         print "assumed cause: [inhouse tumor] is not defined"
 
+    active_HGMD_flag = False
+    HGMD_tabix_db = ""
+    try:
+        active_HGMD_flag = task_conf.get("annotation", "active_HGMD_flag")
+        HGMD_tabix_db = genomon_conf.get("REFERENCE", "HGMD_tabix_db")
+    except ConfigParser.NoOptionError:
+        print "assumed cause: [HGMD] is not defined"
+
     arguments = {
         # fisher mutation
         "fisher": genomon_conf.get("SOFTWARE", "fisher"),
@@ -366,6 +374,8 @@ def identify_mutations(input_file, output_file, output_dir):
         "inhouse_tumor_database":inhouse_tumor_tabix_db,
         "active_HGVD_flag": task_conf.get("annotation", "active_HGVD_flag"),
         "HGVD_database":genomon_conf.get("REFERENCE", "HGVD_tabix_db"),
+        "active_HGMD_flag": active_HGMD_flag,
+        "HGMD_database": HGMD_tabix_db,
         # annovar
         "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
@@ -393,6 +403,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "control_bam_list": input_file[2],
         "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
         "active_HGVD_flag": task_conf.get("annotation", "active_HGVD_flag"),
+        "active_HGMD_flag": active_HGMD_flag,
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "filecount": max_task_id,
@@ -424,6 +435,8 @@ def identify_mutations(input_file, output_file, output_dir):
            os.unlink(output_dir+'/'+sample_name+'.inhouse_tumor.'+str(task_id)+'.txt')
         if os.path.exists(output_dir+'/'+sample_name+'.HGVD.'+str(task_id)+'.txt'):
            os.unlink(output_dir+'/'+sample_name+'.HGVD.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.HGMD.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.HGMD.'+str(task_id)+'.txt')
 
 
 # summary
