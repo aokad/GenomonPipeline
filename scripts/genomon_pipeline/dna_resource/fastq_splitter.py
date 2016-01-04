@@ -20,12 +20,25 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-if [ -f {target_dir}/1_${{SGE_TASK_ID}}.gz ]; then
-    zcat {target_dir}/1_${{SGE_TASK_ID}}.gz | split -a 4 -d -l {lines} - {target_dir}/${{SGE_TASK_ID}}_
-    status=("${{PIPESTATUS[@]}}")
-    [ ${{PIPESTATUS[0]}} -ne 0 ] || echo ${{PIPESTATUS[0]}}
+to_val=`ls {target_dir}/*_${{SGE_TASK_ID}}{ext} | wc -l`
+input_files=""
+for i in `seq 1 ${{to_val}}`; do
+    input_files="${{input_files}} {target_dir}/${{i}}_${{SGE_TASK_ID}}{ext}"
+done    
+
+if [ "_{fastq_filter}" = "_True" ]; then
+
+    if [ "_{ext}" = "_.gz" ]; then
+        gzip -dc $input_files | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a 4 -d -l {lines} - {target_dir}/${{SGE_TASK_ID}}_ || exit $?
+    else
+        cat $input_files | grep -A 3 '^@.* [^:]*:N:[^:]*:' | grep -v '^--$' | split -a 4 -d -l {lines} - {target_dir}/${{SGE_TASK_ID}}_ || exit $?
+    fi
 else
-    split -a 4 -d -l {lines} {target_dir}/1_${{SGE_TASK_ID}}.fastq {target_dir}/${{SGE_TASK_ID}}_ || exit $?
+    if [ "_{ext}" = "_.gz" ]; then
+        gzip -dc $input_files | split -a 4 -d -l {lines} - {target_dir}/${{SGE_TASK_ID}}_ || exit $?
+    else
+        cat $input_files | split -a 4 -d -l {lines} - {target_dir}/${{SGE_TASK_ID}}_ || exit $?
+    fi
 fi
 
 ls -1 {target_dir}/${{SGE_TASK_ID}}_[0-9][0-9][0-9][0-9] | while read filename; do

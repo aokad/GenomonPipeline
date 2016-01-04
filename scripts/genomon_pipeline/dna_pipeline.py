@@ -2,6 +2,7 @@ import os
 import shutil
 import yaml
 import linecache
+import glob
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
@@ -22,7 +23,7 @@ from genomon_pipeline.dna_resource.merge import *
 
 # set task classes
 bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.project_root + '/script')
-fastq_splitter = Fastq_splitter(task_conf.get("split_fast", "qsub_option"), run_conf.project_root + '/script')
+fastq_splitter = Fastq_splitter(task_conf.get("split_fastq", "qsub_option"), run_conf.project_root + '/script')
 bwa_align = Bwa_align(task_conf.get("bwa_mem", "qsub_option"), run_conf.project_root + '/script')
 markduplicates = Markduplicates(task_conf.get("markduplicates", "qsub_option"), run_conf.project_root + '/script')
 mutation_call = Mutation_call(task_conf.get("mutation_call", "qsub_option"), run_conf.project_root + '/script')
@@ -39,17 +40,25 @@ linked_fastq_list = []
 for sample in sample_conf.fastq:
     if os.path.exists(run_conf.project_root + '/bam/' + sample + '/1.sorted.bam'): continue
     if os.path.exists(run_conf.project_root + '/bam/' + sample + '/' + sample + '.markdup.bam'): continue
-    fastq_prefix, ext = os.path.splitext(sample_conf.fastq[sample][0][0])
-    linked_fastq_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1' + ext,
-                              run_conf.project_root + '/fastq/' + sample + '/1_2' + ext])
+
+    link_fastq_arr1 = []
+    link_fastq_arr2 = []
+    for (count, fastq_file) in enumerate(sample_conf.fastq[sample][0]):
+        fastq_prefix, ext = os.path.splitext(fastq_file)
+        link_fastq_arr1.append(run_conf.project_root + '/fastq/' + sample + '/' + str(count+1) + '_1' + ext)
+        link_fastq_arr2.append(run_conf.project_root + '/fastq/' + sample + '/' + str(count+1) + '_2' + ext)
+    linked_fastq_list.append([link_fastq_arr1,link_fastq_arr2])
 
 # generate output list of 'bam2fastq'
 bam2fastq_output_list = []
 for sample in sample_conf.bam_tofastq:
     if os.path.exists(run_conf.project_root + '/bam/' + sample + '/1.sorted.bam'): continue
     if os.path.exists(run_conf.project_root + '/bam/' + sample + '/' + sample + '.markdup.bam'): continue
-    bam2fastq_output_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
-                                  run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
+    bam2fastq_arr1 = []
+    bam2fastq_arr2 = []
+    bam2fastq_arr1.append(run_conf.project_root + '/fastq/' + sample + '/1_1.fastq')
+    bam2fastq_arr2.append(run_conf.project_root + '/fastq/' + sample + '/1_2.fastq')
+    bam2fastq_output_list.append([bam2fastq_arr1,bam2fastq_arr2])
 
 # generate input list of 'mutation call'
 markdup_bam_list = []
@@ -124,12 +133,14 @@ if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_r
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.project_root + '/sv/config')
 if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
-for outputfiles in (bam2fastq_output_list + linked_fastq_list):
-    sample = os.path.basename(os.path.dirname(outputfiles[0]))
-    fastq_dir = run_conf.project_root + '/fastq/' + sample
-    bam_dir = run_conf.project_root + '/bam/' + sample
-    if not os.path.isdir(fastq_dir): os.mkdir(fastq_dir)
-    if not os.path.isdir(bam_dir): os.mkdir(bam_dir)
+for outputfiles in (bam2fastq_output_list, linked_fastq_list):
+    for outputfile in outputfiles:
+        sample = os.path.basename(os.path.dirname(outputfile[0][0]))
+        fastq_dir = run_conf.project_root + '/fastq/' + sample
+        bam_dir = run_conf.project_root + '/bam/' + sample
+        if not os.path.isdir(fastq_dir): os.mkdir(fastq_dir)
+        if not os.path.isdir(bam_dir): os.mkdir(bam_dir)
+
 
 # prepare output directory for each sample and make mutation control panel file
 for complist in sample_conf.mutation_call:
@@ -172,13 +183,13 @@ def link_import_bam(sample):
 # convert bam to fastq
 @originate(bam2fastq_output_list)
 def bam2fastq(outputfiles):
-    sample = os.path.basename(os.path.dirname(outputfiles[0]))
+    sample = os.path.basename(os.path.dirname(outputfiles[0][0]))
     output_dir = run_conf.project_root + '/fastq/' + sample
             
     arguments = {"biobambam": genomon_conf.get("SOFTWARE", "biobambam"),
                  "input_bam": sample_conf.bam_tofastq[sample],
-                 "f1_name": outputfiles[0],
-                 "f2_name": outputfiles[1],
+                 "f1_name": outputfiles[0][0],
+                 "f2_name": outputfiles[1][0],
                  "o1_name": output_dir + '/unmatched_first_output.txt',
                  "o2_name": output_dir + '/unmatched_second_output.txt',
                  "t": output_dir + '/temp.txt',
@@ -188,37 +199,46 @@ def bam2fastq(outputfiles):
 
 
 # link the input fastq to project directory
-@originate(linked_fastq_list, sample_conf.fastq)
-def link_input_fastq(output_file, sample_list_fastq):
-    sample = os.path.basename(os.path.dirname(output_file[0]))
+@originate(linked_fastq_list)
+def link_input_fastq(output_file):
+    sample = os.path.basename(os.path.dirname(output_file[0][0]))
     fastq_dir = run_conf.project_root + '/fastq/' + sample
-    fastq_prefix, ext = os.path.splitext(sample_list_fastq[sample][0][0])
+    fastq_prefix, ext = os.path.splitext(sample_conf.fastq[sample][0][0])
     # Todo
     # 1. should compare the timestamps between input and linked file
     # 2. check md5sum ?
-    if not os.path.exists(fastq_dir + '/1_1' + ext): os.symlink(sample_list_fastq[sample][0][0], fastq_dir + '/1_1' + ext)
-    if not os.path.exists(fastq_dir + '/1_2' + ext): os.symlink(sample_list_fastq[sample][1][0], fastq_dir + '/1_2' + ext)
+    for (count, fastq_files) in enumerate(sample_conf.fastq[sample][0]):
+        fastq_prefix, ext = os.path.splitext(fastq_files)
+        if not os.path.exists(fastq_dir + '/'+str(count+1)+'_1'+ ext): os.symlink(sample_conf.fastq[sample][0][count], fastq_dir + '/'+str(count+1)+'_1'+ ext)
+        if not os.path.exists(fastq_dir + '/'+str(count+1)+'_2'+ ext): os.symlink(sample_conf.fastq[sample][1][count], fastq_dir + '/'+str(count+1)+'_2'+ ext)
 
 
 # split fastq
-@subdivide([bam2fastq, link_input_fastq], formatter(".+/(.+).fastq"), "{path[0]}/*_*.fastq_split", "{path[0]}")
+@subdivide([bam2fastq, link_input_fastq], formatter(".+/(.+).fastq",".+/(.+).gz",".+/(.+).filt",".+/(.+).fq",".+/(.+).txt"), "{path[0]}/*_*.fastq_split", "{path[0]}")
 def split_files(input_files, output_files, target_dir):
 
     for oo in output_files:
         os.unlink(oo)
 
-    arguments = {"lines": task_conf.get("split_fast", "split_fastq_line_number"),
+    input_prefix, ext = os.path.splitext(input_files[0][0])
+    arguments = {"lines": task_conf.get("split_fastq", "split_fastq_line_number"),
+                 "fastq_filter": task_conf.get("split_fastq", "fastq_filter"),
                  "target_dir": target_dir,
+                 "ext": ext,
                  "log": run_conf.project_root + '/log'}
     
     fastq_splitter.task_exec(arguments, 2)
-
-    all_line_num = sum(1 for line in open(input_files[0]))
+   
+    all_line_num = 0
+    for fastq in glob.glob(target_dir + '/1_*.fastq_split'):
+        all_line_num += sum(1 for line in open(fastq))
     with open(target_dir + "/fastq_line_num.txt",  "w") as out_handle:
-        out_handle.write(str(all_line_num))
-
-    os.unlink(input_files[0])
-    os.unlink(input_files[1])
+        out_handle.write(str(all_line_num)+"\n")
+    
+    for input_fastq in input_files[0]:
+        os.unlink(input_fastq)
+    for input_fastq in input_files[1]:
+        os.unlink(input_fastq)
 
 
 #bwa
@@ -231,7 +251,7 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
     with open(input_dir + "/fastq_line_num.txt") as in_handle:
         tmp_num = in_handle.read()
         all_line_num = int(tmp_num)
-    split_lines = task_conf.get("split_fast", "split_fastq_line_number")
+    split_lines = task_conf.get("split_fastq", "split_fastq_line_number")
 
     ans_quotient = all_line_num / int(split_lines)
     ans_remainder = all_line_num % int(split_lines)
