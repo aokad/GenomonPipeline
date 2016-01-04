@@ -65,6 +65,13 @@ then
     print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
 fi
 
+if [ _{active_HGMD_flag} = "_True" ]
+then
+    HGMD_header="HGMD_201504:ID,HGMD_201504:CLASS,HGMD_201504:GENE,HGMD_201504:STRAND,HGMD_201504:DNA,HGMD_201504:PROT,HGMD_201504:PHEN"
+    tmp_header=`echo $HGMD_header | tr "," "\t"` || exit $?
+    print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
+fi
+
 echo "$print_header" > {out_prefix}_genomon_mutations.result.txt || exit $?
 
 for i in `seq 1 1 {filecount}`

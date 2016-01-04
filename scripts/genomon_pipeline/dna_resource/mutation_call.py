@@ -69,10 +69,16 @@ else
     cp {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt
 fi
 
-if [ _{active_annovar_flag} = "_True" ];then
-    {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.${{SGE_TASK_ID}} {table_annovar_params} {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {annovar}/humandb || exit $?
+if [ _{active_HGMD_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt -d {HGMD_database} -c 7 || exit $?
 else
-    cp {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multianno.txt
+    cp {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_annovar_flag} = "_True" ];then
+    {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.${{SGE_TASK_ID}} {table_annovar_params} {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt {annovar}/humandb || exit $?
+else
+    cp {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multianno.txt
 fi
 
 """
