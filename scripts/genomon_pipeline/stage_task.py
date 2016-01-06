@@ -5,20 +5,18 @@ import sys
 import datetime
 import subprocess
 from genomon_pipeline.config.run_conf import *
-import drmaa
 
 file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
 
 class Stage_task(object):
 
-    def __init__(self, qsub_option, script_dir):
+    def __init__(self, qsub_option, use_drmaa_flag):
         self.qsub_option = qsub_option
-        self.script_dir = script_dir
-        self.drmaa = run_conf.drmaa
+        self.drmaa = use_drmaa_flag
         self.retry_count = 2
 
 
-    def task_exec(self, arguments, max_task=0):
+    def task_exec(self, arguments, log_dir, script_dir, max_task=0):
         # Make shell script
 
         now = datetime.datetime.now()
@@ -31,29 +29,32 @@ class Stage_task(object):
                                  min=now.minute,
                                  msecond=now.microsecond )
         
-        shell_script_full_path = "{script}/{file}.sh".format(script = self.script_dir, file = shell_script_name)
+        shell_script_full_path = "{script}/{file}.sh".format(script = script_dir, file = shell_script_name)
         shell_script_file = open(shell_script_full_path, 'w')
         shell_script_file.write(self.script_template.format(**arguments))
         shell_script_file.close()
 
         if self.drmaa:
+            import drmaa
         
             s = drmaa.Session()
             s.initialize()
         
             jt = s.createJobTemplate()
             jt.jobName = shell_script_name
-            jt.outputPath = ':' + run_conf.project_root + '/log'
-            jt.errorPath = ':' + run_conf.project_root + '/log' 
+            jt.outputPath = ':' + log_dir
+            jt.errorPath = ':' + log_dir
             jt.nativeSpecification = self.qsub_option
             jt.remoteCommand = shell_script_full_path
             os.chmod(shell_script_full_path, 0750)
 
             returncode = 0
+            returnflag = True
             if max_task == 0:
                 for var in range(0, (self.retry_count+1)):
                     jobid = s.runJob(jt)
                     returncode = 0
+                    returnflag = True
                     now = datetime.datetime.now()
                     date = now.strftime("%Y-%m-%d %H:%M")
                     print >> sys.stderr, "Date/Time: " + date 
@@ -63,7 +64,8 @@ class Stage_task(object):
                     date = now.strftime("%Y-%m-%d %H:%M")
                     print >> sys.stderr, "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
                     returncode = retval.exitStatus
-                    if returncode == 0: break
+                    returnflag = retval.hasExited
+                    if returncode == 0 and returnflag: break
                 s.deleteJobTemplate(jt)
                 s.exit()
 
@@ -75,6 +77,7 @@ class Stage_task(object):
                         joblist = all_jobids
                         all_jobids = []
                     returncode = 0
+                    returnflag = True
                     now = datetime.datetime.now()
                     date = now.strftime("%Y-%m-%d %H:%M")
                     print >> sys.stderr, "Date/Time: " + date 
@@ -87,14 +90,15 @@ class Stage_task(object):
                         date = now.strftime("%Y-%m-%d %H:%M")
                         print >> sys.stderr, "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
                         
-                        if retval.exitStatus != 0:
+                        if retval.exitStatus != 0 or not retval.hasExited:
                             returncode = retval.exitStatus
+                            returnflag = retval.hasExited
                             if var == self.retry_count: break
                             jobId_list = ((retval.jobId).encode('utf-8')).split(".")
                             taskId = int(jobId_list[1])
                             all_jobids.extend(s.runBulkJobs(jt,taskId,taskId,1))
                        
-                    if returncode == 0: break
+                    if returncode == 0 and returnflag: break
                 s.deleteJobTemplate(jt)
                 s.exit()
 
@@ -106,7 +110,7 @@ class Stage_task(object):
             qsub_options = self.qsub_option.split(' ')
             returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
 
-        if returncode != 0: 
+        if returncode != 0 or not returnflag: 
             raise
 
 

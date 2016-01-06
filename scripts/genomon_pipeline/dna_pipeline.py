@@ -22,18 +22,18 @@ from genomon_pipeline.dna_resource.coverage import *
 from genomon_pipeline.dna_resource.merge import *
 
 # set task classes
-bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.project_root + '/script')
-fastq_splitter = Fastq_splitter(task_conf.get("split_fastq", "qsub_option"), run_conf.project_root + '/script')
-bwa_align = Bwa_align(task_conf.get("bwa_mem", "qsub_option"), run_conf.project_root + '/script')
-markduplicates = Markduplicates(task_conf.get("markduplicates", "qsub_option"), run_conf.project_root + '/script')
-mutation_call = Mutation_call(task_conf.get("mutation_call", "qsub_option"), run_conf.project_root + '/script')
-mutation_merge = Mutation_merge(task_conf.get("mutation_merge", "qsub_option"), run_conf.project_root + '/script')
-sv_parse = SV_parse(task_conf.get("sv_parse", "qsub_option"), run_conf.project_root + '/script')
-sv_merge = SV_merge(task_conf.get("sv_merge", "qsub_option"), run_conf.project_root + '/script')
-sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.project_root + '/script')
-r_bamstats = Res_Bamstats(task_conf.get("bam_stats", "qsub_option"), run_conf.project_root + '/script')
-r_coverage = Res_Coverage(task_conf.get("coverage", "qsub_option"), run_conf.project_root + '/script')
-r_merge = Res_Merge(task_conf.get("merge", "qsub_option"), run_conf.project_root + '/script')
+bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.drmaa)
+fastq_splitter = Fastq_splitter(task_conf.get("split_fastq", "qsub_option"), run_conf.drmaa)
+bwa_align = Bwa_align(task_conf.get("bwa_mem", "qsub_option"), run_conf.drmaa)
+markduplicates = Markduplicates(task_conf.get("markduplicates", "qsub_option"), run_conf.drmaa)
+mutation_call = Mutation_call(task_conf.get("mutation_call", "qsub_option"), run_conf.drmaa)
+mutation_merge = Mutation_merge(task_conf.get("mutation_merge", "qsub_option"), run_conf.drmaa)
+sv_parse = SV_parse(task_conf.get("sv_parse", "qsub_option"), run_conf.drmaa)
+sv_merge = SV_merge(task_conf.get("sv_merge", "qsub_option"), run_conf.drmaa)
+sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.drmaa)
+r_bamstats = Res_Bamstats(task_conf.get("bam_stats", "qsub_option"), run_conf.drmaa)
+r_coverage = Res_Coverage(task_conf.get("coverage", "qsub_option"), run_conf.drmaa)
+r_merge = Res_Merge(task_conf.get("merge", "qsub_option"), run_conf.drmaa)
 
 # generate output list of 'linked fastq'
 linked_fastq_list = []
@@ -193,9 +193,8 @@ def bam2fastq(outputfiles):
                  "o1_name": output_dir + '/unmatched_first_output.txt',
                  "o2_name": output_dir + '/unmatched_second_output.txt',
                  "t": output_dir + '/temp.txt',
-                 "s": output_dir + '/single_end_output.txt',
-                 "log": run_conf.project_root + '/log'}
-    bamtofastq.task_exec(arguments)
+                 "s": output_dir + '/single_end_output.txt'}
+    bamtofastq.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 # link the input fastq to project directory
@@ -224,10 +223,9 @@ def split_files(input_files, output_files, target_dir):
     arguments = {"lines": task_conf.get("split_fastq", "split_fastq_line_number"),
                  "fastq_filter": task_conf.get("split_fastq", "fastq_filter"),
                  "target_dir": target_dir,
-                 "ext": ext,
-                 "log": run_conf.project_root + '/log'}
+                 "ext": ext}
     
-    fastq_splitter.task_exec(arguments, 2)
+    fastq_splitter.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', 2)
    
     all_line_num = 0
     for fastq in glob.glob(target_dir + '/1_*.fastq_split'):
@@ -263,10 +261,9 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
                  "bwa": genomon_conf.get("SOFTWARE", "bwa"),
                  "bwa_params": task_conf.get("bwa_mem", "bwa_params"),
                  "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
-                 "biobambam": genomon_conf.get("SOFTWARE", "biobambam"),
-                 "log": run_conf.project_root + '/log'}
+                 "biobambam": genomon_conf.get("SOFTWARE", "biobambam")}
 
-    bwa_align.task_exec(arguments, max_task_id) 
+    bwa_align.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', max_task_id) 
 
     for task_id in range(max_task_id):
         num = str(task_id).zfill(4)
@@ -288,10 +285,9 @@ def markdup(input_files, output_file):
     arguments = {"biobambam": genomon_conf.get("SOFTWARE", "biobambam"),
                  "out_prefix": output_prefix,
                  "input_bam_files": input_bam_files,
-                 "out_bam": output_file,
-                 "log": run_conf.project_root + '/log'}
+                 "out_bam": output_file}
 
-    markduplicates.task_exec(arguments)
+    markduplicates.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
     for input_file in input_files:
         os.unlink(input_file)
@@ -390,13 +386,12 @@ def identify_mutations(input_file, output_file, output_dir):
         "control_bam": input_file[1],
         "out_prefix": output_dir + '/' + sample_name,
         "samtools": genomon_conf.get("SOFTWARE", "samtools"),
-        "blat": genomon_conf.get("SOFTWARE", "blat"),
-        "log": run_conf.project_root + '/log'}
+        "blat": genomon_conf.get("SOFTWARE", "blat")}
 
     interval_list = genomon_conf.get("REFERENCE", "interval_list")
     max_task_id = sum(1 for line in open(interval_list))
 
-    mutation_call.task_exec(arguments, max_task_id)
+    mutation_call.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', max_task_id)
     
     arguments = {
         "control_bam": input_file[1],
@@ -407,10 +402,9 @@ def identify_mutations(input_file, output_file, output_dir):
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "filecount": max_task_id,
-        "out_prefix": output_dir + '/' + sample_name,
-        "log": run_conf.project_root + '/log'}
+        "out_prefix": output_dir + '/' + sample_name}
 
-    mutation_merge.task_exec(arguments)
+    mutation_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
      
     for task_id in range(1,(max_task_id + 1)):
         input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
@@ -450,10 +444,9 @@ def bam_stats(input_file, output_file):
     arguments = {"PCAP": genomon_conf.get("SOFTWARE", "PCAP"),
                  "PERL5LIB": genomon_conf.get("ENV", "PERL5LIB"),
                  "input": input_file,
-                 "output": output_file,
-                 "log": run_conf.project_root + '/log'}
+                 "output": output_file}
     
-    r_bamstats.task_exec(arguments)
+    r_bamstats.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 @follows( link_import_bam )
@@ -487,10 +480,9 @@ def coverage(input_file, output_file):
                  "SAMTOOLS": genomon_conf.get("SOFTWARE", "samtools"),
                  "LD_LIBRARY_PATH": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "input": input_file,
-                 "output": depth_output_file,
-                 "log": run_conf.project_root + '/log'}
+                 "output": depth_output_file}
 
-    r_coverage.task_exec(arguments)
+    r_coverage.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     
     r_coverage.calc_coverage(depth_output_file, task_conf.get("coverage", "coverage"), output_file)
     
@@ -587,9 +579,8 @@ def parse_sv(input_file, output_file):
                  "param_conf": task_conf.get("genomon_sv", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "log": run_conf.project_root + '/log'}
-    sv_parse.task_exec(arguments)
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
+    sv_parse.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 # merge SV
@@ -603,9 +594,8 @@ def merge_sv(input_files,  output_file):
                  "param_conf": task_conf.get("genomon_sv", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "log": run_conf.project_root + '/log'}
-    sv_merge.task_exec(arguments)
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
+    sv_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 # filt SV
@@ -622,9 +612,8 @@ def filt_sv(input_files,  output_file):
                  "param_conf": task_conf.get("genomon_sv", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "log": run_conf.project_root + '/log'}
-    sv_filt.task_exec(arguments)
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
+    sv_filt.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 

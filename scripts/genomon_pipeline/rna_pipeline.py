@@ -10,8 +10,8 @@ from genomon_pipeline.rna_resource.fusionfusion import *
 
 
 # set task classes
-star_align = Star_align(task_conf.get("star_align", "qsub_option"), run_conf.project_root + '/script')
-fusionfusion = Fusionfusion(task_conf.get("fusionfusion", "qsub_option"), run_conf.project_root + '/script')
+star_align = Star_align(task_conf.get("star_align", "qsub_option"), run_conf.drmaa)
+fusionfusion = Fusionfusion(task_conf.get("fusionfusion", "qsub_option"), run_conf.drmaa)
 
 # generate list of linked_fastq file path
 linked_fastq_list = []
@@ -57,11 +57,10 @@ def task_star_align(input_files, output_file):
                  "samtools_sort_params": task_conf.get("star_align", "samtools_sort_params"),
                  "fastq1": input_files[0],
                  "fastq2": input_files[1],
-                 "out_prefix": dir_name + '/' + sample_name + '.',
-                 "log": run_conf.project_root + '/log'}
+                 "out_prefix": dir_name + '/' + sample_name + '.'}
 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    star_align.task_exec(arguments)
+    star_align.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 @transform(task_star_align, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/star.fusion.result.txt")
@@ -78,10 +77,9 @@ def task_fusionfusion(input_file, output_file):
                  "param_file": task_conf.get("fusionfusion", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "log": run_conf.project_root + '/log'}
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
 
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
-    fusionfusion.task_exec(arguments)
+    fusionfusion.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 

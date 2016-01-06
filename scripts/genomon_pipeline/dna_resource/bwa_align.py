@@ -13,8 +13,6 @@ class Bwa_align(Stage_task):
 #
 #$ -S /bin/bash         # set shell in UGE
 #$ -cwd                 # execute at the submitted dir
-#$ -e {log}             # log file directory
-#$ -o {log}             # log file directory
 pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
