@@ -34,6 +34,8 @@ sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.drmaa)
 r_bamstats = Res_Bamstats(task_conf.get("bam_stats", "qsub_option"), run_conf.drmaa)
 r_coverage = Res_Coverage(task_conf.get("coverage", "qsub_option"), run_conf.drmaa)
 r_merge = Res_Merge(task_conf.get("merge", "qsub_option"), run_conf.drmaa)
+r_pa_capture = Res_PA_Capture(task_conf.get("pa_capture", "qsub_option"), run_conf.drmaa)
+r_pa_merge = Res_PA_Merge(task_conf.get("pa_merge", "qsub_option"), run_conf.drmaa)
 
 # generate output list of 'linked fastq'
 linked_fastq_list = []
@@ -119,7 +121,46 @@ for complist in sample_conf.sv_detection:
 # generate input list of 'summary'
 summary_bam_list = []
 for sample in sample_conf.summary:
+    if os.path.exists(run_conf.project_root + '/summary/' + sample + '/' + sample + '.tsv'): continue
     summary_bam_list.append(run_conf.project_root + '/bam/' + sample +'/'+ sample +'.markdup.bam')
+
+# generate input list of 'post analysis for mutation'
+pa_dir = run_conf.project_root + '/post_analysis/mutation'
+pa_capt_list_mutation = []
+for complist in sample_conf.mutation_call:
+    if (complist[1] == None): continue
+    if (not os.path.exists(pa_dir + '/capture_script/' + complist[0] + '.bat')) \
+       or (not os.path.exists(pa_dir + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.pickup.bam')):
+        pa_capt_list_mutation.append(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt')
+
+pa_merge_list_mutation = []
+if (not os.path.exists(pa_dir + '/capture_script/capture.bat')) \
+  or (not os.path.exists(run_conf.project_root + '/post_analysis/merge.mutation.csv')):
+    for complist in sample_conf.mutation_call:
+        if (complist[1] == None): continue
+        pa_merge_list_mutation.append(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt')
+
+# generate input list of 'post analysis for SV'
+pa_dir = run_conf.project_root + '/post_analysis/sv'
+pa_capt_list_sv = []
+for complist in sample_conf.sv_detection:
+    if (complist[1] == None): continue
+    if (not os.path.exists(pa_dir + '/capture_script/' + complist[0] + '.bat')) \
+      or (not os.path.exists(pa_dir + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.pickup.bam')):
+        pa_capt_list_sv.append(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt')
+
+pa_merge_list_sv = []
+if (not os.path.exists(pa_dir + '/capture_script/capture.bat')) \
+  or (not os.path.exists(run_conf.project_root + '/post_analysis/merge.sv.csv')):
+    for complist in sample_conf.sv_detection:
+        if (complist[1] == None): continue
+        pa_merge_list_sv.append(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt')
+
+# generate input list of 'post analysis for summary'
+pa_summary_list = []
+if not os.path.exists(run_conf.project_root + '/post_analysis/merge.summary.csv'):
+    for sample in sample_conf.summary:
+        pa_summary_list.append(run_conf.project_root + '/summary/' + sample + '/' + sample + '.tsv')
 
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
@@ -133,6 +174,24 @@ if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_r
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.project_root + '/sv/config')
 if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
+if (task_conf.getboolean("post_analysis", "enable") == True):
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/capture'):
+        os.makedirs(run_conf.project_root + '/post_analysis/mutation/capture')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/capture_script'):
+        os.makedirs(run_conf.project_root + '/post_analysis/mutation/capture_script')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/bam'):
+        os.mkdir(run_conf.project_root + '/post_analysis/mutation/bam')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/bam_script'):
+        os.mkdir(run_conf.project_root + '/post_analysis/mutation/bam_script')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/capture'):
+        os.makedirs(run_conf.project_root + '/post_analysis/sv/capture')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/capture_script'):
+        os.makedirs(run_conf.project_root + '/post_analysis/sv/capture_script')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/bam'):
+        os.mkdir(run_conf.project_root + '/post_analysis/sv/bam')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/bam_script'):
+        os.mkdir(run_conf.project_root + '/post_analysis/sv/bam_script')
+    
 for outputfiles in (bam2fastq_output_list, linked_fastq_list):
     for outputfile in outputfiles:
         sample = os.path.basename(os.path.dirname(outputfile[0][0]))
@@ -297,7 +356,7 @@ def markdup(input_files, output_file):
 # identify mutations
 @follows( markdup )
 @follows( link_import_bam )
-@subdivide(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_genomon_mutations.result.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
+@transform(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_genomon_mutations.result.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
 def identify_mutations(input_file, output_file, output_dir):
 
     sample_name = os.path.basename(output_dir)
@@ -493,7 +552,7 @@ def coverage(input_file, output_file):
 ###################
 # merge stage
 @collate([bam_stats, coverage], formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.tsv")
-def merge(input_files, output_file):
+def write_summary(input_files, output_file):
 
     for f in input_files:
         if not os.path.exists(f):
@@ -615,6 +674,265 @@ def filt_sv(input_files,  output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
     sv_filt.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
+#####################
+# post analysis stage
+@active_if(task_conf.getboolean("post_analysis", "enable"))
+@follows(identify_mutations)
+@transform(pa_capt_list_mutation, formatter(), 
+           [run_conf.project_root + "/post_analysis/mutation/bam/{subdir[0][0]}/{subdir[0][0]}.markdup.pickup.bam",
+            run_conf.project_root + "/post_analysis/mutation/capture_script/{subdir[0][0]}.bat"])
+def post_analysis_capt_mutation(input_file, output_file):
 
+    ID = os.path.basename(input_file).replace("_genomon_mutations.result.txt", "")
 
+    config = r_pa_capture.script_template_config.format(
+                 mode = "mutation",
+                 capture_max = task_conf.get("capture_igv", "capture_max"),
+                 capture_width = task_conf.get("capture_igv", "capture_width"),
+                 pickup_width = task_conf.get("capture_bam", "pickup_width"),
+                 markdup_bam_suffix = ".markdup.bam",
+                 pickup_bam_suffix = ".markdup.pickup.bam",
+                 sept = "\\t",
+                 header = "True",
+                 col_pos_chr1 = "0",
+                 col_pos_start = "1",
+                 col_pos_chr2 = "0",
+                 col_pos_end = "2",
+                 samtools = genomon_conf.get("SOFTWARE", "samtools"),
+                 bedtools = genomon_conf.get("SOFTWARE", "bedtools"),
+                 )
 
+    bam_script = ""
+    if os.path.exists("%s/post_analysis/mutation/bam/%s/%s.markdup.pickup.bam" % (run_conf.project_root, ID, ID)) == False:
+        bam_script = r_pa_capture.script_template_bam.format(
+                 mode = "mutation",
+                 input_file = input_file,
+                 id = ID,
+                 output_file = run_conf.project_root + '/post_analysis/mutation/bam_script/pickup.%s.sh' % (ID),
+                 output_bam_dir = run_conf.project_root + '/post_analysis/mutation/bam/',
+                 output_log_dir = run_conf.project_root + '/log/',
+                 genomon_root = run_conf.project_root,
+                 config = config
+                 )
+                 
+    igv_script = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/mutation/capture_script/capture.bat") == False:        
+        igv_script = r_pa_capture.script_template_igv.format(
+                 mode = "mutation",
+                 input_file = input_file,
+                 id = ID,
+                 output_file = run_conf.project_root + '/post_analysis/mutation/capture_script/%s.bat' % (ID),
+                 output_dir = run_conf.project_root + '/post_analysis/mutation/capture',
+                 genomon_root = run_conf.project_root,
+                 config = config
+                 )
+                 
+    arguments = {"mode": "mutation",
+                 "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "bam_script": bam_script,
+                 "igv_script": igv_script
+                 }
+                 
+    r_pa_capture.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+
+@active_if(task_conf.getboolean("post_analysis", "enable"))
+@follows(post_analysis_capt_mutation)
+@merge(pa_merge_list_mutation, 
+       [run_conf.project_root + "/post_analysis/mutation/capture_script/capture.bat",
+        run_conf.project_root + "/post_analysis/merge.mutation.csv"])
+def post_analysis_merge_mutation(input_files, output_file):
+
+    config = r_pa_merge.script_template_config.format(
+                 mode = "mutation",
+                 sept = "\\t",
+                 header = "True",
+                 suffix = "_genomon_mutations.result.txt",
+                 filters = task_conf.get("merge_format_mutation", "filters"),
+                 )
+
+    merge_result = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/merge.mutation.csv") == False:
+        li = ""
+        for item in input_files:
+            if len(item) > 0:
+                if len(li) > 0:
+                    li += ","
+                li += item
+                
+        merge_result = r_pa_merge.script_template_result.format(
+                 mode = "mutation",
+                 input_files = li,
+                 output_file = run_conf.project_root + "/post_analysis/merge.mutation.csv",
+                 config = config
+                 )
+                 
+    merge_igv = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/mutation/capture_script/capture.bat") == False:
+        li = ""
+        for item in input_files:
+            if len(item) > 0:
+                if len(li) > 0:
+                    li += ","
+
+                ID = os.path.basename(item).replace("_genomon_mutations.result.txt", "")
+                li += run_conf.project_root + "/post_analysis/mutation/capture_script/" + ID + ".bat"
+       
+        merge_igv = r_pa_merge.script_template_igv.format(
+                 input_files = li,
+                 output_file = run_conf.project_root + "/post_analysis/mutation/capture_script/capture.bat",
+                 config = config
+                 )
+
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "merge_result": merge_result,
+                 "merge_igv": merge_igv
+                }
+                 
+    r_pa_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+
+@active_if(task_conf.getboolean("post_analysis", "enable"))
+@follows(filt_sv)
+@transform(pa_capt_list_sv, formatter(), 
+           [run_conf.project_root + "/post_analysis/sv/bam/{subdir[0][0]}/{subdir[0][0]}.markdup.pickup.bam",
+            run_conf.project_root + "/post_analysis/sv/capture_script/{subdir[0][0]}.bat"])
+def post_analysis_capt_sv(input_file,  output_file):
+
+    ID = os.path.basename(input_file).replace(".genomonSV.result.txt", "")
+    
+    config = r_pa_capture.script_template_config.format(
+                 mode = "sv",
+                 capture_max = task_conf.get("capture_igv", "capture_max"),
+                 capture_width = task_conf.get("capture_igv", "capture_width"),
+                 pickup_width = task_conf.get("capture_bam", "pickup_width"),
+                 markdup_bam_suffix = ".markdup.bam",
+                 pickup_bam_suffix = ".markdup.pickup.bam",
+                 sept = "\\t",
+                 header = "False",
+                 col_pos_chr1 = "0",
+                 col_pos_start = "1",
+                 col_pos_chr2 = "3",
+                 col_pos_end = "4",
+                 samtools = genomon_conf.get("SOFTWARE", "samtools"),
+                 bedtools = genomon_conf.get("SOFTWARE", "bedtools"),
+                 )
+
+    bam_script = ""
+    if os.path.exists("%s/post_analysis/sv/bam/%s/%s.markdup.pickup.bam" % (run_conf.project_root, ID, ID)) == False:
+        bam_script = r_pa_capture.script_template_bam.format(
+                 mode = "sv",
+                 input_file = input_file,
+                 id = ID,
+                 output_file = run_conf.project_root + '/post_analysis/sv/bam_script/pickup.%s.sh' % (ID),
+                 output_bam_dir = run_conf.project_root + '/post_analysis/sv/bam/',
+                 output_log_dir = run_conf.project_root + '/log/',
+                 genomon_root = run_conf.project_root,
+                 config = config
+                 )
+                 
+    igv_script = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/sv/capture_script/capture.bat") == False:        
+        igv_script = r_pa_capture.script_template_igv.format(
+                 mode = "sv",
+                 input_file = input_file,
+                 id = ID,
+                 output_file = run_conf.project_root + '/post_analysis/sv/capture_script/%s.bat' % (ID),
+                 output_dir = run_conf.project_root + '/post_analysis/sv/capture/',
+                 genomon_root = run_conf.project_root,
+                 config = config
+                 )
+                 
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "bam_script": bam_script,
+                 "igv_script": igv_script,
+                 }
+                 
+    r_pa_capture.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+
+@active_if(task_conf.getboolean("post_analysis", "enable"))
+@follows(post_analysis_capt_sv)
+@merge(pa_merge_list_sv, 
+       [run_conf.project_root + "/post_analysis/sv/capture_script/capture.bat", 
+        run_conf.project_root + "/post_analysis/merge.sv.csv"])
+def post_analysis_merge_sv(input_files, output_file):
+
+    config = r_pa_merge.script_template_config.format(
+                 mode = "sv",
+                 sept = "\\t",
+                 header = "False",
+                 suffix = ".genomonSV.result.txt",
+                 filters = task_conf.get("merge_format_sv", "filters"),
+                 )
+
+    merge_result = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/merge.sv.csv") == False:
+        li = ""
+        for item in input_files:
+            if len(item) > 0:
+                if len(li) > 0:
+                    li += ","
+                li += item
+                
+        merge_result = r_pa_merge.script_template_result.format(
+                 mode = "sv",
+                 input_files = li,
+                 output_file = run_conf.project_root + "/post_analysis/merge.sv.csv",
+                 config = config
+                 )
+                 
+    merge_igv = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/sv/capture_script/capture.bat") == False:
+        li = ""
+        for item in input_files:
+            if len(item) > 0:
+                if len(li) > 0:
+                    li += ","
+
+                ID = os.path.basename(item).replace(".genomonSV.result.txt", "")
+                li += run_conf.project_root + "/post_analysis/sv/capture_script/" + ID + ".bat"
+                
+        merge_igv = r_pa_merge.script_template_igv.format(
+                 input_files = li,
+                 output_file = run_conf.project_root + "/post_analysis/sv/capture_script/capture.bat",
+                 config = config
+                 )
+
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "merge_result": merge_result,
+                 "merge_igv": merge_igv
+                }
+                 
+    r_pa_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+
+@active_if(task_conf.getboolean("post_analysis", "enable"))
+@follows(write_summary)
+@merge(pa_summary_list, run_conf.project_root + "/post_analysis/merge.summary.csv")
+def post_analysis_merge_summary(input_files, output_file):
+
+    li = ""
+    for item in input_files:
+        if len(item) > 0:
+            if len(li) > 0:
+                li += ","
+            li += item
+
+    arguments = {"mode":"summary",
+                 "input_files":li,
+                 "output_file":output_file,
+                 "sept":"\\t",
+                 "header":"True",
+                 "suffix":".tsv",
+                 "filters":task_conf.get("merge_format_sumary", "filters"),
+                 "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH")}
+
+    r_pa_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    
