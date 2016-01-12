@@ -81,6 +81,7 @@ mv {output}.tmp {output}
 
 """
 
+
     def __init__(self, qsub_option, script_dir):
         super(Res_Coverage, self).__init__(qsub_option, script_dir)
 
@@ -143,27 +144,43 @@ mv {output}.tmp {output}
     #
         
     def calc_coverage(self, depth_file, coverage_depth, output):
-        import numpy
-
-        depth=numpy.loadtxt(depth_file, dtype=int, usecols=[2])
-        ave = numpy.average(depth)
-        std = numpy.std(depth)
-        all_sum = numpy.sum(depth)
+        import pandas
+        import math
         
-        bed = numpy.loadtxt(depth_file + ".input_bed", usecols=[1,2])
-        all_count = 0
-        for i in range(len(bed)):
-            all_count += (bed[i,1] - bed[i,0])
+        bed = pandas.read_csv(depth_file + ".input_bed", header = None, sep='\t', usecols = [1,2])
+        all_count = sum(bed[2] - bed[1])
+    
+        # depth average & coverage
+        depth_reader = pandas.read_csv(depth_file, header = None, sep='\t', usecols = [2], chunksize = 10000)
         
+        all_sum = 0
         coverage = {}
+        for depth in depth_reader:
+            all_sum += sum(depth[2])
+            
+            for num in coverage_depth.split(','):
+                filt = depth[(depth[2] >= int(num))]
+                if (num in coverage) == True:
+                    count = coverage[num][0] + len(filt)
+                else:
+                    count = len(filt)
+    
+                coverage[num] = [count, 0]
+        
         for num in coverage_depth.split(','):
-            if numpy.any(depth > int(num)):
-                count = len(depth[(depth >= int(num))])
-                ratio = float(count)/float(all_count)
-                coverage[num] = [count, ratio]
-            else:
-                coverage[num] = [0, 0]
-
+            ratio = float(coverage[num][0])/float(all_count)
+            coverage[num] = [coverage[num][0], ratio]
+                
+        ave = float(all_sum)/float(all_count)
+        
+        # depth std
+        depth_reader = pandas.read_csv(depth_file, header = None, sep='\t', usecols = [2], dtype = 'float', chunksize = 10000)
+        dist2 = 0
+        for depth in depth_reader:
+            dist2 += sum((depth[2] - ave)**2)
+        
+        std = math.sqrt(dist2/float(all_count))
+    
         #
         # Output result
         #
@@ -190,6 +207,3 @@ mv {output}.tmp {output}
         f.write('\n')
         f.write(data_string)
         f.close()
-
- 
- 
