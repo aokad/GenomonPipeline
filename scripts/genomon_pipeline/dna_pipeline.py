@@ -20,6 +20,8 @@ from genomon_pipeline.dna_resource.sv_filt import *
 from genomon_pipeline.dna_resource.bam_stats import *
 from genomon_pipeline.dna_resource.coverage import *
 from genomon_pipeline.dna_resource.merge import *
+from genomon_pipeline.dna_resource.post_analysis_capture import *
+from genomon_pipeline.dna_resource.post_analysis_merge import *
 
 # set task classes
 bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.drmaa)
@@ -671,7 +673,7 @@ def coverage(input_file, output_file):
 @follows( bam_stats )
 @follows( coverage )
 @transform(summary_merge_list, formatter(), "{subpath[0][2]}/summary/{subdir[0][0]}/{subdir[0][0]}.tsv")
-def merge(input_files, output_file):
+def write_summary(input_files, output_file):
 
     for f in input_files:
         if not os.path.exists(f):
@@ -924,23 +926,36 @@ def post_analysis_merge_sv(input_files, output_file):
 @merge(pa_summary_list, run_conf.project_root + "/post_analysis/merge.summary.csv")
 def post_analysis_merge_summary(input_files, output_file):
 
-    li = ""
-    for item in input_files:
-        if len(item) > 0:
-            if len(li) > 0:
-                li += ","
-            li += item
+    config = r_pa_merge.script_template_config.format(
+                 mode = "summary",
+                 sept = "\\t",
+                 header = "True",
+                 suffix = ".txt",
+                 filters = task_conf.get("merge_format_summary", "filters"),
+                 )
 
-    arguments = {"mode":"summary",
-                 "input_files":li,
-                 "output_file":output_file,
-                 "sept":"\\t",
-                 "header":"True",
-                 "suffix":".tsv",
-                 "filters":task_conf.get("merge_format_sumary", "filters"),
-                 "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+    merge_result = ""
+    if os.path.exists(run_conf.project_root + "/post_analysis/merge.summary.csv") == False:
+        li = ""
+        for item in input_files:
+            if len(item) > 0:
+                if len(li) > 0:
+                    li += ","
+                li += item
+                
+        merge_result = r_pa_merge.script_template_result.format(
+                 mode = "summary",
+                 input_files = li,
+                 output_file = run_conf.project_root + "/post_analysis/merge.summary.csv",
+                 config = config
+                 )
+            
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH")}
-
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "merge_result": merge_result,
+                 "merge_igv": ""
+                }
+                 
     r_pa_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     

@@ -39,7 +39,7 @@ bash {output_file}
 genomon_pa igv {mode} {input_file} {id} {output_file} {output_dir} {genomon_root} --config_text "{config}"
 """
 
-    script_template_config = "[capture] capture_max={capture_max} capture_width={capture_width} [pickup] pickup_width={pickup_width} markdup_bam_suffix={markdup_bam_suffix} pickup_bam_suffix={pickup_bam_suffix} [result_format_{mode}] sept={sept} header={header} col_pos_chr1={col_pos_chr1} col_pos_start={col_pos_start} col_pos_chr2={col_pos_chr2} col_pos_end={col_pos_end} [SOFTWARE] samtools={samtools} bedtools={bedtools}"
+    script_template_config = "[igv] capture_max={capture_max} capture_width={capture_width} [bam] pickup_width={pickup_width} input_bam_suffix={markdup_bam_suffix} output_bam_suffix={pickup_bam_suffix} [result_format_{mode}] sept={sept} header={header} col_pos_chr1={col_pos_chr1} col_pos_start={col_pos_start} col_pos_chr2={col_pos_chr2} col_pos_end={col_pos_end} [SOFTWARE] samtools={samtools} bedtools={bedtools}"
 
     def __init__(self, qsub_option, script_dir):
         super(Res_PA_Capture, self).__init__(qsub_option, script_dir)
