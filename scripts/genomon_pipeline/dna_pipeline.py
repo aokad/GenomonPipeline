@@ -313,27 +313,21 @@ def identify_mutations(input_file, output_file, output_dir):
 
     active_inhouse_normal_flag = False
     inhouse_normal_tabix_db = ""
-    try:
+    if task_conf.has_option("annotation", "active_inhouse_normal_flag"):
         active_inhouse_normal_flag = task_conf.get("annotation", "active_inhouse_normal_flag")
         inhouse_normal_tabix_db = genomon_conf.get("REFERENCE", "inhouse_normal_tabix_db")
-    except ConfigParser.NoOptionError:
-        print "assumed cause: [inhouse normal] is not defined"
 
     active_inhouse_tumor_flag = False
     inhouse_tumor_tabix_db = ""
-    try:
+    if task_conf.has_option("annotation", "active_inhouse_tumor_flag"):
         active_inhouse_tumor_flag = task_conf.get("annotation", "active_inhouse_tumor_flag")
         inhouse_tumor_tabix_db = genomon_conf.get("REFERENCE", "inhouse_tumor_tabix_db")
-    except ConfigParser.NoOptionError:
-        print "assumed cause: [inhouse tumor] is not defined"
 
     active_HGMD_flag = False
     HGMD_tabix_db = ""
-    try:
+    if task_conf.has_option("annotation", "active_HGMD_flag"):
         active_HGMD_flag = task_conf.get("annotation", "active_HGMD_flag")
         HGMD_tabix_db = genomon_conf.get("REFERENCE", "HGMD_tabix_db")
-    except ConfigParser.NoOptionError:
-        print "assumed cause: [HGMD] is not defined"
 
     arguments = {
         # fisher mutation
