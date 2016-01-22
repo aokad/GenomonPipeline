@@ -102,7 +102,7 @@ def dna_genomon_conf_check():
         if key == "annovar":
             if task_conf.has_option("annotation", "active_annovar_flag"):
                 flag = task_conf.get("annotation", "active_annovar_flag")
-                if flag == True:
+                if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):
                         raise ValueError(err_msg % (value, key, section))
