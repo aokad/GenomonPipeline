@@ -22,23 +22,21 @@ def main(args):
     ###
     # read sample list file
     sample_conf.parse_file(run_conf.sample_conf_file)
-    ###
 
     ###
-    # set and check genomon_conf config data
+    # set genomon_conf and task parameter config data
     genomon_conf.read(run_conf.genomon_conf_file)
-    genomon_conf_check()
-    ###
-
-    ###
-    # set and check task parameter config data    
     task_conf.read(run_conf.task_conf_file)
-    task_conf_check()
+    
     ###
+    # check task parameter config data
+    task_conf_check()
 
     if run_conf.analysis_type == "dna":
+        dna_genomon_conf_check()
         import dna_pipeline
     elif run_conf.analysis_type == "rna":
+        rna_genomon_conf_check()
         import rna_pipeline
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")
