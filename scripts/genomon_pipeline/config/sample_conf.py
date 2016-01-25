@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-import sys
 import os
 from genomon_pipeline.config.run_conf import *
 
@@ -67,10 +66,16 @@ class Sample_conf(object):
             csv_obj = csv.reader(hIN)
             for cells in csv_obj:
                 tempdata = []
+                row_len = 0
                 for cell in cells:
+                    row_len += len(cell)
+                    if (len(cell) == 0) and (row_len > 0):
+                        continue
                     tempdata.append(cell)
-                _file_data.append(tempdata)
-    
+                
+                if row_len > 0:
+                    _file_data.append(tempdata)
+
         return _file_data
 
 
@@ -79,8 +84,17 @@ class Sample_conf(object):
         _file_data = []
         with open(file_path, 'r') as hIN:
             for line in hIN:
-                F = line.rstrip('\n').split('\t')
-                _file_data.append(F)
+                F = line.rstrip().split('\t')
+                tempdata = []
+                row_len = 0
+                for cell in F:
+                    row_len += len(cell)
+                    if (len(cell) == 0) and (row_len > 0):
+                        continue
+                    tempdata.append(cell)
+                
+                if row_len > 0:
+                    _file_data.append(tempdata)
 
         return _file_data
 
@@ -141,7 +155,7 @@ class Sample_conf(object):
 
                 sampleID_list.append(sampleID)
 
-                if len(row) not in [2, 3]:
+                if len(row) != 3:
                     err_msg = sampleID + ": the path for read1 (and read2) should be provided"
                     raise ValueError(err_msg)
 
@@ -169,7 +183,7 @@ class Sample_conf(object):
 
                 sampleID_list.append(sampleID)
 
-                if len(row) not in [2, 3]:
+                if len(row) != 2:
                     err_msg = sampleID + ": only one bam file is allowed"
                     raise ValueError(err_msg)
 
@@ -195,7 +209,7 @@ class Sample_conf(object):
 
                 sampleID_list.append(sampleID)
 
-                if len(row) not in [2, 3]:
+                if len(row) != 2:
                     err_msg = sampleID + ": only one bam file is allowed"
                     raise ValueError(err_msg)
 
