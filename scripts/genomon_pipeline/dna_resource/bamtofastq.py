@@ -18,36 +18,46 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-echo -n > {f1_name}.tmp
-echo -n > {f2_name}.tmp
-echo -n > {t}.tmp
-echo -n > {s}.tmp
-echo -n > {o1_name}.tmp
-echo -n > {o2_name}.tmp
-echo "{input_bam}" | awk -F ";" '{{n=split($0,f); for(i=1;i<=n;i++){{print f[i];}}}}' | while read bam; do
+bams=( `echo "{input_bam}" | tr -s ';' ' '`)
+
+if [ ${{#bams[@]}} -eq 1 ]; then
+    bam=${{bams[0]}}
     echo $bam
-    {biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename=${{bam}} F={f1_name} F2={f2_name} T={t} S={s} O={o1_name} O2={o2_name} || exit $?
-    cat {f1_name} >> {f1_name}.tmp || exit $?
-    cat {f2_name} >> {f2_name}.tmp || exit $?
-    if [ -s {t} ]; then
-        cat {t} >> {t}.tmp || exit $?
-    fi
-    if [ -s {s} ]; then
-        cat {s} >> {s}.tmp || exit $?
-    fi
-    if [ -s {o1_name} ]; then
-        cat {o1_name} >> {o1_name}.tmp || exit $?
-    fi
-    if [ -s {o2_name} ]; then
-        cat {o2_name} >> {o2_name}.tmp || exit $?
-    fi
-done
-mv {f1_name}.tmp {f1_name} || exit $?
-mv {f2_name}.tmp {f2_name} || exit $?
-mv {t}.tmp {t} || exit $?
-mv {s}.tmp {s} || exit $?
-mv {o1_name}.tmp {o1_name} || exit $?
-mv {o2_name}.tmp {o2_name} || exit $?
+    {biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename=${{bam}} F={f1_name} F2={f2_name} T={t} S={s} O={o1_name} O2={o2_name} || exit $?    
+
+else
+    echo -n > {f1_name}
+    echo -n > {f2_name}
+    echo -n > {t}
+    echo -n > {s}
+    echo -n > {o1_name}
+    echo -n > {o2_name}
+
+    for bam in ${{bams[@]}}; do
+        echo $bam
+        {biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename=${{bam}} F={f1_name}.tmp F2={f2_name}.tmp T={t}.tmp S={s}.tmp O={o1_name}.tmp O2={o2_name}.tmp || exit $?
+        cat {f1_name}.tmp >> {f1_name} || exit $?
+        cat {f2_name}.tmp >> {f2_name} || exit $?
+        if [ -s {t}.tmp ]; then
+            cat {t}.tmp >> {t} || exit $?
+        fi
+        if [ -s {s}.tmp ]; then
+            cat {s}.tmp >> {s} || exit $?
+        fi
+        if [ -s {o1_name}.tmp ]; then
+            cat {o1_name}.tmp >> {o1_name} || exit $?
+        fi
+        if [ -s {o2_name}.tmp ]; then
+            cat {o2_name}.tmp >> {o2_name} || exit $?
+        fi
+        rm {f1_name}.tmp
+        rm {f2_name}.tmp
+        rm {t}.tmp
+        rm {s}.tmp
+        rm {o1_name}.tmp
+        rm {o2_name}.tmp
+    done
+fi
 
 """
 
