@@ -2,9 +2,9 @@
 
 from genomon_pipeline.stage_task import *
 
-class Res_Merge(Stage_task):
+class Res_Summary(Stage_task):
 
-    task_name = "merge"
+    task_name = "summary"
 
     script_template = """
 #!/bin/bash
@@ -17,12 +17,10 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
-
-# cat {input1} {input2} {input3} {input4} > {output}
 """
 
     def __init__(self, qsub_option, script_dir):
-        super(Res_Merge, self).__init__(qsub_option, script_dir)
+        super(Res_Summary, self).__init__(qsub_option, script_dir)
         
     def mkxls(self, files, excel_file):
         import xlwt
@@ -201,5 +199,5 @@ set -xv
              tsvfile.write('\t'.join(data_to_write) + '\n')
     
          tsvfile.close()
-    
-    
+
+
