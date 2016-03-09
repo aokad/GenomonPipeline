@@ -137,7 +137,7 @@ for sample in sample_conf.summary:
 # generate input list of 'post analysis for mutation'
 pa_list_mutation_tumor = []
 pa_list_mutation_normal = []
-if (not os.path.exists(run_conf.project_root + '/post_analysis/merge.mutation.csv')):
+if (not os.path.exists(run_conf.project_root + '/post_analysis/merge.mutation.tumor.csv')):
     for complist in sample_conf.mutation_call:
         result_file = run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'
         if (complist[1] == None):
@@ -148,8 +148,8 @@ if (not os.path.exists(run_conf.project_root + '/post_analysis/merge.mutation.cs
 # generate input list of 'post analysis for SV'
 pa_list_sv_tumor = []
 pa_list_sv_normal = []
-if (not os.path.exists(run_conf.project_root + '/post_analysis/merge.sv.csv')):
-    for complist in sample_conf.mutation_call:
+if (not os.path.exists(run_conf.project_root + '/post_analysis/merge.sv.tumor.csv')):
+    for complist in sample_conf.sv_detection:
         result_file = run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt'
         if (complist[1] == None):
             pa_list_sv_normal.append(result_file)
@@ -186,25 +186,7 @@ if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): o
 if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.project_root + '/sv/config')
 if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
 if (task_conf.getboolean("post_analysis", "enable") == True):
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/capture'):
-        os.makedirs(run_conf.project_root + '/post_analysis/mutation/capture')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/capture_script'):
-        os.makedirs(run_conf.project_root + '/post_analysis/mutation/capture_script')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/bam'):
-        os.mkdir(run_conf.project_root + '/post_analysis/mutation/bam')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/mutation/bam_script'):
-        os.mkdir(run_conf.project_root + '/post_analysis/mutation/bam_script')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/capture'):
-        os.makedirs(run_conf.project_root + '/post_analysis/sv/capture')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/capture_script'):
-        os.makedirs(run_conf.project_root + '/post_analysis/sv/capture_script')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/bam'):
-        os.mkdir(run_conf.project_root + '/post_analysis/sv/bam')
-    if not os.path.isdir(run_conf.project_root + '/post_analysis/sv/bam_script'):
-        os.mkdir(run_conf.project_root + '/post_analysis/sv/bam_script')
-if (task_conf.getboolean("pa_plot", "enable") == True):
-    if not os.path.isdir(run_conf.project_root + '/paplot'):
-        os.mkdir(run_conf.project_root + '/paplot')
+    if not os.path.isdir(run_conf.project_root + '/post_analysis'): os.makedirs(run_conf.project_root + '/post_analysis')
         
 for outputfiles in (bam2fastq_output_list, linked_fastq_list):
     for outputfile in outputfiles:
@@ -688,29 +670,11 @@ def write_summary(input_files, output_file):
 
 #####################
 # post analysis stage
-@active_if(task_conf.getboolean("pa_plot", "enable"))
-@follows(write_summary)
-@merge(pa_plot_list_summary, run_conf.project_root + "/paplot/index.html")
-def post_analysis_plot(input_file, output_file):
-    
-    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
-                 "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
-                 "inputs_qc": r_pa_plot.list_to_string(pa_plot_list_summary),
-                 "inputs_sv": r_pa_plot.list_to_string(pa_plot_list_sv),
-                 "output_dir": run_conf.project_root + "/paplot",
-                 "title": task_conf.get("pa_plot", "title"),
-                 "config_file": task_conf.get("pa_plot", "config_file"),
-                }
-                 
-    r_pa_plot.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
-
 @active_if(task_conf.getboolean("post_analysis", "enable"))
 @follows(identify_mutations)
-@merge(pa_list_mutation_tumor, run_conf.project_root + "/post_analysis/merge.mutation.csv")
+@merge(pa_list_mutation_tumor, run_conf.project_root + "/post_analysis/merge.mutation.tumor.csv")
 def post_analysis_mutation(input_files, output_file):
-
+        
     li = r_post_analysis.list_to_string(input_files)
     
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
@@ -721,17 +685,18 @@ def post_analysis_mutation(input_files, output_file):
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis",
                  "config_file": task_conf.get("post_analysis", "config_file"),
-                 "input_file": li
+                 "input_file": li,
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     
 @active_if(task_conf.getboolean("post_analysis", "enable"))
 @follows(filt_sv)
-@merge(pa_list_sv_tumor, run_conf.project_root + "/post_analysis/sv/capture_script/capture.bat")
+@merge(pa_list_sv_tumor, run_conf.project_root + "/post_analysis/merge.sv.tumor.csv")
 def post_analysis_sv(input_files, output_file):
 
-    li = r_post_analysis.list_to_string(input_files)
+    li_tumor = r_post_analysis.list_to_string(pa_list_sv_tumor)
+    li_normal = r_post_analysis.list_to_string(pa_list_sv_normal)
     
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
@@ -741,7 +706,7 @@ def post_analysis_sv(input_files, output_file):
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis",
                  "config_file": task_conf.get("post_analysis", "config_file"),
-                 "input_file": li
+                 "input_file": li_tumor + ";" + li_normal,
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
@@ -761,8 +726,27 @@ def post_analysis_summary(input_files, output_file):
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis",
                  "config_file": task_conf.get("post_analysis", "config_file"),
-                 "input_file": li
+                 "input_file": li,
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     
+@active_if(task_conf.getboolean("pa_plot", "enable"))
+@follows(write_summary)
+@merge(pa_plot_list_summary, run_conf.project_root + "/paplot/index.html")
+def post_analysis_plot(input_file, output_file):
+    
+    if not os.path.isdir(run_conf.project_root + '/paplot'): os.mkdir(run_conf.project_root + '/paplot')
+        
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
+                 "inputs_qc": r_pa_plot.list_to_string(pa_plot_list_summary),
+                 "inputs_sv": r_pa_plot.list_to_string(pa_plot_list_sv),
+                 "output_dir": run_conf.project_root + "/paplot",
+                 "title": task_conf.get("pa_plot", "title"),
+                 "config_file": task_conf.get("pa_plot", "config_file"),
+                }
+                 
+    r_pa_plot.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
