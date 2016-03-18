@@ -18,7 +18,8 @@ set -xv
 
 # set python environment
 export PYTHONHOME={pythonhome}
-export PATH=$PYTHONHOME/bin:$PATH
+samtools_home={samtools}
+export PATH=${{samtools_home%/*}}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
