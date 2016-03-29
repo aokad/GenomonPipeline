@@ -70,7 +70,20 @@ then
     print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
 fi
 
-echo "$print_header" > {out_prefix}_genomon_mutations.result.txt || exit $?
+if [ _{control_bam_list} = "_None" ]
+then
+    tmp_header="# {pipeline_version} {fisher_version} {mutfilter_version}"
+    echo $tmp_header > {out_prefix}_genomon_mutations.result.txt || exit 
+else
+    tmp_header="# {pipeline_version} {fisher_version} {mutfilter_version} {ebfilter_version}"
+    echo $tmp_header > {out_prefix}_genomon_mutations.result.txt || exit $?
+fi
+tmp_date=`date`
+echo "# Created: $tmp_date" >> {out_prefix}_genomon_mutations.result.txt || exit $?
+tmp_id=`whoami`
+echo "# User: $tmp_id" >> {out_prefix}_genomon_mutations.result.txt || exit $?
+
+echo "$print_header" >> {out_prefix}_genomon_mutations.result.txt || exit $?
 
 for i in `seq 1 1 {filecount}`
 do
@@ -82,8 +95,9 @@ do
     fi
 done
 
+{mutil} filter -i {out_prefix}_genomon_mutations.result.txt -o {out_prefix}_genomon_mutations.result.filt.txt -e {eb_pval} -f {fish_pval} -r {realign_pval} -t {tcount} -n {ncount} -p {post10q} -q {r_post10q} -c {tcount}
+
 """
     def __init__(self, qsub_option, script_dir):
         super(Mutation_merge, self).__init__(qsub_option, script_dir)
-
 

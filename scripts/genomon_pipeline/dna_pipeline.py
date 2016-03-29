@@ -68,7 +68,7 @@ for sample in sample_conf.bam_tofastq:
 markdup_bam_list = []
 merge_mutation_list = []
 for complist in sample_conf.mutation_call:
-     if os.path.exists(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'): continue
+     if os.path.exists(run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.filt.txt'): continue
      tumor_bam  = run_conf.project_root + '/bam/' + complist[0] + '/' + complist[0] + '.markdup.bam'
      normal_bam = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam' if complist[1] != None else None
      panel = run_conf.project_root + '/mutation/control_panel/' + complist[2] + ".control_panel.txt" if complist[2] != None else None
@@ -139,7 +139,7 @@ pa_list_mutation_tumor = []
 pa_list_mutation_normal = []
 if (not os.path.exists(run_conf.project_root + '/post_analysis/merge.mutation.tumor.csv')):
     for complist in sample_conf.mutation_call:
-        result_file = run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.txt'
+        result_file = run_conf.project_root + '/mutation/' + complist[0] + '/' + complist[0] + '_genomon_mutations.result.filt.txt'
         if (complist[1] == None):
             pa_list_mutation_normal.append(result_file)
         else:
@@ -352,7 +352,7 @@ def markdup(input_files, output_file):
 # identify mutations
 @follows( markdup )
 @follows( link_import_bam )
-@subdivide(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_genomon_mutations.result.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
+@subdivide(markdup_bam_list, formatter(), "{subpath[0][2]}/mutation/{subdir[0][0]}/{subdir[0][0]}_genomon_mutations.result.filt.txt", "{subpath[0][2]}/mutation/{subdir[0][0]}")
 def identify_mutations(input_file, output_file, output_dir):
 
     sample_name = os.path.basename(output_dir)
@@ -393,8 +393,6 @@ def identify_mutations(input_file, output_file, output_dir):
         "post_10_q": task_conf.get("fisher_mutation_call", "post_10_q"),
         # realignment filter
         "mutfilter": genomon_conf.get("SOFTWARE", "mutfilter"),
-        "realign_min_mismatch": task_conf.get("realignment_filter","disease_min_mismatch"),
-        "realign_max_mismatch": task_conf.get("realignment_filter","control_max_mismatch"),
         "realign_score_diff": task_conf.get("realignment_filter","score_diff"),
         "realign_window_size": task_conf.get("realignment_filter","window_size"),
         "realign_max_depth": task_conf.get("realignment_filter","max_depth"),
@@ -457,9 +455,23 @@ def identify_mutations(input_file, output_file, output_dir):
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "filecount": max_task_id,
+        "mutil": genomon_conf.get("SOFTWARE", "mutil"),
+        "eb_pval": task_conf.get("eb_filter","ebcall_pval-log10_thres"),
+        "fish_pval": task_conf.get("fisher_mutation_call","fisher_pval-log10_thres"),
+        "realign_pval": task_conf.get("realignment_filter","fisher_pval-log10_thres"),
+        "tcount": task_conf.get("realignment_filter","disease_min_mismatch"),
+        "ncount": task_conf.get("realignment_filter","control_max_mismatch"),
+        "post10q": task_conf.get("fisher_mutation_call","post_10_q_thres"),
+        "r_post10q": task_conf.get("realignment_filter","post_10_q_thres"),
+        "fisher_version": get_version("fisher"),
+        "mutfilter_version": get_version("mutfilter"),
+        "ebfilter_version": get_version("ebfilter"),
+        "pipeline_version": get_version("genomon_pipeline"),
         "out_prefix": output_dir + '/' + sample_name}
 
+
     mutation_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+
      
     for task_id in range(1,(max_task_id + 1)):
         input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'

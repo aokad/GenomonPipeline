@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
+exec(open('scripts/genomon_pipeline/__init__.py').read())
 
 setup(name='genomon_pipeline',
-      version='2.1.0',
+      version=__version__,
       description='Python tools for running genomon pipeline for cancer genome and transcriptome sequencing analysis',
       author='Kenichi Chiba, Eigo Shimizu, Yuichi Shiraishi',
       author_email='genomon_team@gamil.com',

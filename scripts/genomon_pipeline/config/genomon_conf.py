@@ -3,11 +3,16 @@
 import sys
 import os
 import ConfigParser
+import subprocess
+import subprocess
+from genomon_pipeline.__init__ import __version__
 from genomon_pipeline.config.task_conf import *
 
 global genomon_conf
 
 genomon_conf = ConfigParser.SafeConfigParser()
+
+software_version ={'genomon_pipeline':'genomon_pipeline-'+__version__}
 
 dna_reference_list = ["ref_fasta",
                       "interval_list",
@@ -44,6 +49,12 @@ rna_software_list = ["samtools",
                      "STAR-Fusion",
                      "fusionfusion"
                      ]
+
+dna_software_version = {"genomon_sv":"GenomonSV",
+                        "mutfilter":"GenomonMutationFilter",
+                        "ebfilter":"EBFilter",
+                        "fisher":"GenomonFisher"
+                        } 
 
 err_msg = 'No target File : \'%s\' for the %s key in the section of %s' 
 
@@ -132,4 +143,20 @@ def rna_genomon_conf_check():
             raise ValueError(err_msg % (value, key, section))
 
     pass
+
+
+def dna_software_version_set():
+    section = "SOFTWARE"
+    for key, name in dna_software_version.iteritems():
+        command = genomon_conf.get(section, key) + ' --version 2>&1 | grep ' + name
+        proc = subprocess.Popen([command], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        version_list = (proc.communicate()[0]).split("\n")
+        software_version[key] = version_list[0]
+
+
+def get_version(key):
+    return software_version[key]
+
+
+
 

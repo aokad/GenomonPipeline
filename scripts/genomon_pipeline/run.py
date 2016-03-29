@@ -34,6 +34,7 @@ def main(args):
 
     if run_conf.analysis_type == "dna":
         dna_genomon_conf_check()
+        dna_software_version_set()
         import dna_pipeline
     elif run_conf.analysis_type == "rna":
         rna_genomon_conf_check()
