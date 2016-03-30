@@ -18,7 +18,6 @@ parser.add_argument("project_root", metavar = "project_root_dir", default = None
                     help = "output root directory")
 
 parser.add_argument("genomon_conf_file", help = "config file for genomon pipeline", type = str)
-parser.add_argument("task_conf_file", help = "config file for each task", type = str)
 
 parser.add_argument("--param_check", help = "only param check", action='store_true')
 parser.add_argument("--disable_drmaa", help = "disable drmaa", action='store_true', default=False)

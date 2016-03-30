@@ -6,7 +6,6 @@ import glob
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
-from genomon_pipeline.config.task_conf import *
 from genomon_pipeline.config.sample_conf import *
 from genomon_pipeline.dna_resource.bamtofastq import *
 from genomon_pipeline.dna_resource.fastq_splitter import *
@@ -24,20 +23,20 @@ from genomon_pipeline.dna_resource.post_analysis import *
 from genomon_pipeline.dna_resource.paplot import *
 
 # set task classes
-bamtofastq = Bam2Fastq(task_conf.get("bam2fastq", "qsub_option"), run_conf.drmaa)
-fastq_splitter = Fastq_splitter(task_conf.get("split_fastq", "qsub_option"), run_conf.drmaa)
-bwa_align = Bwa_align(task_conf.get("bwa_mem", "qsub_option"), run_conf.drmaa)
-markduplicates = Markduplicates(task_conf.get("markduplicates", "qsub_option"), run_conf.drmaa)
-mutation_call = Mutation_call(task_conf.get("mutation_call", "qsub_option"), run_conf.drmaa)
-mutation_merge = Mutation_merge(task_conf.get("mutation_merge", "qsub_option"), run_conf.drmaa)
-sv_parse = SV_parse(task_conf.get("sv_parse", "qsub_option"), run_conf.drmaa)
-sv_merge = SV_merge(task_conf.get("sv_merge", "qsub_option"), run_conf.drmaa)
-sv_filt = SV_filt(task_conf.get("sv_filt", "qsub_option"), run_conf.drmaa)
-r_bamstats = Res_Bamstats(task_conf.get("bam_stats", "qsub_option"), run_conf.drmaa)
-r_coverage = Res_Coverage(task_conf.get("coverage", "qsub_option"), run_conf.drmaa)
-r_summary = Res_Summary(task_conf.get("summary", "qsub_option"), run_conf.drmaa)
-r_pa_plot = Res_PA_Plot(task_conf.get("pa_plot", "qsub_option"), run_conf.drmaa)
-r_post_analysis = Res_PostAnalysis(task_conf.get("post_analysis", "qsub_option"), run_conf.drmaa)
+bamtofastq = Bam2Fastq(genomon_conf.get("bam2fastq", "qsub_option"), run_conf.drmaa)
+fastq_splitter = Fastq_splitter(genomon_conf.get("split_fastq", "qsub_option"), run_conf.drmaa)
+bwa_align = Bwa_align(genomon_conf.get("bwa_mem", "qsub_option"), run_conf.drmaa)
+markduplicates = Markduplicates(genomon_conf.get("markduplicates", "qsub_option"), run_conf.drmaa)
+mutation_call = Mutation_call(genomon_conf.get("mutation_call", "qsub_option"), run_conf.drmaa)
+mutation_merge = Mutation_merge(genomon_conf.get("mutation_merge", "qsub_option"), run_conf.drmaa)
+sv_parse = SV_parse(genomon_conf.get("sv_parse", "qsub_option"), run_conf.drmaa)
+sv_merge = SV_merge(genomon_conf.get("sv_merge", "qsub_option"), run_conf.drmaa)
+sv_filt = SV_filt(genomon_conf.get("sv_filt", "qsub_option"), run_conf.drmaa)
+r_bamstats = Res_Bamstats(genomon_conf.get("bam_stats", "qsub_option"), run_conf.drmaa)
+r_coverage = Res_Coverage(genomon_conf.get("coverage", "qsub_option"), run_conf.drmaa)
+r_summary = Res_Summary(genomon_conf.get("summary", "qsub_option"), run_conf.drmaa)
+r_pa_plot = Res_PA_Plot(genomon_conf.get("pa_plot", "qsub_option"), run_conf.drmaa)
+r_post_analysis = Res_PostAnalysis(genomon_conf.get("post_analysis", "qsub_option"), run_conf.drmaa)
 
 # generate output list of 'linked fastq'
 linked_fastq_list = []
@@ -185,7 +184,7 @@ if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_r
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.project_root + '/sv/config')
 if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
-if (task_conf.getboolean("post_analysis", "enable") == True):
+if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.isdir(run_conf.project_root + '/post_analysis'): os.makedirs(run_conf.project_root + '/post_analysis')
         
 for outputfiles in (bam2fastq_output_list, linked_fastq_list):
@@ -275,8 +274,8 @@ def split_files(input_files, output_files, target_dir):
         os.unlink(oo)
 
     input_prefix, ext = os.path.splitext(input_files[0][0])
-    arguments = {"lines": task_conf.get("split_fastq", "split_fastq_line_number"),
-                 "fastq_filter": task_conf.get("split_fastq", "fastq_filter"),
+    arguments = {"lines": genomon_conf.get("split_fastq", "split_fastq_line_number"),
+                 "fastq_filter": genomon_conf.get("split_fastq", "fastq_filter"),
                  "target_dir": target_dir,
                  "ext": ext}
     
@@ -304,7 +303,7 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
     with open(input_dir + "/fastq_line_num.txt") as in_handle:
         tmp_num = in_handle.read()
         all_line_num = int(tmp_num)
-    split_lines = task_conf.get("split_fastq", "split_fastq_line_number")
+    split_lines = genomon_conf.get("split_fastq", "split_fastq_line_number")
 
     ans_quotient = all_line_num / int(split_lines)
     ans_remainder = all_line_num % int(split_lines)
@@ -314,7 +313,7 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
                  "output_dir": output_dir,
                  "sample_name": sample_name,
                  "bwa": genomon_conf.get("SOFTWARE", "bwa"),
-                 "bwa_params": task_conf.get("bwa_mem", "bwa_params"),
+                 "bwa_params": genomon_conf.get("bwa_mem", "bwa_params"),
                  "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
                  "biobambam": genomon_conf.get("SOFTWARE", "biobambam")}
 
@@ -358,24 +357,24 @@ def identify_mutations(input_file, output_file, output_dir):
     sample_name = os.path.basename(output_dir)
 
     active_inhouse_normal_flag = False
-    if task_conf.has_option("annotation", "active_inhouse_normal_flag"):
-        active_inhouse_normal_flag = task_conf.get("annotation", "active_inhouse_normal_flag")
+    if genomon_conf.has_option("annotation", "active_inhouse_normal_flag"):
+        active_inhouse_normal_flag = genomon_conf.get("annotation", "active_inhouse_normal_flag")
 
     inhouse_normal_tabix_db = ""
     if genomon_conf.has_option("REFERENCE", "inhouse_normal_tabix_db"):
         inhouse_normal_tabix_db = genomon_conf.get("REFERENCE", "inhouse_normal_tabix_db")
 
     active_inhouse_tumor_flag = False
-    if task_conf.has_option("annotation", "active_inhouse_tumor_flag"):
-        active_inhouse_tumor_flag = task_conf.get("annotation", "active_inhouse_tumor_flag")
+    if genomon_conf.has_option("annotation", "active_inhouse_tumor_flag"):
+        active_inhouse_tumor_flag = genomon_conf.get("annotation", "active_inhouse_tumor_flag")
 
     inhouse_tumor_tabix_db = ""
     if genomon_conf.has_option("REFERENCE", "inhouse_tumor_tabix_db"):
         inhouse_tumor_tabix_db = genomon_conf.get("REFERENCE", "inhouse_tumor_tabix_db")
 
     active_HGMD_flag = False
-    if task_conf.has_option("annotation", "active_HGMD_flag"):
-        active_HGMD_flag = task_conf.get("annotation", "active_HGMD_flag")
+    if genomon_conf.has_option("annotation", "active_HGMD_flag"):
+        active_HGMD_flag = genomon_conf.get("annotation", "active_HGMD_flag")
         
     HGMD_tabix_db = ""
     if genomon_conf.has_option("REFERENCE", "HGMD_tabix_db"):
@@ -384,36 +383,36 @@ def identify_mutations(input_file, output_file, output_dir):
     arguments = {
         # fisher mutation
         "fisher": genomon_conf.get("SOFTWARE", "fisher"),
-        "map_quality": task_conf.get("fisher_mutation_call", "map_quality"),
-        "base_quality": task_conf.get("fisher_mutation_call", "base_quality"),
-        "min_allele_freq": task_conf.get("fisher_mutation_call", "disease_min_allele_frequency"),
-        "max_allele_freq": task_conf.get("fisher_mutation_call", "control_max_allele_frequency"),
-        "min_depth": task_conf.get("fisher_mutation_call", "min_depth"),
-        "fisher_thres": task_conf.get("fisher_mutation_call", "fisher_thres_hold"),
-        "post_10_q": task_conf.get("fisher_mutation_call", "post_10_q"),
+        "map_quality": genomon_conf.get("fisher_mutation_call", "map_quality"),
+        "base_quality": genomon_conf.get("fisher_mutation_call", "base_quality"),
+        "min_allele_freq": genomon_conf.get("fisher_mutation_call", "disease_min_allele_frequency"),
+        "max_allele_freq": genomon_conf.get("fisher_mutation_call", "control_max_allele_frequency"),
+        "min_depth": genomon_conf.get("fisher_mutation_call", "min_depth"),
+        "fisher_thres": genomon_conf.get("fisher_mutation_call", "fisher_thres_hold"),
+        "post_10_q": genomon_conf.get("fisher_mutation_call", "post_10_q"),
         # realignment filter
         "mutfilter": genomon_conf.get("SOFTWARE", "mutfilter"),
-        "realign_score_diff": task_conf.get("realignment_filter","score_diff"),
-        "realign_window_size": task_conf.get("realignment_filter","window_size"),
-        "realign_max_depth": task_conf.get("realignment_filter","max_depth"),
+        "realign_score_diff": genomon_conf.get("realignment_filter","score_diff"),
+        "realign_window_size": genomon_conf.get("realignment_filter","window_size"),
+        "realign_max_depth": genomon_conf.get("realignment_filter","max_depth"),
         # indel filter
-        "indel_search_length": task_conf.get("indel_filter","search_length"),
-        "indel_neighbor": task_conf.get("indel_filter","neighbor"),
-        "indel_base_quality": task_conf.get("indel_filter","base_quality"),
-        "indel_min_depth": task_conf.get("indel_filter","min_depth"),
-        "indel_min_mismatch": task_conf.get("indel_filter","max_mismatch"),
-        "indel_min_allele_freq": task_conf.get("indel_filter","max_allele_freq"),
+        "indel_search_length": genomon_conf.get("indel_filter","search_length"),
+        "indel_neighbor": genomon_conf.get("indel_filter","neighbor"),
+        "indel_base_quality": genomon_conf.get("indel_filter","base_quality"),
+        "indel_min_depth": genomon_conf.get("indel_filter","min_depth"),
+        "indel_min_mismatch": genomon_conf.get("indel_filter","max_mismatch"),
+        "indel_min_allele_freq": genomon_conf.get("indel_filter","max_allele_freq"),
         # breakpoint filter
-        "bp_max_depth": task_conf.get("breakpoint_filter","max_depth"),
-        "bp_min_clip_size": task_conf.get("breakpoint_filter","min_clip_size"),
-        "bp_junc_num_thres": task_conf.get("breakpoint_filter","junc_num_thres"),
-        "bp_map_quality": task_conf.get("breakpoint_filter","map_quality"),
+        "bp_max_depth": genomon_conf.get("breakpoint_filter","max_depth"),
+        "bp_min_clip_size": genomon_conf.get("breakpoint_filter","min_clip_size"),
+        "bp_junc_num_thres": genomon_conf.get("breakpoint_filter","junc_num_thres"),
+        "bp_map_quality": genomon_conf.get("breakpoint_filter","map_quality"),
         # simplerepeat filter
         "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
         # EB filter
         "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
-        "eb_map_quality": task_conf.get("eb_filter","map_quality"),
-        "eb_base_quality": task_conf.get("eb_filter","base_quality"),
+        "eb_map_quality": genomon_conf.get("eb_filter","map_quality"),
+        "eb_base_quality": genomon_conf.get("eb_filter","base_quality"),
         "control_bam_list": input_file[2],
         # original_annotations
         "mutanno": genomon_conf.get("SOFTWARE", "mutanno"),
@@ -421,14 +420,14 @@ def identify_mutations(input_file, output_file, output_dir):
         "inhouse_normal_database":inhouse_normal_tabix_db,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "inhouse_tumor_database":inhouse_tumor_tabix_db,
-        "active_HGVD_flag": task_conf.get("annotation", "active_HGVD_flag"),
+        "active_HGVD_flag": genomon_conf.get("annotation", "active_HGVD_flag"),
         "HGVD_database":genomon_conf.get("REFERENCE", "HGVD_tabix_db"),
         "active_HGMD_flag": active_HGMD_flag,
         "HGMD_database": HGMD_tabix_db,
         # annovar
-        "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
+        "active_annovar_flag": genomon_conf.get("annotation", "active_annovar_flag"),
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
-        "table_annovar_params": task_conf.get("annotation", "table_annovar_params"),
+        "table_annovar_params": genomon_conf.get("annotation", "table_annovar_params"),
         # commmon
         "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
         "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
@@ -449,20 +448,20 @@ def identify_mutations(input_file, output_file, output_dir):
     arguments = {
         "control_bam": input_file[1],
         "control_bam_list": input_file[2],
-        "active_annovar_flag": task_conf.get("annotation", "active_annovar_flag"),
-        "active_HGVD_flag": task_conf.get("annotation", "active_HGVD_flag"),
+        "active_annovar_flag": genomon_conf.get("annotation", "active_annovar_flag"),
+        "active_HGVD_flag": genomon_conf.get("annotation", "active_HGVD_flag"),
         "active_HGMD_flag": active_HGMD_flag,
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "filecount": max_task_id,
         "mutil": genomon_conf.get("SOFTWARE", "mutil"),
-        "eb_pval": task_conf.get("eb_filter","ebcall_pval-log10_thres"),
-        "fish_pval": task_conf.get("fisher_mutation_call","fisher_pval-log10_thres"),
-        "realign_pval": task_conf.get("realignment_filter","fisher_pval-log10_thres"),
-        "tcount": task_conf.get("realignment_filter","disease_min_mismatch"),
-        "ncount": task_conf.get("realignment_filter","control_max_mismatch"),
-        "post10q": task_conf.get("fisher_mutation_call","post_10_q_thres"),
-        "r_post10q": task_conf.get("realignment_filter","post_10_q_thres"),
+        "eb_pval": genomon_conf.get("eb_filter","ebcall_pval-log10_thres"),
+        "fish_pval": genomon_conf.get("fisher_mutation_call","fisher_pval-log10_thres"),
+        "realign_pval": genomon_conf.get("realignment_filter","fisher_pval-log10_thres"),
+        "tcount": genomon_conf.get("realignment_filter","disease_min_mismatch"),
+        "ncount": genomon_conf.get("realignment_filter","control_max_mismatch"),
+        "post10q": genomon_conf.get("fisher_mutation_call","post_10_q_thres"),
+        "r_post10q": genomon_conf.get("realignment_filter","post_10_q_thres"),
         "fisher_version": get_version("fisher"),
         "mutfilter_version": get_version("mutfilter"),
         "ebfilter_version": get_version("ebfilter"),
@@ -566,7 +565,7 @@ def parse_sv(input_file, output_file):
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "sample_conf": sample_yaml,
-                 "param_conf": task_conf.get("genomon_sv", "param_file"),
+                 "param_conf": genomon_conf.get("genomon_sv", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
@@ -581,7 +580,7 @@ def merge_sv(input_files,  output_file):
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "control_conf": input_files[0],
                  "bedpe": output_file,
-                 "param_conf": task_conf.get("genomon_sv", "param_file"),
+                 "param_conf": genomon_conf.get("genomon_sv", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
@@ -599,7 +598,7 @@ def filt_sv(input_files,  output_file):
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "sample_conf": sample_yaml,
-                 "param_conf": task_conf.get("genomon_sv", "param_file"),
+                 "param_conf": genomon_conf.get("genomon_sv", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
@@ -639,16 +638,16 @@ def coverage(input_file, output_file):
     incl_bed_file = ""
     genome_file = ""
     data_type = ""
-    if task_conf.get("coverage", "wgs_flag") == "True":
+    if genomon_conf.get("coverage", "wgs_flag") == "True":
         genome_file = genomon_conf.get("REFERENCE", "hg19_genome")
         incl_bed_file = output_file + "genome.bed"
-        incl_bed_w = task_conf.get("coverage", "wgs_incl_bed_width")
+        incl_bed_w = genomon_conf.get("coverage", "wgs_incl_bed_width")
         r_coverage.create_incl_bed_wgs(genome_file, incl_bed_file, long(incl_bed_w), "")
         data_type = "wgs"
 
     arguments = {"data_type": data_type,
-                 "i_bed_lines": task_conf.get("coverage", "wgs_i_bed_lines"),
-                 "i_bed_size": task_conf.get("coverage", "wgs_i_bed_width"),
+                 "i_bed_lines": genomon_conf.get("coverage", "wgs_i_bed_lines"),
+                 "i_bed_size": genomon_conf.get("coverage", "wgs_i_bed_width"),
                  "incl_bed_file": incl_bed_file,
                  "genome_file": genome_file,
                  "gaptxt": genomon_conf.get("REFERENCE", "gaptxt"),
@@ -661,7 +660,7 @@ def coverage(input_file, output_file):
 
     r_coverage.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     
-    r_coverage.calc_coverage(depth_output_file, task_conf.get("coverage", "coverage"), output_file)
+    r_coverage.calc_coverage(depth_output_file, genomon_conf.get("coverage", "coverage"), output_file)
     
     os.unlink(dir_name+'/'+sample_name+'.depth')
     os.unlink(dir_name+'/'+sample_name+'.depth.input_bed')
@@ -682,7 +681,7 @@ def write_summary(input_files, output_file):
 
 #####################
 # post analysis stage
-@active_if(task_conf.getboolean("post_analysis", "enable"))
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @follows(identify_mutations)
 @merge(pa_list_mutation_tumor, run_conf.project_root + "/post_analysis/merge.mutation.tumor.csv")
 def post_analysis_mutation(input_files, output_file):
@@ -696,13 +695,13 @@ def post_analysis_mutation(input_files, output_file):
                  "mode": "mutation",
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis",
-                 "config_file": task_conf.get("post_analysis", "config_file"),
+                 "config_file": genomon_conf.get("post_analysis", "config_file"),
                  "input_file": li,
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     
-@active_if(task_conf.getboolean("post_analysis", "enable"))
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @follows(filt_sv)
 @merge(pa_list_sv_tumor, run_conf.project_root + "/post_analysis/merge.sv.tumor.csv")
 def post_analysis_sv(input_files, output_file):
@@ -717,13 +716,13 @@ def post_analysis_sv(input_files, output_file):
                  "mode": "sv",
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis",
-                 "config_file": task_conf.get("post_analysis", "config_file"),
+                 "config_file": genomon_conf.get("post_analysis", "config_file"),
                  "input_file": li_tumor + ";" + li_normal,
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
-@active_if(task_conf.getboolean("post_analysis", "enable"))
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @follows(write_summary)
 @merge(pa_list_summary, run_conf.project_root + "/post_analysis/merge.summary.csv")
 def post_analysis_summary(input_files, output_file):
@@ -737,13 +736,13 @@ def post_analysis_summary(input_files, output_file):
                  "mode": "summary",
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis",
-                 "config_file": task_conf.get("post_analysis", "config_file"),
+                 "config_file": genomon_conf.get("post_analysis", "config_file"),
                  "input_file": li,
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
     
-@active_if(task_conf.getboolean("pa_plot", "enable"))
+@active_if(genomon_conf.getboolean("pa_plot", "enable"))
 @follows(write_summary)
 @merge(pa_plot_list_summary, run_conf.project_root + "/paplot/index.html")
 def post_analysis_plot(input_file, output_file):
@@ -757,8 +756,10 @@ def post_analysis_plot(input_file, output_file):
                  "inputs_qc": r_pa_plot.list_to_string(pa_plot_list_summary),
                  "inputs_sv": r_pa_plot.list_to_string(pa_plot_list_sv),
                  "output_dir": run_conf.project_root + "/paplot",
-                 "title": task_conf.get("pa_plot", "title"),
-                 "config_file": task_conf.get("pa_plot", "config_file"),
+                 "title": genomon_conf.get("pa_plot", "title"),
+                 "config_file": genomon_conf.get("pa_plot", "config_file"),
                 }
                  
     r_pa_plot.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+
+

@@ -2,7 +2,6 @@ import os
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
-from genomon_pipeline.config.task_conf import *
 from genomon_pipeline.config.sample_conf import *
 from genomon_pipeline.rna_resource.star_align import *
 from genomon_pipeline.rna_resource.fusionfusion import *
@@ -10,8 +9,8 @@ from genomon_pipeline.rna_resource.fusionfusion import *
 
 
 # set task classes
-star_align = Star_align(task_conf.get("star_align", "qsub_option"), run_conf.drmaa)
-fusionfusion = Fusionfusion(task_conf.get("fusionfusion", "qsub_option"), run_conf.drmaa)
+star_align = Star_align(genomon_conf.get("star_align", "qsub_option"), run_conf.drmaa)
+fusionfusion = Fusionfusion(genomon_conf.get("fusionfusion", "qsub_option"), run_conf.drmaa)
 
 # generate list of linked_fastq file path
 linked_fastq_list = []
@@ -52,9 +51,9 @@ def task_star_align(input_files, output_file):
 
     arguments = {"star": genomon_conf.get("SOFTWARE", "STAR"),
                  "star_genome": genomon_conf.get("REFERENCE", "star_genome"),
-                 "additional_params": task_conf.get("star_align", "star_params"),
+                 "additional_params": genomon_conf.get("star_align", "star_params"),
                  "samtools": genomon_conf.get("SOFTWARE", "samtools"),
-                 "samtools_sort_params": task_conf.get("star_align", "samtools_sort_params"),
+                 "samtools_sort_params": genomon_conf.get("star_align", "samtools_sort_params"),
                  "fastq1": input_files[0],
                  "fastq2": input_files[1],
                  "out_prefix": dir_name + '/' + sample_name + '.'}
@@ -74,7 +73,7 @@ def task_fusionfusion(input_file, output_file):
     arguments = {"fusionfusion": genomon_conf.get("SOFTWARE", "fusionfusion"),
                  "chimeric_sam": input_chimeric_sam,
                  "output_prefix": output_dir_name,
-                 "param_file": task_conf.get("fusionfusion", "param_file"),
+                 "param_file": genomon_conf.get("fusionfusion", "param_file"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
