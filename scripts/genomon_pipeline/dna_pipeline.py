@@ -186,7 +186,11 @@ if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.pr
 if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
 if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.isdir(run_conf.project_root + '/post_analysis'): os.makedirs(run_conf.project_root + '/post_analysis')
-        
+if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
+
+genomon_conf_name, ext = os.path.splitext(run_conf.genomon_conf_file)
+shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
+
 for outputfiles in (bam2fastq_output_list, linked_fastq_list):
     for outputfile in outputfiles:
         sample = os.path.basename(os.path.dirname(outputfile[0][0]))

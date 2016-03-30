@@ -1,4 +1,5 @@
 import os
+import shutil
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
@@ -27,7 +28,10 @@ if not os.path.isdir(run_conf.project_root + '/log'): os.mkdir(run_conf.project_
 if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.project_root + '/fastq')
 if not os.path.isdir(run_conf.project_root + '/star'): os.mkdir(run_conf.project_root + '/star')
 if not os.path.isdir(run_conf.project_root + '/fusion'): os.mkdir(run_conf.project_root + '/fusion')
+if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
 
+genomon_conf_name, ext = os.path.splitext(run_conf.genomon_conf_file)
+shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
 
 # link the input fastq files
 @originate(linked_fastq_list, sample_list_fastq)
