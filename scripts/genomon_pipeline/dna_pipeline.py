@@ -108,7 +108,7 @@ for complist in sample_conf.sv_detection:
 for control_panel_name in unique_complist:
     if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
     tmp_list = []
-    tmp_list.append(run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml")
+    tmp_list.append(run_conf.project_root + '/sv/control_panel/' + control_panel_name + ".control_info.txt")
     for sample in sample_conf.control_panel[control_panel_name]:
         tmp_list.append(run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz")
     merge_bedpe_list.append(tmp_list)
@@ -182,7 +182,7 @@ if not os.path.isdir(run_conf.project_root + '/mutation'): os.mkdir(run_conf.pro
 if not os.path.isdir(run_conf.project_root + '/mutation/control_panel'): os.mkdir(run_conf.project_root + '/mutation/control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_root + '/sv')
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
-if not os.path.isdir(run_conf.project_root + '/sv/config'): os.mkdir(run_conf.project_root + '/sv/config')
+if not os.path.isdir(run_conf.project_root + '/sv/control_panel'): os.mkdir(run_conf.project_root + '/sv/control_panel')
 if not os.path.isdir(run_conf.project_root + '/summary'): os.mkdir(run_conf.project_root + '/summary')
 if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.isdir(run_conf.project_root + '/post_analysis'): os.makedirs(run_conf.project_root + '/post_analysis')
@@ -218,10 +218,10 @@ for complist in sample_conf.sv_detection:
     # make the control yaml file
     control_panel_name = complist[2]
     if control_panel_name != None:
-        control_conf = run_conf.project_root + '/sv/config/' + control_panel_name + ".control.yaml"
+        control_conf = run_conf.project_root + '/sv/control_panel/' + control_panel_name + ".control_info.txt"
         with open(control_conf,  "w") as out_handle:
             for sample in sample_conf.control_panel[control_panel_name]:
-                out_handle.write(sample +": "+run_conf.project_root+ "/sv/"+ sample +"/"+ sample +".junction.clustered.bedpe.gz\n")
+                out_handle.write(sample+ "\t"+ run_conf.project_root+ "/sv/"+ sample +"/"+ sample+ "\n")
 
 # link the import bam to project directory
 @originate(sample_conf.bam_import.keys())
@@ -512,85 +512,34 @@ def identify_mutations(input_file, output_file, output_dir):
 def parse_sv(input_file, output_file):
 
     dir_name = os.path.dirname(output_file)
-    sample_name = os.path.basename(dir_name)
-
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    yaml_flag = False
-    sv_sampleConf = {"target": {}, "matched_control": {}, "non_matched_control_panel": {}}
-    for complist in sample_conf.sv_detection:
-        if sample_name == complist[0]:
-
-            # tumor:exist, matched_normal:exist, non-matched-normal:exist
-            if complist[0] != None and complist[1] != None and complist[2] != None:
-                sv_sampleConf["target"]["label"] = sample_name
-                sv_sampleConf["target"]["path_to_bam"] = input_file
-                sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-                sv_sampleConf["matched_control"]["use"] = True
-                sv_sampleConf["matched_control"]["path_to_bam"] = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam'
-                sv_sampleConf["non_matched_control_panel"]["use"] = True
-                sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = complist[1]
-                sv_sampleConf["non_matched_control_panel"]["data_path"] = run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
-                yaml_flag = True
-                break
-
-            # tumor:exist, matched_normal:exist, non-matched-normal:none
-            elif complist[0] != None and complist[1] != None and complist[2] == None:
-                sv_sampleConf["target"]["label"] = sample_name
-                sv_sampleConf["target"]["path_to_bam"] = input_file
-                sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-                sv_sampleConf["matched_control"]["use"] = True
-                sv_sampleConf["matched_control"]["path_to_bam"] = run_conf.project_root + '/bam/' + complist[1] + '/' + complist[1] + '.markdup.bam'
-                sv_sampleConf["non_matched_control_panel"]["use"] = False
-                yaml_flag = True
-                break
-
-            # tumor:exist, matched_normal:none, non-matched-normal:exist
-            elif complist[0] != None and complist[1] == None and complist[2] != None:
-                sv_sampleConf["target"]["label"] = sample_name
-                sv_sampleConf["target"]["path_to_bam"] = input_file
-                sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-                sv_sampleConf["matched_control"]["use"] = False
-                sv_sampleConf["matched_control"]["path_to_bam"] = None
-                sv_sampleConf["non_matched_control_panel"]["use"] = True
-                sv_sampleConf["non_matched_control_panel"]["matched_control_label"] = None
-                sv_sampleConf["non_matched_control_panel"]["data_path"] = run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
-                yaml_flag = True
-                break
-
-    if not yaml_flag:
-        sv_sampleConf["target"]["label"] = sample_name
-        sv_sampleConf["target"]["path_to_bam"] = input_file
-        sv_sampleConf["target"]["path_to_output_dir"] = dir_name
-        sv_sampleConf["matched_control"]["use"] = False
-        sv_sampleConf["matched_control"]["path_to_bam"] = None
-        sv_sampleConf["non_matched_control_panel"]["use"] = False
-
-    sample_yaml = run_conf.project_root + "/sv/config/" + sample_name + ".yaml"
-    hOUT = open(sample_yaml, "w")
-    print >> hOUT, yaml.dump(sv_sampleConf, default_flow_style = False)
-    hOUT.close()
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
-                 "sample_conf": sample_yaml,
-                 "param_conf": genomon_conf.get("genomon_sv", "param_file"),
+                 "input_bam": input_file,
+                 "output_prefix": output_file.replace(".junction.clustered.bedpe.gz", ""),
+                 "param": genomon_conf.get("genomon_sv", "parse_param"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib")}
+
     sv_parse.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
 # merge SV
 @follows( parse_sv )
-@transform(merge_bedpe_list, formatter(".+/(?P<NAME>.+).control.yaml"), "{subpath[0][2]}/sv/non_matched_control_panel/{NAME[0]}.merged.junction.control.bedpe.gz")
+@transform(merge_bedpe_list, formatter(".+/(?P<NAME>.+).control_info.txt"), "{subpath[0][2]}/sv/non_matched_control_panel/{NAME[0]}.merged.junction.control.bedpe.gz")
 def merge_sv(input_files,  output_file):
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
-                 "control_conf": input_files[0],
-                 "bedpe": output_file,
-                 "param_conf": genomon_conf.get("genomon_sv", "param_file"),
+                 "control_info": input_files[0],
+                 "merge_output_file": output_file,
+                 "param": genomon_conf.get("genomon_sv", "merge_param"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib")}
+
     sv_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 
@@ -603,12 +552,34 @@ def filt_sv(input_files,  output_file):
     sample_name = os.path.basename(dir_name)
     sample_yaml = run_conf.project_root + "/sv/config/" + sample_name + ".yaml"
 
+    filt_param = ""
+
+    for complist in sample_conf.sv_detection:
+        if sample_name == complist[0]:
+
+            if complist[1] != None:
+                filt_param = filt_param + " --matched_control_bam " + run_conf.project_root + "/bam/" + complist[1] + '/' + complist[1] + ".markdup.bam"
+
+            if complist[2] != None:
+                filt_param = filt_param + " --non_matched_control_junction " + run_conf.project_root +"/sv/non_matched_control_panel/"+ complist[2] +".merged.junction.control.bedpe.gz"
+                if complist[1] != None:
+                    filt_param = filt_param + " --matched_control_label " + complist[1]
+
+            break
+
+    filt_param = filt_param.lstrip(' ') + ' ' + genomon_conf.get("genomon_sv", "filt_param")
+
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
-                 "sample_conf": sample_yaml,
-                 "param_conf": genomon_conf.get("genomon_sv", "param_file"),
+                 "input_bam": run_conf.project_root + "/bam/" + sample_name + '/' + sample_name + ".markdup.bam",
+                 "output_prefix": run_conf.project_root + "/sv/" + sample_name + '/' + sample_name,
+                 "reference_genome": genomon_conf.get("REFERENCE", "ref_fasta"),
+                 "annotation_dir": genomon_conf.get("genomon_sv", "annotation_dir"),
+                 "param": filt_param,
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib")}
+
     sv_filt.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
 

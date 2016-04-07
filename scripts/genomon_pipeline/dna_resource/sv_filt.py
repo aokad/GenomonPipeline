@@ -20,11 +20,11 @@ set -xv
 
 # set python environment
 export PYTHONHOME={pythonhome}
-export PATH=$PYTHONHOME/bin:$PATH
+export PATH={htslib}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-{genomon_sv} filt {sample_conf} {param_conf}
+{genomon_sv} filt {input_bam} {output_prefix} {reference_genome} {annotation_dir} {param}
 
 """
 
