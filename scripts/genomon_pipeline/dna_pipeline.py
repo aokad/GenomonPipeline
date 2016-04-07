@@ -116,7 +116,7 @@ for control_panel_name in unique_complist:
 # generate input list of 'SV filt'
 filt_bedpe_list = []
 for complist in sample_conf.sv_detection:
-    if os.path.exists(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.txt'): continue
+    if os.path.exists(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.filt.txt'): continue
     filt_bedpe_list.append(run_conf.project_root+ "/sv/"+ complist[0] +"/"+ complist[0] +".junction.clustered.bedpe.gz")
 
 # generate input list of 'summary'
@@ -545,7 +545,7 @@ def merge_sv(input_files,  output_file):
 
 # filt SV
 @follows( merge_sv )
-@transform(filt_bedpe_list, formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.genomonSV.result.txt")
+@transform(filt_bedpe_list, formatter(), "{subpath[0][2]}/sv/{subdir[0][0]}/{subdir[0][0]}.genomonSV.filt.result.txt")
 def filt_sv(input_files,  output_file):
 
     dir_name = os.path.dirname(output_file)
@@ -575,6 +575,9 @@ def filt_sv(input_files,  output_file):
                  "reference_genome": genomon_conf.get("REFERENCE", "ref_fasta"),
                  "annotation_dir": genomon_conf.get("sv_filt", "annotation_dir"),
                  "param": filt_param,
+                 "sv_utils": genomon_conf.get("SOFTWARE", "sv_utils"),
+                 "sv_utils_annotation_dir": genomon_conf.get("sv_filt", "sv_utils_annotation_dir"),
+                 "sv_utils_param": genomon_conf.get("sv_filt", "sv_utils_params"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),

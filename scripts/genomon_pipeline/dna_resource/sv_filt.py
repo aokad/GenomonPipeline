@@ -26,6 +26,8 @@ export PYTHONPATH={pythonpath}
 
 {genomon_sv} filt {input_bam} {output_prefix} {reference_genome} {annotation_dir} {param}
 
+{sv_utils} filter {output_prefix}.genomonSV.result.txt {output_prefix}.genomonSV.result.filt.txt {sv_utils_annotation_dir} {sv_utils_param}
+
 """
 
     def __init__(self, qsub_option, script_dir):
