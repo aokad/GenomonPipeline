@@ -450,6 +450,9 @@ def identify_mutations(input_file, output_file, output_dir):
     mutation_call.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', max_task_id)
     
     arguments = {
+        "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+        "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
+        "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
         "control_bam": input_file[1],
         "control_bam_list": input_file[2],
         "active_annovar_flag": genomon_conf.get("annotation", "active_annovar_flag"),
