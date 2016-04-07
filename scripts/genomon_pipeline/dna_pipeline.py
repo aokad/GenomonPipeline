@@ -517,7 +517,7 @@ def parse_sv(input_file, output_file):
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "input_bam": input_file,
                  "output_prefix": output_file.replace(".junction.clustered.bedpe.gz", ""),
-                 "param": genomon_conf.get("genomon_sv", "parse_param"),
+                 "param": genomon_conf.get("sv_parse", "params"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
@@ -534,7 +534,7 @@ def merge_sv(input_files,  output_file):
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "control_info": input_files[0],
                  "merge_output_file": output_file,
-                 "param": genomon_conf.get("genomon_sv", "merge_param"),
+                 "param": genomon_conf.get("sv_merge", "params"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
@@ -567,13 +567,13 @@ def filt_sv(input_files,  output_file):
 
             break
 
-    filt_param = filt_param.lstrip(' ') + ' ' + genomon_conf.get("genomon_sv", "filt_param")
+    filt_param = filt_param.lstrip(' ') + ' ' + genomon_conf.get("sv_filt", "params")
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "input_bam": run_conf.project_root + "/bam/" + sample_name + '/' + sample_name + ".markdup.bam",
                  "output_prefix": run_conf.project_root + "/sv/" + sample_name + '/' + sample_name,
                  "reference_genome": genomon_conf.get("REFERENCE", "ref_fasta"),
-                 "annotation_dir": genomon_conf.get("genomon_sv", "annotation_dir"),
+                 "annotation_dir": genomon_conf.get("sv_filt", "annotation_dir"),
                  "param": filt_param,
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
