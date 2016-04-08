@@ -469,6 +469,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "ncount": genomon_conf.get("realignment_filter","control_max_mismatch"),
         "post10q": genomon_conf.get("fisher_mutation_call","post_10_q_thres"),
         "r_post10q": genomon_conf.get("realignment_filter","post_10_q_thres"),
+        "analysis_date": run_conf.analysis_date,
         "fisher_version": get_version("fisher"),
         "mutfilter_version": get_version("mutfilter"),
         "ebfilter_version": get_version("ebfilter"),

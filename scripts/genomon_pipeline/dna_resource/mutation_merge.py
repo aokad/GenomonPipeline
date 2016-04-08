@@ -78,14 +78,13 @@ fi
 
 if [ _{control_bam_list} = "_None" ]
 then
-    tmp_header="# {pipeline_version} {fisher_version} {mutfilter_version}"
+    tmp_header="# Version: {pipeline_version} {fisher_version} {mutfilter_version}"
     echo $tmp_header > {out_prefix}_genomon_mutations.result.txt || exit 
 else
-    tmp_header="# {pipeline_version} {fisher_version} {mutfilter_version} {ebfilter_version}"
+    tmp_header="# Version: {pipeline_version} {fisher_version} {mutfilter_version} {ebfilter_version}"
     echo $tmp_header > {out_prefix}_genomon_mutations.result.txt || exit $?
 fi
-tmp_date=`date +"%Y-%m-%d %H:%M:%S %Z"`
-echo "# Created: $tmp_date" >> {out_prefix}_genomon_mutations.result.txt || exit $?
+echo "# Analysis Date: {analysis_date}" >> {out_prefix}_genomon_mutations.result.txt || exit $?
 tmp_id=`whoami`
 echo "# User: $tmp_id" >> {out_prefix}_genomon_mutations.result.txt || exit $?
 

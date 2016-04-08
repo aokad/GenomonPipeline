@@ -6,7 +6,7 @@ import datetime
 import subprocess
 from genomon_pipeline.config.run_conf import *
 
-file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}_{msecond:0>6d}"
+file_timestamp_format = "{name}_{year:0>4d}{month:0>2d}{day:0>2d}_{hour:0>2d}{min:0>2d}{second:0>2d}_{msecond:0>6d}"
 
 class Stage_task(object):
 
@@ -27,6 +27,7 @@ class Stage_task(object):
                                  day=now.day,
                                  hour=now.hour,
                                  min=now.minute,
+                                 second=now.second,
                                  msecond=now.microsecond )
         
         shell_script_full_path = "{script}/{file}.sh".format(script = script_dir, file = shell_script_name)
