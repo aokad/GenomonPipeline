@@ -2,11 +2,10 @@
 
 from genomon_pipeline.run import *
 import argparse
-exec(open('scripts/genomon_pipeline/__init__.py').read())
 
 parser = argparse.ArgumentParser(prog = "genomon_pipeline")
 
-parser.add_argument("--version", action = "version", version = "genomon_pipeline-"+ __version__)
+parser.add_argument("--version", action = "version", version = "genomon_pipeline-2.2.0")
 
 parser.add_argument('analysis_type', choices=['dna', 'rna'],
                     help = "analysis type")
