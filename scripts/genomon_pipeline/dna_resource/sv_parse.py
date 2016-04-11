@@ -25,7 +25,7 @@ export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
 
-{genomon_sv} parse {input_bam} {output_prefix} {param}
+{genomon_sv} parse {input_bam} {output_prefix} {param} || exit $?
 
 """
 

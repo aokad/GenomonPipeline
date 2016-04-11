@@ -576,6 +576,7 @@ def filt_sv(input_files,  output_file):
                  "reference_genome": genomon_conf.get("REFERENCE", "ref_fasta"),
                  "annotation_dir": genomon_conf.get("sv_filt", "annotation_dir"),
                  "param": filt_param,
+                 "meta_info": get_meta_info(["genomon_sv", "sv_utils"]),
                  "sv_utils": genomon_conf.get("SOFTWARE", "sv_utils"),
                  "sv_utils_annotation_dir": genomon_conf.get("sv_filt", "sv_utils_annotation_dir"),
                  "sv_utils_param": genomon_conf.get("sv_filt", "sv_utils_params"),

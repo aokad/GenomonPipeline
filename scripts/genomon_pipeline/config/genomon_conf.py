@@ -1,12 +1,9 @@
 #! /usr/bin/env python
 
-import sys
-import os
-import ConfigParser
-import subprocess
-import subprocess
+import sys, os, pwd, subprocess, ConfigParser
 from genomon_pipeline.__init__ import __version__
 from genomon_pipeline.config.task_conf import *
+from genomon_pipeline.config.run_conf import *
 
 global genomon_conf
 
@@ -54,7 +51,8 @@ rna_software_list = ["samtools",
 dna_software_version = {"genomon_sv":"GenomonSV",
                         "mutfilter":"GenomonMutationFilter",
                         "ebfilter":"EBFilter",
-                        "fisher":"GenomonFisher"
+                        "fisher":"GenomonFisher",
+                        "sv_utils": "sv_utils"
                         } 
 
 err_msg = 'No target File : \'%s\' for the %s key in the section of %s' 
@@ -159,5 +157,11 @@ def get_version(key):
     return software_version[key]
 
 
+def get_meta_info(softwares):
 
+    print_meta_info = "# Version: " + ' '.join([software_version[x] for x in softwares])
+    print_meta_info = print_meta_info + '\n' + "# Analysis Date: " + run_conf.analysis_date
+    print_meta_info = print_meta_info + '\n' + "# User: " + pwd.getpwuid(os.getuid()).pw_name
+   
+    return print_meta_info
 

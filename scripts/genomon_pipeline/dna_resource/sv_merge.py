@@ -24,7 +24,7 @@ export PATH={htslib}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-{genomon_sv} merge {control_info} {merge_output_file} {param}
+{genomon_sv} merge {control_info} {merge_output_file} {param} || exit $?  
 
 """
 
