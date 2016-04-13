@@ -5,7 +5,7 @@ from distutils.core import setup
 setup(name='genomon_pipeline',
       version='2.2.0',
       description='Python tools for running genomon pipeline for cancer genome and transcriptome sequencing analysis',
-      author='Kenichi Chiba and Yuichi Shiraishi',
+      author='Kenichi Chiba, Ai Okada and Yuichi Shiraishi',
       author_email='kchiba@hgc.jp',
       url='https://github.com/Genomon-Project/Genomon.git',
       package_dir = {'': 'scripts'},
