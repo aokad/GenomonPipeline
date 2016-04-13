@@ -7,7 +7,7 @@ export PATH=${PYTHONHOME}/bin:~/.local/bin:$PATH
 export LD_LIBRARY_PATH=${PYTHONHOME}/lib:${LD_LIBRARY_PATH}
 export DRMAA_LIBRARY_PATH=/geadmin/N1GE/lib/lx-amd64/libdrmaa.so.1.0
 
-TARGET_PATH=$6
-echo "${TARGET_PATH}/genomon_pipeline $1 $2 $3 $4 $5"
-${TARGET_PATH}/genomon_pipeline $1 $2 $3 $4 $5
+TARGET_PATH=$5
+echo "${TARGET_PATH}/genomon_pipeline $1 $2 $3 $4"
+${TARGET_PATH}/genomon_pipeline $1 $2 $3 $4
 

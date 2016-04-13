@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from genomon_qc.stage_task import *
+from genomon_pipeline.stage_task import *
 
 class Res_QC_Coverage(Stage_task):
 

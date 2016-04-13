@@ -14,27 +14,14 @@ target_pipeline=$1
 sample_conf=$2
 project_dir=$3
 genomon_conf=$4
-task_param_conf=$5
-
-if [ "_${genomon_conf}" = "_" ]; then
-    genomon_conf=${TARGET_PATH}/genomon.cfg
-fi
-
-if [ "_${task_param_conf}" = "_" ]; then
-    if  [ "_${target_pipeline}" = "_dna" ]; then
-        task_param_conf=${TARGET_PATH}/dna_task_param.cfg
-    elif  [ "_${target_pipeline}" = "_rna" ]; then
-        task_param_conf=${TARGET_PATH}/rna_task_param.cfg
-    fi
-fi
 
 echo "Genomon is checking parameters ..."
-${TARGET_PATH}/genomon_pipeline --param_check $target_pipeline $sample_conf $project_dir $genomon_conf $task_param_conf || exit $?
+${TARGET_PATH}/genomon_pipeline --param_check $target_pipeline $sample_conf $project_dir $genomon_conf || exit $?
 echo "Parameters check is complete."
 
 mkdir -p ${project_dir}/log || exit $?
 echo "Genomon created the '${project_dir}/log' directory"
 
-qsub -o ${project_dir}/log -e ${project_dir}/log -l s_vmem=64G,mem_req=64G -l ljob -r no ${TARGET_PATH}/qsub_genomon_pipeline_HGC.sh $target_pipeline $sample_conf $project_dir $genomon_conf $task_param_conf ${TARGET_PATH}
+/home/geadmin/N1GE/bin/lx-amd64/orgqsub -o ${project_dir}/log -e ${project_dir}/log -l s_vmem=64G,mem_req=128G -l ljob -r no ${TARGET_PATH}/qsub_genomon_pipeline_HGC.sh $target_pipeline $sample_conf $project_dir $genomon_conf ${TARGET_PATH}
 
 

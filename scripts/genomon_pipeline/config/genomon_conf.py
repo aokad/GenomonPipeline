@@ -2,7 +2,7 @@
 
 import sys, os, pwd, subprocess, ConfigParser
 from genomon_pipeline.__init__ import __version__
-from genomon_pipeline.config.task_conf import *
+from genomon_pipeline.config.genomon_conf import *
 from genomon_pipeline.config.run_conf import *
 
 global genomon_conf
@@ -59,8 +59,8 @@ dna_software_version = {"genomon_sv":"GenomonSV",
                         "bedtools": "bedtools",
                         "biobambam": "biobambam",
                         "bamstats": "PCAP-bamstats",
-                        "mutanno": "mutanno",
-                        "annovar": "annovar"
+                        "mutil": "MutationUtil",
+                        "mutanno": "GenomonMutationAnnotation"
                         } 
 
 err_msg = 'No target File : \'%s\' for the %s key in the section of %s' 
@@ -75,8 +75,8 @@ def dna_genomon_conf_check():
     for key in dna_reference_list:
 
         if key == "inhouse_normal_tabix_db":
-            if task_conf.has_option("annotation", "active_inhouse_normal_flag"):
-                flag = task_conf.get("annotation", "active_inhouse_normal_flag")
+            if genomon_conf.has_option("annotation", "active_inhouse_normal_flag"):
+                flag = genomon_conf.get("annotation", "active_inhouse_normal_flag")
                 if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):
@@ -84,8 +84,8 @@ def dna_genomon_conf_check():
             continue
         
         if key == "inhouse_tumor_tabix_db":
-            if task_conf.has_option("annotation", "active_inhouse_tumor_flag"):
-                flag = task_conf.get("annotation", "active_inhouse_tumor_flag")
+            if genomon_conf.has_option("annotation", "active_inhouse_tumor_flag"):
+                flag = genomon_conf.get("annotation", "active_inhouse_tumor_flag")
                 if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):
@@ -93,8 +93,8 @@ def dna_genomon_conf_check():
             continue
             
         if key == "HGVD_tabix_db":
-            if task_conf.has_option("annotation", "active_HGVD_flag"):
-                flag = task_conf.get("annotation", "active_HGVD_flag")
+            if genomon_conf.has_option("annotation", "active_HGVD_flag"):
+                flag = genomon_conf.get("annotation", "active_HGVD_flag")
                 if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):
@@ -102,8 +102,8 @@ def dna_genomon_conf_check():
             continue
             
         if key == "HGMD_tabix_db":
-            if task_conf.has_option("annotation", "active_HGMD_flag"):
-                flag = task_conf.get("annotation", "active_HGMD_flag")
+            if genomon_conf.has_option("annotation", "active_HGMD_flag"):
+                flag = genomon_conf.get("annotation", "active_HGMD_flag")
                 if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):
@@ -118,8 +118,8 @@ def dna_genomon_conf_check():
     for key in dna_software_list:
         
         if key == "annovar":
-            if task_conf.has_option("annotation", "active_annovar_flag"):
-                flag = task_conf.get("annotation", "active_annovar_flag")
+            if genomon_conf.has_option("annotation", "active_annovar_flag"):
+                flag = genomon_conf.get("annotation", "active_annovar_flag")
                 if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):

@@ -24,10 +24,6 @@ def main(args):
     # set genomon_conf and task parameter config data
     genomon_conf.read(run_conf.genomon_conf_file)
     
-    ###
-    # check task parameter config data
-    task_conf_check()
-
     if run_conf.analysis_type == "dna":
         dna_genomon_conf_check()
         dna_software_version_set()

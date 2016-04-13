@@ -78,15 +78,20 @@ fi
 
 if [ _{control_bam_list} = "_None" ]
 then
-    tmp_header="# Version: {pipeline_version} {fisher_version} {mutfilter_version}"
-    echo $tmp_header > {out_prefix}.genomon_mutation.result.txt || exit 
+    if [ _{active_HGMD_flag} = "_True" ] || [ _{active_HGVD_flag} = "_True" ]
+    then
+        echo -e "{meta_info_m}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    else
+        echo -e "{meta_info}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    fi
 else
-    tmp_header="# Version: {pipeline_version} {fisher_version} {mutfilter_version} {ebfilter_version}"
-    echo $tmp_header > {out_prefix}.genomon_mutation.result.txt || exit $?
+    if [ _{active_HGMD_flag} = "_True" ] || [ _{active_HGVD_flag} = "_True" ]
+    then
+        echo -e "{meta_info_em}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    else
+        echo -e "{meta_info_e}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    fi
 fi
-echo "# Analysis Date: {analysis_date}" >> {out_prefix}.genomon_mutation.result.txt || exit $?
-tmp_id=`whoami`
-echo "# User: $tmp_id" >> {out_prefix}.genomon_mutation.result.txt || exit $?
 
 echo "$print_header" >> {out_prefix}.genomon_mutation.result.txt || exit $?
 

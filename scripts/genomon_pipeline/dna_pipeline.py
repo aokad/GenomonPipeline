@@ -473,17 +473,14 @@ def identify_mutations(input_file, output_file, output_dir):
         "ncount": genomon_conf.get("realignment_filter","control_max_mismatch"),
         "post10q": genomon_conf.get("fisher_mutation_call","post_10_q_thres"),
         "r_post10q": genomon_conf.get("realignment_filter","post_10_q_thres"),
-        "analysis_date": run_conf.analysis_date,
-        "fisher_version": get_version("fisher"),
-        "mutfilter_version": get_version("mutfilter"),
-        "ebfilter_version": get_version("ebfilter"),
-        "pipeline_version": get_version("genomon_pipeline"),
+        "meta_info_em": get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil", "mutanno"]),
+        "meta_info_e":  get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil"]),
+        "meta_info_m": get_meta_info(["fisher", "mutfilter", "mutil", "mutanno"]),
+        "meta_info":   get_meta_info(["fisher", "mutfilter", "mutil"]),
         "out_prefix": output_dir + '/' + sample_name}
-
 
     mutation_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
 
-     
     for task_id in range(1,(max_task_id + 1)):
         input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
         os.unlink(input_file)
