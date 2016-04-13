@@ -655,7 +655,7 @@ def coverage(input_file, output_file):
 @collate(qc_merge_list, formatter(), "{subpath[0][2]}/qc/{subdir[0][0]}/{subdir[0][0]}.genomonQC.result.txt")
 def merge_qc(input_files, output_file):
 
-    r_qc_merge.write_qc(input_files[0], output_file, get_meta_info(["genomon_pipeline", "bamstats", "samtools", "bedtools"]))
+    r_qc_merge.write_qc(input_files[0], output_file, get_meta_info(["genomon_pipeline"]))
 
 #####################
 # post analysis stage

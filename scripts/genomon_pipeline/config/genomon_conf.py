@@ -49,16 +49,10 @@ rna_software_list = ["samtools",
                      ]
 
 dna_software_version = {"genomon_sv":"GenomonSV",
+                        "sv_utils": "sv_utils",
+                        "fisher":"GenomonFisher",
                         "mutfilter":"GenomonMutationFilter",
                         "ebfilter":"EBFilter",
-                        "fisher":"GenomonFisher",
-                        "sv_utils": "sv_utils",
-                        "blat": "BLAT",
-                        "bwa": "BWA",
-                        "samtools": "samtools",
-                        "bedtools": "bedtools",
-                        "biobambam": "biobambam",
-                        "bamstats": "PCAP-bamstats",
                         "mutil": "MutationUtil",
                         "mutanno": "GenomonMutationAnnotation"
                         } 
