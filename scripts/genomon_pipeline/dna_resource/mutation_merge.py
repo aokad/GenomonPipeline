@@ -79,28 +79,28 @@ fi
 if [ _{control_bam_list} = "_None" ]
 then
     tmp_header="# Version: {pipeline_version} {fisher_version} {mutfilter_version}"
-    echo $tmp_header > {out_prefix}_genomon_mutations.result.txt || exit 
+    echo $tmp_header > {out_prefix}.genomon_mutation.result.txt || exit 
 else
     tmp_header="# Version: {pipeline_version} {fisher_version} {mutfilter_version} {ebfilter_version}"
-    echo $tmp_header > {out_prefix}_genomon_mutations.result.txt || exit $?
+    echo $tmp_header > {out_prefix}.genomon_mutation.result.txt || exit $?
 fi
-echo "# Analysis Date: {analysis_date}" >> {out_prefix}_genomon_mutations.result.txt || exit $?
+echo "# Analysis Date: {analysis_date}" >> {out_prefix}.genomon_mutation.result.txt || exit $?
 tmp_id=`whoami`
-echo "# User: $tmp_id" >> {out_prefix}_genomon_mutations.result.txt || exit $?
+echo "# User: $tmp_id" >> {out_prefix}.genomon_mutation.result.txt || exit $?
 
-echo "$print_header" >> {out_prefix}_genomon_mutations.result.txt || exit $?
+echo "$print_header" >> {out_prefix}.genomon_mutation.result.txt || exit $?
 
 for i in `seq 1 1 {filecount}`
 do
     if [ _{active_annovar_flag} = "_True" ]
     then
-        awk 'NR>1 {{print}}' {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}_genomon_mutations.result.txt || exit $?
+        awk 'NR>1 {{print}}' {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
     else
-        cat {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}_genomon_mutations.result.txt || exit $?
+        cat {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
     fi
 done
 
-{mutil} filter -i {out_prefix}_genomon_mutations.result.txt -o {out_prefix}_genomon_mutations.result.filt.txt -e {eb_pval} -f {fish_pval} -r {realign_pval} -t {tcount} -n {ncount} -p {post10q} -q {r_post10q} -c {tcount}
+{mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt -e {eb_pval} -f {fish_pval} -r {realign_pval} -t {tcount} -n {ncount} -p {post10q} -q {r_post10q} -c {tcount}
 
 """
     def __init__(self, qsub_option, script_dir):

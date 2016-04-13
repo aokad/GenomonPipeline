@@ -28,7 +28,7 @@ dna_software_list = ["blat",
                      "samtools",
                      "bedtools",
                      "biobambam",
-                     "PCAP",
+                     "bamstats",
                      "genomon_sv",
                      "sv_utils",
                      "mutfilter",
@@ -52,7 +52,15 @@ dna_software_version = {"genomon_sv":"GenomonSV",
                         "mutfilter":"GenomonMutationFilter",
                         "ebfilter":"EBFilter",
                         "fisher":"GenomonFisher",
-                        "sv_utils": "sv_utils"
+                        "sv_utils": "sv_utils",
+                        "blat": "BLAT",
+                        "bwa": "BWA",
+                        "samtools": "samtools",
+                        "bedtools": "bedtools",
+                        "biobambam": "biobambam",
+                        "bamstats": "PCAP-bamstats",
+                        "mutanno": "mutanno",
+                        "annovar": "annovar"
                         } 
 
 err_msg = 'No target File : \'%s\' for the %s key in the section of %s' 
