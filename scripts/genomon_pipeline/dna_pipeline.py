@@ -661,6 +661,7 @@ def merge_qc(input_files, output_file):
 # post analysis stage
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(len(pa_files_mutation) > 0)
+@follows(filt_sv)
 @follows(identify_mutations)
 @collate(pa_files_mutation, formatter(), run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*mutation*.csv')
 def post_analysis_mutation(input_files, output_file):
@@ -687,6 +688,7 @@ def post_analysis_mutation(input_files, output_file):
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(len(pa_files_sv) > 0)
 @follows(filt_sv)
+@follows(identify_mutations)
 @collate(pa_files_sv, formatter(), run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*sv*.csv')
 def post_analysis_sv(input_files, output_file):
 
