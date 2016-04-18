@@ -17,8 +17,9 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -eu
 
-LD_LIBRARY_PATH={LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH={LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
 
 input_bed={output}.input_bed
 
@@ -29,7 +30,7 @@ then
     # for hg19, create gap text (bedtools shuffle -excl option file)
     gaptxt_cut={output}.gap.txt
     cut -f 2,3,4 {gaptxt} | cut -c 4- > $gaptxt_cut
-
+    
     # create temp bed (bedtools shuffle -i option file)
     temp_bed={output}_{i_bed_lines}_{i_bed_size}.bed
     
@@ -41,7 +42,7 @@ then
     
     # bedtools shuffle
     {BEDTOOLS} shuffle -i $temp_bed -g {genome_file} -incl {incl_bed_file} -excl $gaptxt_cut > $input_bed
-
+    
     # depth
     if [ -e {output}.tmp ]; then
         rm {output}.tmp
@@ -58,7 +59,7 @@ then
     ) </dev/null; done
  
     rm $temp_bed {incl_bed_file} $gaptxt_cut {output}.tmp.bam {output}.tmp.bam.bai
-    
+
 else
     ########## exome ##########
 
@@ -146,7 +147,11 @@ mv {output}.tmp {output}
     def calc_coverage(self, depth_file, coverage_depth, output):
         import pandas
         import math
-        
+
+        if not os.path.exists(depth_file + ".input_bed"):
+            print "Not exist file, " + depth_file + ".input_bed"
+            return
+            
         bed = pandas.read_csv(depth_file + ".input_bed", header = None, sep='\t', usecols = [1,2])
         all_count = sum(bed[2] - bed[1])
     
