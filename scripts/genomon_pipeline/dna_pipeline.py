@@ -396,6 +396,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "min_allele_freq": genomon_conf.get("fisher_mutation_call", "disease_min_allele_frequency"),
         "max_allele_freq": genomon_conf.get("fisher_mutation_call", "control_max_allele_frequency"),
         "min_depth": genomon_conf.get("fisher_mutation_call", "min_depth"),
+        "min_variant_read": genomon_conf.get("fisher_mutation_call", "min_variant_read"),
         "fisher_thres": genomon_conf.get("fisher_mutation_call", "fisher_thres_hold"),
         "post_10_q": genomon_conf.get("fisher_mutation_call", "post_10_q"),
         # realignment filter

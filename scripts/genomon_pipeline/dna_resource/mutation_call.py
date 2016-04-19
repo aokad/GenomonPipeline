@@ -26,14 +26,14 @@ export PYTHONPATH={pythonpath}
 REGION=`head -n $SGE_TASK_ID {interval_list} | tail -n 1`
 
 if [ _{control_bam} = "_None" ]; then 
-    {fisher} single -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --post_10_q {post_10_q} --min_depth {min_depth} -1 {disease_bam} --samtools_path {samtools} || exit $?
+    {fisher} single -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --post_10_q {post_10_q} --min_depth {min_depth} -1 {disease_bam} --samtools_path {samtools} -v {min_variant_read} || exit $?
 
     {mutfilter} realignment --score_difference {realign_score_diff} --window_size {realign_window_size} --max_depth {realign_max_depth} --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} || exit $?
 
     {mutfilter} simplerepeat --target_mutation_file {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --output {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt --simple_repeat_db {simple_repeat_db} || exit $?
 
 else
-    {fisher} comparison -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth} --fisher_value {fisher_thres} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} || exit $?
+    {fisher} comparison -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth} --fisher_value {fisher_thres} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} -v {min_variant_read} || exit $?
 
     {mutfilter} realignment --score_difference {realign_score_diff} --window_size {realign_window_size} --max_depth {realign_max_depth} --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} -2 {control_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} || exit $?
 
