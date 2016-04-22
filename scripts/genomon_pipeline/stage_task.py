@@ -57,12 +57,11 @@ class Stage_task(object):
                     returncode = 0
                     returnflag = True
                     now = datetime.datetime.now()
-                    date = now.strftime("%Y-%m-%d %H:%M")
-                    print >> sys.stderr, "Date/Time: " + date 
-                    print "Job has been submitted with id: " + jobid + " at Date/Time: " + date
+                    date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    print >> sys.stderr, "Your job has been submitted with id: " + jobid + " at Date/Time: " + date
                     retval = s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
                     now = datetime.datetime.now()
-                    date = now.strftime("%Y-%m-%d %H:%M")
+                    date = now.strftime("%Y-%m-%d %H:%M:%S")
                     print >> sys.stderr, "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
                     returncode = retval.exitStatus
                     returnflag = retval.hasExited
@@ -80,15 +79,14 @@ class Stage_task(object):
                     returncode = 0
                     returnflag = True
                     now = datetime.datetime.now()
-                    date = now.strftime("%Y-%m-%d %H:%M")
-                    print >> sys.stderr, "Date/Time: " + date 
-                    print >> sys.stderr, 'Your job has been submitted with id ' + str(joblist)
+                    date = now.strftime("%Y-%m-%d %H:%M:%S")
+                    print >> sys.stderr, 'Your job has been submitted with id ' + str(joblist) + " at Date/Time: " + date
                     s.synchronize(joblist, drmaa.Session.TIMEOUT_WAIT_FOREVER, False)
                     for curjob in joblist:
                         print >> sys.stderr, 'Collecting job ' + curjob
                         retval = s.wait(curjob, drmaa.Session.TIMEOUT_WAIT_FOREVER)
                         now = datetime.datetime.now()
-                        date = now.strftime("%Y-%m-%d %H:%M")
+                        date = now.strftime("%Y-%m-%d %H:%M:%S")
                         print >> sys.stderr, "Job: " + str(retval.jobId) + ' finished with status: ' + str(retval.hasExited) + ' and exit status: ' + str(retval.exitStatus) + " at Date/Time: " + date
                         
                         if retval.exitStatus != 0 or not retval.hasExited:

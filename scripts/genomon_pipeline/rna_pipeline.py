@@ -30,6 +30,12 @@ if not os.path.isdir(run_conf.project_root + '/star'): os.mkdir(run_conf.project
 if not os.path.isdir(run_conf.project_root + '/fusion'): os.mkdir(run_conf.project_root + '/fusion')
 if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
 
+for sample in sample_conf.fastq:
+        script_dir = run_conf.project_root + '/script/' + sample
+        log_dir = run_conf.project_root + '/log/' + sample
+        if not os.path.isdir(script_dir): os.mkdir(script_dir)
+        if not os.path.isdir(log_dir): os.mkdir(log_dir)
+
 genomon_conf_name, ext = os.path.splitext(run_conf.genomon_conf_file)
 shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
 
@@ -63,7 +69,7 @@ def task_star_align(input_files, output_file):
                  "out_prefix": dir_name + '/' + sample_name + '.'}
 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
-    star_align.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    star_align.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name)
 
 
 @transform(task_star_align, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/star.fusion.result.txt")
@@ -83,6 +89,6 @@ def task_fusionfusion(input_file, output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
 
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
-    fusionfusion.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    fusionfusion.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
 

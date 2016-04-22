@@ -1,7 +1,5 @@
 import os
 import shutil
-#import yaml
-#import linecache
 import glob
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
@@ -178,7 +176,13 @@ if not os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name + '/
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
+if not os.path.isdir(run_conf.project_root + '/script/sv_merge'): os.mkdir(run_conf.project_root + '/script/sv_merge')
+if not os.path.isdir(run_conf.project_root + '/script/post_analysis'): os.mkdir(run_conf.project_root + '/script/post_analysis')
+if not os.path.isdir(run_conf.project_root + '/script/paplot'): os.mkdir(run_conf.project_root + '/script/paplot')
 if not os.path.isdir(run_conf.project_root + '/log'): os.mkdir(run_conf.project_root + '/log')
+if not os.path.isdir(run_conf.project_root + '/log/sv_merge'): os.mkdir(run_conf.project_root + '/log/sv_merge')
+if not os.path.isdir(run_conf.project_root + '/log/post_analysis'): os.mkdir(run_conf.project_root + '/log/post_analysis')
+if not os.path.isdir(run_conf.project_root + '/log/paplot'): os.mkdir(run_conf.project_root + '/log/paplot')
 if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.project_root + '/fastq')
 if not os.path.isdir(run_conf.project_root + '/bam'): os.mkdir(run_conf.project_root + '/bam')
 if not os.path.isdir(run_conf.project_root + '/mutation'): os.mkdir(run_conf.project_root + '/mutation')
@@ -203,6 +207,12 @@ for outputfiles in (bam2fastq_output_list, linked_fastq_list):
         if not os.path.isdir(fastq_dir): os.mkdir(fastq_dir)
         if not os.path.isdir(bam_dir): os.mkdir(bam_dir)
 
+for target_sample_dict in (sample_conf.bam_import, sample_conf.fastq, sample_conf.bam_tofastq):
+    for sample in target_sample_dict:
+        script_dir = run_conf.project_root + '/script/' + sample
+        log_dir = run_conf.project_root + '/log/' + sample
+        if not os.path.isdir(script_dir): os.mkdir(script_dir)
+        if not os.path.isdir(log_dir): os.mkdir(log_dir)
 
 # prepare output directory for each sample and make mutation control panel file
 for complist in sample_conf.mutation_call:
@@ -256,7 +266,7 @@ def bam2fastq(outputfiles):
                  "o2_name": output_dir + '/unmatched_second_output.txt',
                  "t": output_dir + '/temp.txt',
                  "s": output_dir + '/single_end_output.txt'}
-    bamtofastq.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    bamtofastq.task_exec(arguments, run_conf.project_root + '/log/' + sample, run_conf.project_root + '/script/'+ sample)
 
 
 # link the input fastq to project directory
@@ -278,6 +288,8 @@ def link_input_fastq(output_file):
 @subdivide([bam2fastq, link_input_fastq], formatter(), "{path[0]}/*_*.fastq_split", "{path[0]}")
 def split_files(input_files, output_files, target_dir):
 
+    sample_name = os.path.basename(target_dir)
+
     for oo in output_files:
         os.unlink(oo)
 
@@ -287,7 +299,7 @@ def split_files(input_files, output_files, target_dir):
                  "target_dir": target_dir,
                  "ext": ext}
     
-    fastq_splitter.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', 2)
+    fastq_splitter.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/'+ sample_name, 2)
    
     all_line_num = 0
     for fastq in glob.glob(target_dir + '/1_*.fastq_split'):
@@ -325,7 +337,7 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
                  "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
                  "biobambam": genomon_conf.get("SOFTWARE", "biobambam")}
 
-    bwa_align.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', max_task_id) 
+    bwa_align.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name, max_task_id) 
 
     for task_id in range(max_task_id):
         num = str(task_id).zfill(4)
@@ -335,8 +347,10 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
 
 
 # merge sorted bams into one and mark duplicate reads with biobambam
-@collate(map_dna_sequence, formatter(), "{subpath[0][2]}/bam/{subdir[0][0]}/{subdir[0][0]}.markdup.bam")
-def markdup(input_files, output_file):
+@collate(map_dna_sequence, formatter(), "{subpath[0][2]}/bam/{subdir[0][0]}/{subdir[0][0]}.markdup.bam", "{subpath[0][2]}/bam/{subdir[0][0]}")
+def markdup(input_files, output_file, output_dir):
+
+    sample_name = os.path.basename(output_dir)
 
     output_prefix, ext = os.path.splitext(output_file)
 
@@ -349,7 +363,7 @@ def markdup(input_files, output_file):
                  "input_bam_files": input_bam_files,
                  "out_bam": output_file}
 
-    markduplicates.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    markduplicates.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/'+ sample_name)
 
     for input_file in input_files:
         os.unlink(input_file)
@@ -452,7 +466,7 @@ def identify_mutations(input_file, output_file, output_dir):
     interval_list = genomon_conf.get("REFERENCE", "interval_list")
     max_task_id = sum(1 for line in open(interval_list))
 
-    mutation_call.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script', max_task_id)
+    mutation_call.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name, max_task_id)
     
     arguments = {
         "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
@@ -480,7 +494,7 @@ def identify_mutations(input_file, output_file, output_dir):
         "meta_info":   get_meta_info(["fisher", "mutfilter", "mutil"]),
         "out_prefix": output_dir + '/' + sample_name}
 
-    mutation_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    mutation_merge.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
     for task_id in range(1,(max_task_id + 1)):
         input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
@@ -516,6 +530,7 @@ def parse_sv(input_file, output_file):
 
     dir_name = os.path.dirname(output_file)
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
+    sample_name = os.path.basename(dir_name)
 
     arguments = {"genomon_sv": genomon_conf.get("SOFTWARE", "genomon_sv"),
                  "input_bam": input_file,
@@ -526,7 +541,7 @@ def parse_sv(input_file, output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "htslib": genomon_conf.get("SOFTWARE", "htslib")}
 
-    sv_parse.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    sv_parse.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name)
 
 
 # merge SV
@@ -543,7 +558,7 @@ def merge_sv(input_files,  output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "htslib": genomon_conf.get("SOFTWARE", "htslib")}
 
-    sv_merge.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    sv_merge.task_exec(arguments, run_conf.project_root + '/log/sv_merge', run_conf.project_root + '/script/sv_merge')
 
 
 # filt SV
@@ -587,7 +602,7 @@ def filt_sv(input_files,  output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "htslib": genomon_conf.get("SOFTWARE", "htslib")}
 
-    sv_filt.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    sv_filt.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
 
 # qc
@@ -599,13 +614,14 @@ def filt_sv(input_files,  output_file):
 def bam_stats(input_file, output_file):
     dir_name = os.path.dirname(output_file)
     if not os.path.exists(dir_name): os.makedirs(dir_name)
+    sample_name = os.path.basename(dir_name)
       
     arguments = {"bamstats": genomon_conf.get("SOFTWARE", "bamstats"),
                  "PERL5LIB": genomon_conf.get("ENV", "PERL5LIB"),
                  "input": input_file,
                  "output": output_file}
     
-    r_qc_bamstats.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    r_qc_bamstats.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
 
 @follows( link_import_bam )
@@ -643,7 +659,7 @@ def coverage(input_file, output_file):
                  "input": input_file,
                  "output": depth_output_file}
 
-    r_qc_coverage.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    r_qc_coverage.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name)
     
     r_qc_coverage.calc_coverage(depth_output_file, genomon_conf.get("qc_coverage", "coverage"), output_file)
     
@@ -684,7 +700,7 @@ def post_analysis_mutation(input_files, output_file):
                  "input_file_case4": ",".join(pa_samples_mutation["case4"])
                 }
                  
-    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(len(pa_files_sv) > 0)
@@ -710,7 +726,7 @@ def post_analysis_sv(input_files, output_file):
                  "input_file_case4": ",".join(pa_samples_sv["case4"])
                 }
                  
-    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
 
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(len(pa_files_qc) > 0)
@@ -735,7 +751,7 @@ def post_analysis_qc(input_files, output_file):
                  "input_file_case4": ""
                 }
                  
-    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
 @active_if(genomon_conf.getboolean("pa_plot", "enable"))
 @active_if(len(paplot_files_collate) > 0)
@@ -774,6 +790,6 @@ def post_analysis_plot(input_file, output_file):
                  "config_file": genomon_conf.get("pa_plot", "config_file"),
                 }
                  
-    r_pa_plot.task_exec(arguments, run_conf.project_root + '/log', run_conf.project_root + '/script')
+    r_pa_plot.task_exec(arguments, run_conf.project_root + '/log/paplot', run_conf.project_root + '/script/paplot')
 
 
