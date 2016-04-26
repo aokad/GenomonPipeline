@@ -18,7 +18,7 @@ INSTALL
 ```bash
 
 # get latest genomon-pipeline
-wget https://github.com/Genomon-Project/GenomonPipeline/archive/v2.2.5.tar.gz
+wget https://github.com/Genomon-Project/GenomonPipeline/archive/v2.2.0.tar.gz
 tar xzvf v2.2.0.tar.gz
 cd GenomonPipeline-2.2.0
 
