@@ -2,10 +2,6 @@ GenomonPipeline
 ===============
 Genomon is a cancer genome data analysis pipeline.
 
-AUTHOR/SUPPORT
-==============
-Kenichi Chiba, Ai Okada and Yuichi Shiraishi
-
 MANUAL
 ======
 http://genomon-project.github.io/GenomonPages/
