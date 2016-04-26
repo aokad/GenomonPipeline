@@ -1,19 +1,16 @@
 GenomonPipeline
 ===============
-Genomon is a cancer genome data analysis pipeline.
+GenomonPipeline is a cancer genome and RNA sequencing data analysis pipeline.
 
-MANUAL
-======
+## MANUAL
 http://genomon-project.github.io/GenomonPages/
 
-DEPENDENCY
-==========
+## DEPENDENCY
 [ruffus](http://www.ruffus.org.uk/)
 [drmaa](https://www.drmaa.org/)
 [PyYAML](http://pyyaml.org/)
 
-INSTALL
-=======
+## INSTALL
 
 ```bash
 
