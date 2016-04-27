@@ -12,7 +12,7 @@ class Sample_conf(object):
         self.bam_import = {}
         self.mutation_call = []
         self.sv_detection = []
-        self.summary = []
+        self.qc = []
         self.control_panel = {}
         # 
         # should add the file exist check here ?
@@ -106,7 +106,7 @@ class Sample_conf(object):
         sampleID_list = []
         mut_tumor_sampleID_list = []
         sv_tumor_sampleID_list = []
-        summary_sampleID_list = []
+        qc_sampleID_list = []
         
         for row in _data:
             if row[0].startswith('['):
@@ -127,8 +127,11 @@ class Sample_conf(object):
                 elif row[0].lower() == '[sv_detection]':
                     mode = 'sv_detection'
                     continue
+                elif row[0].lower() == '[qc]':
+                    mode = 'qc'
+                    continue
                 elif row[0].lower() == '[summary]':
-                    mode = 'summary'
+                    mode = 'qc'
                     continue
                 elif row[0].lower() == '[controlpanel]':
                     mode = 'controlpanel'
@@ -272,20 +275,20 @@ class Sample_conf(object):
                 self.sv_detection.append((tumorID, normalID, controlpanelID))
 
 
-            elif mode == 'summary':
+            elif mode == 'qc':
 
                 sampleID = row[0]
                 if sampleID not in sampleID_list:
-                    err_msg = "[summary] section, " + sampleID + " is not defined"
+                    err_msg = "[qc] section, " + sampleID + " is not defined"
                     raise ValueError(err_msg)
 
-                if sampleID in summary_sampleID_list:
-                    err_msg = "[summary] section, " + sampleID + " is duplicated"
+                if sampleID in qc_sampleID_list:
+                    err_msg = "[qc] section, " + sampleID + " is duplicated"
                     raise ValueError(err_msg)
 
-                summary_sampleID_list.append(sampleID)
+                qc_sampleID_list.append(sampleID)
 
-                self.summary.append(sampleID)
+                self.qc.append(sampleID)
 
 
             elif mode == 'controlpanel':

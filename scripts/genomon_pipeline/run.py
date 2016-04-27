@@ -2,7 +2,6 @@
 
 from ruffus import *
 from genomon_pipeline.config.genomon_conf import *
-from genomon_pipeline.config.task_conf import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.sample_conf import *
 
@@ -15,9 +14,7 @@ def main(args):
     run_conf.analysis_type = args.analysis_type
     run_conf.project_root = os.path.abspath(args.project_root)
     run_conf.genomon_conf_file = args.genomon_conf_file
-    run_conf.task_conf_file = args.task_conf_file
     run_conf.drmaa = False if args.disable_drmaa else True
-    ###
 
     ###
     # read sample list file
@@ -26,14 +23,10 @@ def main(args):
     ###
     # set genomon_conf and task parameter config data
     genomon_conf.read(run_conf.genomon_conf_file)
-    task_conf.read(run_conf.task_conf_file)
     
-    ###
-    # check task parameter config data
-    task_conf_check()
-
     if run_conf.analysis_type == "dna":
         dna_genomon_conf_check()
+        dna_software_version_set()
         import dna_pipeline
     elif run_conf.analysis_type == "rna":
         rna_genomon_conf_check()

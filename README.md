@@ -1,30 +1,7 @@
-# GenomonPipeline
-Genomon pipeline in 2015
+GenomonPipeline
+===============
+GenomonPipeline, a cancer genome and RNA sequencing data analysis pipeline, efficiently detects of genomic variants and transcriptomic changes. Additionally, it automatically produces rich analysis reports describing data qualities and summary of detected variants.  Users can run GenomonPipeline with ease of use in the HGC supercomputer and also can run it in other high performance computers.
 
-## Dependency
+## Manual
+http://genomon-project.github.io/GenomonPages/
 
-
-## Install
-
-```
-git clone https://github.com/Genomon-Project/GenomonPipeline.git
-cd Genomon
-python setup.py build
-python setup.py install
-```
-
-## Run
-Disease sample vs. Control sample Comparison
-```
-genomon_pipeline [-h] {dna,rna} sample_conf.txt project_root_dir genomon_conf_file task_conf_file
-```
-
-For DNA sample
-```
-genomon_pipeline dna ./sample_conf.txt ~/tmp ./genomon.cfg ./dna_task_param.cfg
-```
-
-For RNA sample
-```
-genomon_pipeline rna ./sample_conf.txt ~/tmp ./genomon.cfg ./rna_task_param.cfg
-```

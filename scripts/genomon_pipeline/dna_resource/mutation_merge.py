@@ -16,13 +16,19 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
+# set python environment
+export PYTHONHOME={pythonhome}
+export PATH=$PYTHONHOME/bin:$PATH
+export LD_LIBRARY_PATH={ld_library_path}
+export PYTHONPATH={pythonpath}
+
 mut_header=""
 
 if [ _{control_bam} = "_None" ]
 then
     mut_header="Chr,Start,End,Ref,Alt,depth,variantNum,bases,A_C_G_T,misRate,strandRatio,10%_posterior_quantile,posterior_mean,90%_posterior_quantile,readPairNum,variantPairNum,otherPairNum,10%_posterior_quantile(realignment),posterior_mean(realignment),90%_posterior_quantile(realignment),simple_repeat_pos,simple_repeat_seq,P-value(EBCall)"
 else
-    mut_header="Chr,Start,End,Ref,Alt,depth_tumor,variantNum_tumor,depth_normal,variantNum_normal,bases_tumor,bases_normal,A_C_G_T_tumor,A_C_G_T_normal,misRate_tumor,strandRatio_tumor,misRate_normal,strandRatio_normal,P-value(fisher),readPairNum_tumor,variantPairNum_tumor,otherPairNum_tumor,readPairNum_normal,variantPairNum_normal,otherPairNum_normal,P-value(fisher_realignment),indel_mismatch_rate,indel_mismatch_rate,bp_mismatch_count,distance_from_breakpoint,simple_repeat_pos,simple_repeat_seq,P-value(EBCall)"
+    mut_header="Chr,Start,End,Ref,Alt,depth_tumor,variantNum_tumor,depth_normal,variantNum_normal,bases_tumor,bases_normal,A_C_G_T_tumor,A_C_G_T_normal,misRate_tumor,strandRatio_tumor,misRate_normal,strandRatio_normal,P-value(fisher),readPairNum_tumor,variantPairNum_tumor,otherPairNum_tumor,readPairNum_normal,variantPairNum_normal,otherPairNum_normal,P-value(fisher_realignment),indel_mismatch_count,indel_mismatch_rate,bp_mismatch_count,distance_from_breakpoint,simple_repeat_pos,simple_repeat_seq,P-value(EBCall)"
 fi
 
 if [ _{control_bam_list} = "_None" ]
@@ -70,20 +76,38 @@ then
     print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
 fi
 
-echo "$print_header" > {out_prefix}_genomon_mutations.result.txt || exit $?
+if [ _{control_bam_list} = "_None" ]
+then
+    if [ _{active_HGMD_flag} = "_True" ] || [ _{active_HGVD_flag} = "_True" ]
+    then
+        echo -e "{meta_info_m}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    else
+        echo -e "{meta_info}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    fi
+else
+    if [ _{active_HGMD_flag} = "_True" ] || [ _{active_HGVD_flag} = "_True" ]
+    then
+        echo -e "{meta_info_em}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    else
+        echo -e "{meta_info_e}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    fi
+fi
+
+echo "$print_header" >> {out_prefix}.genomon_mutation.result.txt || exit $?
 
 for i in `seq 1 1 {filecount}`
 do
     if [ _{active_annovar_flag} = "_True" ]
     then
-        awk 'NR>1 {{print}}' {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}_genomon_mutations.result.txt || exit $?
+        awk 'NR>1 {{print}}' {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
     else
-        cat {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}_genomon_mutations.result.txt || exit $?
+        cat {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
     fi
 done
+
+{mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt -e {eb_pval} -f {fish_pval} -r {realign_pval} -t {tcount} -n {ncount} -p {post10q} -q {r_post10q} -c {tcount}
 
 """
     def __init__(self, qsub_option, script_dir):
         super(Mutation_merge, self).__init__(qsub_option, script_dir)
-
 

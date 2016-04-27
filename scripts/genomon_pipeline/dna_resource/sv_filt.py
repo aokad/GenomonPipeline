@@ -20,12 +20,23 @@ set -xv
 
 # set python environment
 export PYTHONHOME={pythonhome}
-export PATH=$PYTHONHOME/bin:$PATH
+export PATH={htslib}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-{genomon_sv} filt {sample_conf} {param_conf}
+{genomon_sv} filt {input_bam} {output_prefix} {reference_genome} {annotation_dir} {param} || exit $?
 
+mv {output_prefix}.genomonSV.result.txt {output_prefix}.genomonSV.result.txt.tmp || exit $?
+
+echo -e "{meta_info}" > {output_prefix}.genomonSV.result.txt || exit $?
+
+cat {output_prefix}.genomonSV.result.txt.tmp >> {output_prefix}.genomonSV.result.txt || exit $?
+
+rm -rf {output_prefix}.genomonSV.result.txt.tmp
+ 
+{sv_utils} filter {output_prefix}.genomonSV.result.txt {output_prefix}.genomonSV.result.filt.txt.tmp {sv_utils_annotation_dir} {sv_utils_param} || exit $?
+
+mv {output_prefix}.genomonSV.result.filt.txt.tmp {output_prefix}.genomonSV.result.filt.txt
 """
 
     def __init__(self, qsub_option, script_dir):
