@@ -36,7 +36,7 @@ for sample in sample_conf.fastq:
         if not os.path.isdir(script_dir): os.mkdir(script_dir)
         if not os.path.isdir(log_dir): os.mkdir(log_dir)
 
-genomon_conf_name, ext = os.path.splitext(run_conf.genomon_conf_file)
+genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
 shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
 
 # link the input fastq files
