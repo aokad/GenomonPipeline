@@ -191,6 +191,8 @@ if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_r
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv/control_panel'): os.mkdir(run_conf.project_root + '/sv/control_panel')
 if not os.path.isdir(run_conf.project_root + '/qc'): os.mkdir(run_conf.project_root + '/qc')
+for sample in sample_conf.qc:
+    if not os.path.isdir(run_conf.project_root + '/qc/' + sample): os.mkdir(run_conf.project_root + '/qc/' + sample)
 if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.exists(run_conf.project_root + '/post_analysis'): os.mkdir(run_conf.project_root + '/post_analysis')
     if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name): os.mkdir(run_conf.project_root + '/post_analysis/' + sample_conf_name)
@@ -613,9 +615,8 @@ def filt_sv(input_files,  output_file):
 @transform(qc_bamstats_list, formatter(), "{subpath[0][2]}/qc/{subdir[0][0]}/{subdir[0][0]}.bamstats")
 def bam_stats(input_file, output_file):
     dir_name = os.path.dirname(output_file)
-    if not os.path.exists(dir_name): os.makedirs(dir_name)
     sample_name = os.path.basename(dir_name)
-      
+    
     arguments = {"bamstats": genomon_conf.get("SOFTWARE", "bamstats"),
                  "PERL5LIB": genomon_conf.get("ENV", "PERL5LIB"),
                  "input": input_file,
@@ -630,9 +631,7 @@ def bam_stats(input_file, output_file):
 @follows( identify_mutations )
 @transform(qc_coverage_list, formatter(), "{subpath[0][2]}/qc/{subdir[0][0]}/{subdir[0][0]}.coverage")
 def coverage(input_file, output_file):
-
     dir_name = os.path.dirname(output_file)
-    if not os.path.exists(dir_name): os.makedirs(dir_name)
     sample_name = os.path.basename(dir_name)
     depth_output_file = dir_name+'/'+sample_name+'.depth'
 
