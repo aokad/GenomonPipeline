@@ -21,7 +21,6 @@ set -xv
 # set python environment
 export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
-export LD_LIBRARY_PATH={ld_library_path}:$LD_LIBRARY_PATH
 export PYTHONPATH={pythonpath}
 
 {genomon_pa} run {mode} {output_dir} {genomon_root} {sample_sheet} \

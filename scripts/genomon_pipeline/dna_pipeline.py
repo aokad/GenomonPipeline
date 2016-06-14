@@ -1,6 +1,7 @@
 import os
 import shutil
 import glob
+import ConfigParser
 from ruffus import *
 from genomon_pipeline.config.run_conf import *
 from genomon_pipeline.config.genomon_conf import *
@@ -160,18 +161,33 @@ if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_na
 # generate input list of paplot
 paplot_files_qc = []
 paplot_files_sv = []
+paplot_files_mutation = []
 paplot_files_collate = []
 if not os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'):
-    for sample in sample_conf.qc:
-        paplot_files_qc.append(run_conf.project_root + '/qc/' + sample + '/' + sample + '.genomonQC.result.txt')
+    pa_conf = ConfigParser.RawConfigParser()
+    pa_conf.read(genomon_conf.get("post_analysis", "config_file"))
+    
+    paplot_files_qc.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_qc", "output_all"))
 
-    for complist in sample_conf.sv_detection:
-        if (complist[1] == None and genomon_conf.getboolean("pa_plot", "include_unpair") == False): continue
-        if (complist[2] == None and genomon_conf.getboolean("pa_plot", "include_unpanel") == False): continue
-        paplot_files_sv.append(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.filt.txt')
+    paplot_files_sv.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_sv", "output_filt_case1"))
+    if genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_files_sv.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_sv", "output_filt_case2"))
+    if genomon_conf.getboolean("pa_plot", "include_unpair"):
+        paplot_files_sv.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_sv", "output_filt_case3"))    
+    if genomon_conf.getboolean("pa_plot", "include_unpair") and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_files_sv.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_sv", "output_filt_case4")) 
 
+    paplot_files_mutation.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_mutation", "output_filt_case1"))
+    if genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_files_mutation.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_mutation", "output_filt_case2"))
+    if genomon_conf.getboolean("pa_plot", "include_unpair"):
+        paplot_files_mutation.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_mutation", "output_filt_case3"))    
+    if genomon_conf.getboolean("pa_plot", "include_unpair") and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_files_mutation.append(run_conf.project_root + '/post_analysis/' + pa_conf.get("merge_format_mutation", "output_filt_case4")) 
+        
     paplot_files_collate.extend(paplot_files_qc)
     paplot_files_collate.extend(paplot_files_sv)
+    paplot_files_collate.extend(paplot_files_mutation)
     
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
@@ -754,6 +770,7 @@ def post_analysis_qc(input_files, output_file):
     
 @active_if(genomon_conf.getboolean("pa_plot", "enable"))
 @active_if(len(paplot_files_collate) > 0)
+@follows(post_analysis_mutation)
 @follows(merge_qc)
 @collate(paplot_files_collate, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
 def post_analysis_plot(input_file, output_file):
@@ -777,12 +794,23 @@ def post_analysis_plot(input_file, output_file):
 
     remark += "</ul>"
     
+    target_qc = []
+    for f in paplot_files_qc:
+        if os.path.exists(f): target_qc.append(f)
+    target_sv = []
+    for f in paplot_files_sv:
+        if os.path.exists(f): target_sv.append(f)
+    target_mutation = []
+    for f in paplot_files_mutation:
+        if os.path.exists(f): target_mutation.append(f)
+            
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
                  "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
-                 "inputs_qc": ",".join(paplot_files_qc),
-                 "inputs_sv": ",".join(paplot_files_sv),
+                 "inputs_qc": ",".join(target_qc),
+                 "inputs_sv": ",".join(target_sv),
+                 "inputs_mutation": ",".join(target_mutation),
                  "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
                  "title": genomon_conf.get("pa_plot", "title"),
                  "remarks": remark,
