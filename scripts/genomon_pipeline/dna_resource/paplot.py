@@ -22,9 +22,15 @@ export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-{pa_plot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
-{pa_plot} sv "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
-{pa_plot} mutation "{inputs_mutation}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+if test "{inputs_qc}" != ""; then
+  {pa_plot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+fi
+if test "{inputs_sv}" != ""; then
+  {pa_plot} sv "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+fi
+if test "{inputs_mutation}" != ""; then
+  {pa_plot} mutation "{inputs_mutation}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+fi
 """
 
     def __init__(self, qsub_option, script_dir):
