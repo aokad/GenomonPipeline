@@ -21,7 +21,6 @@ set -xv
 # set python environment
 export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
-export LD_LIBRARY_PATH={ld_library_path}:$LD_LIBRARY_PATH
 export PYTHONPATH={pythonpath}
 
 {genomon_pa} run {mode} {output_dir} {genomon_root} {sample_sheet} \
@@ -57,4 +56,61 @@ export PYTHONPATH={pythonpath}
         
         return {"case1": tmr_nrml_list, "case2": tmr_nrml_none, "case3": tmr_none_list, "case4": tmr_none_none}
 
+
+    def output_files(self, mode, samples, base_dir, genomon_conf):
+        import ConfigParser
+        pa_conf = ConfigParser.RawConfigParser()
+        pa_conf.read(genomon_conf.get("post_analysis", "config_file"))
+
+        if len(samples) == 0:
+            return {}
+        
+        if mode == "qc":
+            return {"all": base_dir + '/' + pa_conf.get("merge_format_qc", "output_all")}
+        
+        section = ""
+        if mode == "mutation":
+            section = "merge_format_mutation"
+        elif mode == "sv":
+            section = "merge_format_sv"
+        else:
+            return {}
             
+        li_output_files = {}
+        case1=False
+        case2=False
+        case3=False
+        case4=False
+        include_unpair = pa_conf.getboolean(section, "include_unpair")
+        include_unpanel = pa_conf.getboolean(section, "include_unpanel")
+        for complist in samples:
+            if (complist[1] != None and complist[2] != None): case1 = True
+            if (complist[1] == None and complist[2] != None and include_unpair == True): case3 = True
+            if (complist[1] != None and complist[2] == None and include_unpanel == True): case2 = True
+            if (complist[1] == None and complist[2] == None and include_unpair == True and include_unpanel == True): case4 = True
+    
+        if pa_conf.getboolean(section, "all_in_one"):
+            li_output_files["filt_all"] = base_dir + '/' + pa_conf.get(section, "output_filt_all")
+            if pa_conf.getboolean(section, "include_unfilt"):
+                li_output_files["all"] = base_dir + '/' + pa_conf.get(section, "output_all")
+                
+        if pa_conf.getboolean(section, "separate"):
+            if case1 == True: 
+                li_output_files["filt_case1"] = base_dir + '/' + pa_conf.get(section, "output_filt_case1")
+                if pa_conf.getboolean(section, "include_unfilt"):
+                    li_output_files["case1"] = base_dir + '/' + pa_conf.get(section, "output_case1")
+            if case2 == True: 
+                li_output_files["filt_case2"] = base_dir + '/' + pa_conf.get(section, "output_filt_case2")
+                if pa_conf.getboolean(section, "include_unfilt"):
+                    li_output_files["case2"] = base_dir + '/' + pa_conf.get(section, "output_case2")
+            if case3 == True: 
+                li_output_files["filt_case3"] = base_dir + '/' + pa_conf.get(section, "output_filt_case3")
+                if pa_conf.getboolean(section, "include_unfilt"):
+                    li_output_files["case3"] = base_dir + '/' + pa_conf.get(section, "output_case3")
+            if case4 == True: 
+                li_output_files["filt_case4"] = base_dir + '/' + pa_conf.get(section, "output_filt_case4")
+                if pa_conf.getboolean(section, "include_unfilt"):
+                    li_output_files["case4"] = base_dir + '/' + pa_conf.get(section, "output_case4")
+        
+        return li_output_files
+        

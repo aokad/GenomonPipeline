@@ -132,27 +132,40 @@ for sample in sample_conf.qc:
         qc_coverage_list.append(run_conf.project_root + '/bam/' + sample +'/'+ sample +'.markdup.bam')
 
 
-sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))        
+sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
+
 # generate input list of 'post analysis for mutation'
+pa_output_files_mutation = r_post_analysis.output_files("mutation", sample_conf.mutation_call, run_conf.project_root + '/post_analysis/' + sample_conf_name, genomon_conf)
+run_pa = False
+for key in pa_output_files_mutation:
+    if not os.path.exists(pa_output_files_mutation[key]): run_pa = True
 pa_files_mutation = []
 pa_samples_mutation = {}
-if len(glob.glob(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*mutation*.csv')) == 0:
+if run_pa == True:
     pa_samples_mutation = r_post_analysis.sample_split_case(sample_conf.mutation_call)
     for complist in sample_conf.sv_detection:
         pa_files_mutation.append(run_conf.project_root + '/mutation/' + complist[0] +'/'+ complist[0] +'.genomon_mutation.result.filt.txt')
-
+        
 # generate input list of 'post analysis for SV'
+pa_output_files_sv = r_post_analysis.output_files("sv", sample_conf.sv_detection, run_conf.project_root + '/post_analysis/' + sample_conf_name, genomon_conf)
+run_pa = False
+for key in pa_output_files_sv:
+    if not os.path.exists(pa_output_files_sv[key]): run_pa = True
 pa_files_sv = []
 pa_samples_sv = {}
-if len(glob.glob(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*sv*.csv')) == 0:
+if run_pa == True:
     pa_samples_sv = r_post_analysis.sample_split_case(sample_conf.sv_detection)
     for complist in sample_conf.sv_detection:
         pa_files_sv.append(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.filt.txt')
         
 # generate input list of 'post analysis for qc'
+pa_output_files_qc = r_post_analysis.output_files("qc", sample_conf.qc, run_conf.project_root + '/post_analysis/' + sample_conf_name, genomon_conf)
+run_pa = False
+for key in pa_output_files_qc:
+    if not os.path.exists(pa_output_files_qc[key]): run_pa = True
 pa_files_qc = []
 pa_samples_qc = []
-if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*qc*.csv'):
+if run_pa == True:
     for sample in sample_conf.qc:
         pa_samples_qc.append(sample)
         pa_files_qc.append(run_conf.project_root + '/qc/' + sample + '/' + sample + '.genomonQC.result.txt')
@@ -160,19 +173,37 @@ if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_na
 # generate input list of paplot
 paplot_files_qc = []
 paplot_files_sv = []
+paplot_files_mutation = []
 paplot_files_collate = []
 if not os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'):
-    for sample in sample_conf.qc:
-        paplot_files_qc.append(run_conf.project_root + '/qc/' + sample + '/' + sample + '.genomonQC.result.txt')
+    # mutation
+    if pa_output_files_mutation.has_key("filt_case1"):
+        paplot_files_mutation.append(pa_output_files_mutation["filt_case1"])
+    if pa_output_files_mutation.has_key("filt_case2") and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_files_mutation.append(pa_output_files_mutation["filt_case2"])
+    if pa_output_files_mutation.has_key("filt_case3") and genomon_conf.getboolean("pa_plot", "include_unpair"):
+        paplot_files_mutation.append(pa_output_files_mutation["filt_case3"])
+    if pa_output_files_mutation.has_key("filt_case4") and genomon_conf.getboolean("pa_plot", "include_unpanel") and genomon_conf.getboolean("pa_plot", "include_unpair"):
+        paplot_files_mutation.append(pa_output_files_mutation["filt_case4"])
+            
+    # sv
+    if pa_output_files_sv.has_key("filt_case1"):
+        paplot_files_sv.append(pa_output_files_sv["filt_case1"])
+    if pa_output_files_sv.has_key("filt_case2") and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_files_sv.append(pa_output_files_sv["filt_case2"])
+    if pa_output_files_sv.has_key("filt_case3") and genomon_conf.getboolean("pa_plot", "include_unpair"):
+        paplot_files_sv.append(pa_output_files_sv["filt_case3"])
+    if pa_output_files_sv.has_key("filt_case4") and genomon_conf.getboolean("pa_plot", "include_unpanel") and genomon_conf.getboolean("pa_plot", "include_unpair"):
+        paplot_files_sv.append(pa_output_files_sv["filt_case4"])
 
-    for complist in sample_conf.sv_detection:
-        if (complist[1] == None and genomon_conf.getboolean("pa_plot", "include_unpair") == False): continue
-        if (complist[2] == None and genomon_conf.getboolean("pa_plot", "include_unpanel") == False): continue
-        paplot_files_sv.append(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.filt.txt')
-
+    # qc
+    if pa_output_files_qc.has_key("all"):
+        paplot_files_qc.append(pa_output_files_qc["all"])
+        
     paplot_files_collate.extend(paplot_files_qc)
     paplot_files_collate.extend(paplot_files_sv)
-    
+    paplot_files_collate.extend(paplot_files_mutation)
+    print paplot_files_collate
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
@@ -676,10 +707,10 @@ def merge_qc(input_files, output_file):
 #####################
 # post analysis stage
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
-@active_if(len(pa_files_mutation) > 0)
+@active_if(len(pa_output_files_mutation) > 0)
 @follows(filt_sv)
 @follows(identify_mutations)
-@collate(pa_files_mutation, formatter(), run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*mutation*.csv')
+@collate(pa_files_mutation, formatter(), pa_output_files_mutation.values())
 def post_analysis_mutation(input_files, output_file):
         
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
@@ -702,10 +733,10 @@ def post_analysis_mutation(input_files, output_file):
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
-@active_if(len(pa_files_sv) > 0)
+@active_if(len(pa_output_files_sv) > 0)
 @follows(filt_sv)
 @follows(identify_mutations)
-@collate(pa_files_sv, formatter(), run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*sv*.csv')
+@collate(pa_files_sv, formatter(), pa_output_files_sv.values())
 def post_analysis_sv(input_files, output_file):
 
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
@@ -728,9 +759,9 @@ def post_analysis_sv(input_files, output_file):
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
 
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
-@active_if(len(pa_files_qc) > 0)
+@active_if(len(pa_output_files_qc) > 0)
 @follows(merge_qc)
-@collate(pa_files_qc, formatter(), run_conf.project_root + '/post_analysis/' + sample_conf_name + '/*qc*.csv')
+@collate(pa_files_qc, formatter(), pa_output_files_qc.values())
 def post_analysis_qc(input_files, output_file):
 
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
@@ -754,7 +785,9 @@ def post_analysis_qc(input_files, output_file):
     
 @active_if(genomon_conf.getboolean("pa_plot", "enable"))
 @active_if(len(paplot_files_collate) > 0)
-@follows(merge_qc)
+@follows(post_analysis_mutation)
+@follows(post_analysis_sv)
+@follows(post_analysis_qc)
 @collate(paplot_files_collate, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
 def post_analysis_plot(input_file, output_file):
     
@@ -776,13 +809,14 @@ def post_analysis_plot(input_file, output_file):
         remark += "<li>" + name + " " + version[-1] + "</li>"
 
     remark += "</ul>"
-    
+            
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
                  "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
                  "inputs_qc": ",".join(paplot_files_qc),
                  "inputs_sv": ",".join(paplot_files_sv),
+                 "inputs_mutation": ",".join(paplot_files_mutation),
                  "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
                  "title": genomon_conf.get("pa_plot", "title"),
                  "remarks": remark,
