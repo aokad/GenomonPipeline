@@ -143,7 +143,7 @@ pa_files_mutation = []
 pa_samples_mutation = {}
 if run_pa == True:
     pa_samples_mutation = r_post_analysis.sample_split_case(sample_conf.mutation_call)
-    for complist in sample_conf.sv_detection:
+    for complist in sample_conf.mutation_call:
         pa_files_mutation.append(run_conf.project_root + '/mutation/' + complist[0] +'/'+ complist[0] +'.genomon_mutation.result.filt.txt')
         
 # generate input list of 'post analysis for SV'
@@ -203,7 +203,7 @@ if not os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name + '/
     paplot_files_collate.extend(paplot_files_qc)
     paplot_files_collate.extend(paplot_files_sv)
     paplot_files_collate.extend(paplot_files_mutation)
-    print paplot_files_collate
+    
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.mkdir(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
