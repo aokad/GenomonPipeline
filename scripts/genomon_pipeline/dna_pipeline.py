@@ -837,6 +837,7 @@ def post_analysis_plot(input_file, output_file):
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
                  "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
+                 "annovar": genomon_conf.getboolean("annotation", "active_annovar_flag"),
                  "inputs_qc": ",".join(paplot_inputs_qc),
                  "inputs_sv": ",".join(paplot_inputs_sv),
                  "inputs_mutation": ",".join(paplot_inputs_mutation),

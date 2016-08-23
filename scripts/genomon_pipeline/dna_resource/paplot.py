@@ -23,13 +23,17 @@ export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
 if test "{inputs_qc}" != ""; then
-  {pa_plot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+  {pa_plot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" || exit $?
 fi
 if test "{inputs_sv}" != ""; then
-  {pa_plot} sv "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+  {pa_plot} sv "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" || exit $?
 fi
-if test "{inputs_mutation}" != ""; then
-  {pa_plot} mutation "{inputs_mutation}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+if test "{annovar}" == "True"; then
+  if test "{inputs_mutation}" != ""; then
+    {pa_plot} mutation "{inputs_mutation}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" || exit $?
+  fi
+else
+  echo "paplot: [annotation] active_annovar_flag = False in genomon_conf_file, skip mutation-matrix."
 fi
 """
 
