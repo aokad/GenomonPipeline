@@ -20,11 +20,12 @@ set -xv
 
 # set python environment
 export PYTHONHOME={pythonhome}
-export PATH=$PYTHONHOME/bin:$PATH
+blat_home={blat}
+export PATH=${{blat_home%/*}}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
-{fusionfusion} --star {chimeric_sam} --out {output_prefix} --param {param_file}
+{fusionfusion} --star {chimeric_sam} --out {output_prefix} --reference_genome {ref_fa} --resource_dir {annotation_dir} {additional_params}
 """
 
     def __init__(self, qsub_option, script_dir):
