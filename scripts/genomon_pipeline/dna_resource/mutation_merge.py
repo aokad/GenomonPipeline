@@ -40,7 +40,7 @@ print_header=""
 
 if [ _{active_annovar_flag} = _True ]
 then
-    tmp_header=`head -n 1 {out_prefix}_mutations_candidate.1.hg19_multianno.txt | awk -F"\t" -v OFS="\t" '{{$NF=""; sub(/.$/,""); print $0}}'` || exit $?
+    tmp_header=`head -n 1 {out_prefix}_mutations_candidate.1.{annovar_buildver}_multianno.txt | awk -F"\t" -v OFS="\t" '{{$NF=""; sub(/.$/,""); print $0}}'` || exit $?
     print_header=${{tmp_header}}
 
     tmp_header=`echo $mut_header | cut -d "," -f 6- | tr "," "\t"` || exit $?
@@ -99,13 +99,17 @@ for i in `seq 1 1 {filecount}`
 do
     if [ _{active_annovar_flag} = "_True" ]
     then
-        awk 'NR>1 {{print}}' {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
+        awk 'NR>1 {{print}}' {out_prefix}_mutations_candidate.${{i}}.{annovar_buildver}_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
     else
-        cat {out_prefix}_mutations_candidate.${{i}}.hg19_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
+        cat {out_prefix}_mutations_candidate.${{i}}.{annovar_buildver}_multianno.txt >> {out_prefix}.genomon_mutation.result.txt || exit $?
     fi
 done
 
-{mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt -e {eb_pval} -f {fish_pval} -r {realign_pval} -t {tcount} -n {ncount} -p {post10q} -q {r_post10q} -c {tcount}
+if [ _{control_bam} = "_None" ]; then 
+    {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {single_params}
+else
+    {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {pair_params}
+fi
 
 """
     def __init__(self, qsub_option, script_dir):
