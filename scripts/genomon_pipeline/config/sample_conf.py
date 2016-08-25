@@ -14,6 +14,8 @@ class Sample_conf(object):
         self.sv_detection = []
         self.qc = []
         self.control_panel = {}
+        self.fusionfusion = []
+        self.expression = []
         # 
         # should add the file exist check here ?
         #
@@ -107,6 +109,8 @@ class Sample_conf(object):
         mut_tumor_sampleID_list = []
         sv_tumor_sampleID_list = []
         qc_sampleID_list = []
+        ff_sampleID_list = []
+        exp_sampleID_list = []
         
         for row in _data:
             if row[0].startswith('['):
@@ -136,9 +140,15 @@ class Sample_conf(object):
                 elif row[0].lower() == '[controlpanel]':
                     mode = 'controlpanel'
                     continue
+                elif row[0].lower() == '[fusionfusion]':
+                    mode = 'fusionfusion'
+                    continue
+                elif row[0].lower() == '[expression]':
+                    mode = 'expression'
+                    continue
                 else:
                     err_msg = "Section name should be either of [fastq], [bam_tofastq], [bam_import], " + \
-                              "[mutation_call], [sv_detection] or [controlpanel]. " + \
+                              "[mutation_call], [sv_detection], [controlpanel], [fusionfusion] or [expression]. " + \
                               "Also, sample name should not start with '['."
                     raise ValueError(err_msg)
             
@@ -306,6 +316,40 @@ class Sample_conf(object):
                         raise ValueError(err_msg)
  
                 self.control_panel[controlpanelID] = row[1:]
+
+
+            elif mode == 'fusionfusion':
+
+                sampleID = row[0]
+                if sampleID not in sampleID_list:
+                    err_msg = "[fusionfusion] section, " + sampleID + " is not defined"
+                    raise ValueError(err_msg)
+
+                if sampleID in ff_sampleID_list:
+                    err_msg = "[fusionfusion] section, " + sampleID + " is duplicated"
+                    raise ValueError(err_msg)
+
+                controlpanelID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
+
+                ff_sampleID_list.append(sampleID)
+
+                self.fusionfusion.append((sampleID,controlpanelID))
+
+
+            elif mode == 'expression':
+
+                sampleID = row[0]
+                if sampleID not in sampleID_list:
+                    err_msg = "[expression] section, " + sampleID + " is not defined"
+                    raise ValueError(err_msg)
+
+                if sampleID in exp_sampleID_list:
+                    err_msg = "[expression] section, " + sampleID + " is duplicated"
+                    raise ValueError(err_msg)
+
+                exp_sampleID_list.append(sampleID)
+
+                self.expression.append(sampleID)
 
 
         # check whether controlpanleID in compare section is defined

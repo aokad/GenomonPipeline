@@ -132,6 +132,7 @@ for sample in sample_conf.qc:
         qc_coverage_list.append(run_conf.project_root + '/bam/' + sample +'/'+ sample +'.markdup.bam')
 
 
+genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
 sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
 
 # generate input list of 'post analysis for mutation'
@@ -252,9 +253,6 @@ if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name): os.mkdir(run_conf.project_root + '/post_analysis/' + sample_conf_name)
 if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
 
-genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
-shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
-
 for outputfiles in (bam2fastq_output_list, linked_fastq_list):
     for outputfile in outputfiles:
         sample = os.path.basename(os.path.dirname(outputfile[0][0]))
@@ -269,6 +267,9 @@ for target_sample_dict in (sample_conf.bam_import, sample_conf.fastq, sample_con
         log_dir = run_conf.project_root + '/log/' + sample
         if not os.path.isdir(script_dir): os.mkdir(script_dir)
         if not os.path.isdir(log_dir): os.mkdir(log_dir)
+
+shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
+shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + sample_conf_name +'_'+ run_conf.analysis_timestamp + ext)
 
 # prepare output directory for each sample and make mutation control panel file
 for complist in sample_conf.mutation_call:
@@ -461,31 +462,15 @@ def identify_mutations(input_file, output_file, output_dir):
     arguments = {
         # fisher mutation
         "fisher": genomon_conf.get("SOFTWARE", "fisher"),
-        "map_quality": genomon_conf.get("fisher_mutation_call", "map_quality"),
-        "base_quality": genomon_conf.get("fisher_mutation_call", "base_quality"),
-        "min_allele_freq": genomon_conf.get("fisher_mutation_call", "disease_min_allele_frequency"),
-        "max_allele_freq": genomon_conf.get("fisher_mutation_call", "control_max_allele_frequency"),
-        "min_depth": genomon_conf.get("fisher_mutation_call", "min_depth"),
-        "min_variant_read": genomon_conf.get("fisher_mutation_call", "min_variant_read"),
-        "fisher_thres": genomon_conf.get("fisher_mutation_call", "fisher_thres_hold"),
-        "post_10_q": genomon_conf.get("fisher_mutation_call", "post_10_q"),
+        "fisher_pair_params": genomon_conf.get("fisher_mutation_call", "pair_params"),
+        "fisher_single_params": genomon_conf.get("fisher_mutation_call", "single_params"),
         # realignment filter
         "mutfilter": genomon_conf.get("SOFTWARE", "mutfilter"),
-        "realign_score_diff": genomon_conf.get("realignment_filter","score_diff"),
-        "realign_window_size": genomon_conf.get("realignment_filter","window_size"),
-        "realign_max_depth": genomon_conf.get("realignment_filter","max_depth"),
+        "realignment_params": genomon_conf.get("realignment_filter","params"),
         # indel filter
-        "indel_search_length": genomon_conf.get("indel_filter","search_length"),
-        "indel_neighbor": genomon_conf.get("indel_filter","neighbor"),
-        "indel_base_quality": genomon_conf.get("indel_filter","base_quality"),
-        "indel_min_depth": genomon_conf.get("indel_filter","min_depth"),
-        "indel_min_mismatch": genomon_conf.get("indel_filter","max_mismatch"),
-        "indel_min_allele_freq": genomon_conf.get("indel_filter","max_allele_freq"),
+        "indel_params": genomon_conf.get("indel_filter", "params"),
         # breakpoint filter
-        "bp_max_depth": genomon_conf.get("breakpoint_filter","max_depth"),
-        "bp_min_clip_size": genomon_conf.get("breakpoint_filter","min_clip_size"),
-        "bp_junc_num_thres": genomon_conf.get("breakpoint_filter","junc_num_thres"),
-        "bp_map_quality": genomon_conf.get("breakpoint_filter","map_quality"),
+        "breakpoint_params": genomon_conf.get("breakpoint_filter","params"),
         # simplerepeat filter
         "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
         # EB filter
@@ -506,7 +491,9 @@ def identify_mutations(input_file, output_file, output_dir):
         # annovar
         "active_annovar_flag": genomon_conf.get("annotation", "active_annovar_flag"),
         "annovar": genomon_conf.get("SOFTWARE", "annovar"),
+        "annovar_database": genomon_conf.get("annotation", "annovar_database"),
         "table_annovar_params": genomon_conf.get("annotation", "table_annovar_params"),
+        "annovar_buildver": genomon_conf.get("annotation", "annovar_buildver"),
         # commmon
         "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
         "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
@@ -531,19 +518,15 @@ def identify_mutations(input_file, output_file, output_dir):
         "control_bam": input_file[1],
         "control_bam_list": input_file[2],
         "active_annovar_flag": genomon_conf.get("annotation", "active_annovar_flag"),
+        "annovar_buildver": genomon_conf.get("annotation", "annovar_buildver"),
         "active_HGVD_flag": genomon_conf.get("annotation", "active_HGVD_flag"),
         "active_HGMD_flag": active_HGMD_flag,
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "filecount": max_task_id,
         "mutil": genomon_conf.get("SOFTWARE", "mutil"),
-        "eb_pval": genomon_conf.get("eb_filter","ebcall_pval-log10_thres"),
-        "fish_pval": genomon_conf.get("fisher_mutation_call","fisher_pval-log10_thres"),
-        "realign_pval": genomon_conf.get("realignment_filter","fisher_pval-log10_thres"),
-        "tcount": genomon_conf.get("realignment_filter","disease_min_mismatch"),
-        "ncount": genomon_conf.get("realignment_filter","control_max_mismatch"),
-        "post10q": genomon_conf.get("fisher_mutation_call","post_10_q_thres"),
-        "r_post10q": genomon_conf.get("realignment_filter","post_10_q_thres"),
+        "pair_params": genomon_conf.get("mutation_util","pair_params"),
+        "single_params": genomon_conf.get("mutation_util","single_params"),
         "meta_info_em": get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil", "mutanno"]),
         "meta_info_e":  get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil"]),
         "meta_info_m": get_meta_info(["fisher", "mutfilter", "mutil", "mutanno"]),
@@ -552,8 +535,9 @@ def identify_mutations(input_file, output_file, output_dir):
 
     mutation_merge.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
+    annovar_buildver = genomon_conf.get("annotation", "annovar_buildver"),
     for task_id in range(1,(max_task_id + 1)):
-        input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.hg19_multianno.txt'
+        input_file = output_dir+'/'+sample_name+'_mutations_candidate.'+str(task_id)+'.'+annovar_buildver[0]+'_multianno.txt'
         os.unlink(input_file)
 
     for task_id in range(1,(max_task_id + 1)):
