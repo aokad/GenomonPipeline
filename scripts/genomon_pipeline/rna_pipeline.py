@@ -11,6 +11,7 @@ from genomon_pipeline.rna_resource.paplot import *
 from genomon_pipeline.rna_resource.fusion_count import *
 from genomon_pipeline.rna_resource.fusion_merge import *
 from genomon_pipeline.rna_resource.genomon_expression import *
+from genomon_pipeline.rna_resource.intron_retention import *
 from genomon_pipeline.dna_resource.bamtofastq import *
 
 # set task classes
@@ -20,6 +21,7 @@ fusionfusion = Fusionfusion(genomon_conf.get("fusionfusion", "qsub_option"), run
 fusion_count = Fusion_count(genomon_conf.get("fusion_count_control", "qsub_option"), run_conf.drmaa)
 fusion_merge = Fusion_merge(genomon_conf.get("fusion_merge_control", "qsub_option"), run_conf.drmaa)
 genomon_expression = Genomon_expression(genomon_conf.get("genomon_expression", "qsub_option"), run_conf.drmaa)
+intron_retention = Intron_retention(genomon_conf.get("intron_retention", "qsub_option"), run_conf.drmaa)
 r_pa_plot = Res_PA_Plot(genomon_conf.get("pa_plot", "qsub_option"), run_conf.drmaa)
 r_post_analysis = Res_PostAnalysis(genomon_conf.get("post_analysis", "qsub_option"), run_conf.drmaa)
 
@@ -84,6 +86,7 @@ if not os.path.isdir(run_conf.project_root + '/fusion'): os.mkdir(run_conf.proje
 if not os.path.isdir(run_conf.project_root + '/fusion/control_panel'): os.mkdir(run_conf.project_root + '/fusion/control_panel')
 if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
 if not os.path.isdir(run_conf.project_root + '/expression'): os.mkdir(run_conf.project_root + '/expression')
+if not os.path.isdir(run_conf.project_root + '/intron_retention'): os.mkdir(run_conf.project_root + '/intron_retention')
 if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.exists(run_conf.project_root + '/post_analysis'): os.mkdir(run_conf.project_root + '/post_analysis')
     if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name): os.mkdir(run_conf.project_root + '/post_analysis/' + sample_conf_name)
@@ -103,7 +106,14 @@ shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + 
 expression_bams = []
 # generate input list of genomon expression
 for tumor_sample in sample_conf.expression:
+    if os.path.exists(run_conf.project_root + '/expression/' + tumor_sample + '/' + tumor_sample + '.sym2fkpm.txt'): continue
     expression_bams.append(run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam')
+
+intron_retention_bams = []
+# generate input list of intron_retention
+for tumor_sample in sample_conf.intron_retention:
+    if os.path.exists(run_conf.project_root + '/intron_retention/' + tumor_sample + '/' + tumor_sample + '.ir_simple_count.txt'): continue
+    intron_retention_bams.append(run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam')
 
 fusionfusion_bams = []
 fusion_control_panel = []
@@ -113,6 +123,7 @@ for complist in sample_conf.fusionfusion:
 
     tumor_sample = complist[0]
     control_panel_name = complist[1]
+    if os.path.exists(run_conf.project_root + '/fusion/' + tumor_sample + '/' + tumor_sample + '.fusion.fusion.result.txt'): continue
 
     # generate input list of 'fusionfusion'
     tumor_bam = run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam'
@@ -142,6 +153,7 @@ def link_import_bam(sample):
     input_dir_name = os.path.dirname(bam)
     sample_name = os.path.basename(input_dir_name)
     input_chimeric_sam = input_dir_name + '/' + sample_name + ".Chimeric.out.sam"
+    input_log_final = input_dir_name + '/' + sample_name + ".Log.final.out"
     
     if not os.path.isdir(link_dir): os.mkdir(link_dir)
     if (not os.path.exists(link_dir +'/'+ sample +'.Aligned.sortedByCoord.out.bam')) and (not os.path.exists(link_dir +'/'+ sample +'.Aligned.sortedByCoord.out.bam.bai')): 
@@ -150,8 +162,10 @@ def link_import_bam(sample):
             os.symlink(bam +'.bai', link_dir +'/'+ sample +'.Aligned.sortedByCoord.out.bam.bai')
         elif (os.path.exists(bam_prefix +'.bai')):
             os.symlink(bam_prefix +'.bai', link_dir +'/'+ sample +'.Aligned.sortedByCoord.out.bam.bai')
-    if (not os.path.exists(link_dir +'/'+ sample +'.Chimeric.out.sam')): 
+    if not os.path.exists(link_dir +'/'+ sample +'.Chimeric.out.sam') and os.path.exists(input_chimeric_sam): 
         os.symlink(input_chimeric_sam, link_dir +'/'+ sample +'.Chimeric.out.sam')
+    if not os.path.exists(link_dir +'/'+ sample +'.Log.final.out') and os.path.exists(input_log_final): 
+        os.symlink(input_log_final, link_dir +'/'+ sample +'.Log.final.out')
 
 # convert bam to fastq
 @originate(bam2fastq_output_list)
@@ -242,7 +256,7 @@ def task_fusion_merge(input_file, output_file):
 
 
 @follows( task_fusion_merge )
-@transform(fusionfusion_bams, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/star.fusion.result.txt")
+@transform(fusionfusion_bams, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/{subdir[0][0]}.fusion.fusion.result.txt")
 def task_fusionfusion(input_file, output_file):
 
     input_dir_name = os.path.dirname(input_file[0])
@@ -261,6 +275,7 @@ def task_fusionfusion(input_file, output_file):
                  "output_prefix": output_dir_name,
                  "annotation_dir": genomon_conf.get("fusionfusion", "annotation_dir"),
                  "additional_params": params + genomon_conf.get("fusionfusion", "params"),
+                 "sample": sample_name,
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH")}
@@ -290,6 +305,27 @@ def task_genomon_expression(input_file, output_file):
     if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
     genomon_expression.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
+
+@follows( link_import_bam )
+@follows( task_star_align )
+@transform(intron_retention_bams, formatter(), "{subpath[0][2]}/intron_retention/{subdir[0][0]}/{subdir[0][0]}.ir_simple_count.txt")
+def task_intron_retention(input_file, output_file):
+
+    input_dir_name = os.path.dirname(input_file)
+    sample_name = os.path.basename(input_dir_name)
+    output_dir_name = os.path.dirname(output_file)  
+
+    arguments = {"intron_retention_utils": genomon_conf.get("SOFTWARE", "intron_retention_utils"),
+                 "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "input_bam": input_file,
+                 "output": output_file,
+                 "ref_gene": genomon_conf.get("intron_retention", "ref_gene"),
+                 "additional_params": genomon_conf.get("intron_retention", "params"),
+                 "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH")}  
+
+    if not os.path.isdir(output_dir_name): os.mkdir(output_dir_name)
+    intron_retention.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
 
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
