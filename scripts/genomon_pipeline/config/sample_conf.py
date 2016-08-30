@@ -16,6 +16,7 @@ class Sample_conf(object):
         self.control_panel = {}
         self.fusionfusion = []
         self.expression = []
+        self.intron_retention = []
         # 
         # should add the file exist check here ?
         #
@@ -111,6 +112,7 @@ class Sample_conf(object):
         qc_sampleID_list = []
         ff_sampleID_list = []
         exp_sampleID_list = []
+        ir_sampleID_list = []
         
         for row in _data:
             if row[0].startswith('['):
@@ -146,9 +148,12 @@ class Sample_conf(object):
                 elif row[0].lower() == '[expression]':
                     mode = 'expression'
                     continue
+                elif row[0].lower() == '[intron_retention]':
+                    mode = 'intron_retention'
+                    continue
                 else:
                     err_msg = "Section name should be either of [fastq], [bam_tofastq], [bam_import], " + \
-                              "[mutation_call], [sv_detection], [controlpanel], [fusionfusion] or [expression]. " + \
+                              "[mutation_call], [sv_detection], [controlpanel], [fusionfusion], [expression] or [intron_retention]. " + \
                               "Also, sample name should not start with '['."
                     raise ValueError(err_msg)
             
@@ -351,6 +356,21 @@ class Sample_conf(object):
 
                 self.expression.append(sampleID)
 
+
+            elif mode == 'intron_retention':
+
+                sampleID = row[0]
+                if sampleID not in sampleID_list:
+                    err_msg = "[intron_retention] section, " + sampleID + " is not defined"
+                    raise ValueError(err_msg)
+
+                if sampleID in ir_sampleID_list:
+                    err_msg = "[intron_retention] section, " + sampleID + " is duplicated"
+                    raise ValueError(err_msg)
+
+                ir_sampleID_list.append(sampleID)
+
+                self.intron_retention.append(sampleID)
 
         # check whether controlpanleID in compare section is defined
         # for comp in self.compare:
