@@ -23,7 +23,7 @@ export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-{genomon_pa} run {mode} {output_dir} {genomon_root} {sample_sheet} \
+{genomon_pa} dna {mode} {output_dir} {genomon_root} {sample_sheet} \
 --config_file {config_file} \
 --samtools {samtools} --bedtools {bedtools} \
 --input_file_case1 "{input_file_case1}" \
@@ -95,10 +95,12 @@ export PYTHONPATH={pythonpath}
         for complist in samples:
             type = ""
             if (complist[1] != None and complist[2] != None): type = "case1"
-            if (complist[1] == None and complist[2] != None and include_unpair == True): type = "case2"
-            if (complist[1] != None and complist[2] == None and include_unpanel == True): type = "case3"
+            if (complist[1] != None and complist[2] == None and include_unpanel == True): type = "case2"
+            if (complist[1] == None and complist[2] != None and include_unpair == True): type = "case3"
             if (complist[1] == None and complist[2] == None and include_unpair == True and include_unpanel == True): type = "case4"
-                    
+            
+            if type == "": continue
+            
             di_outputs[type]["samples"].append(complist[0])
             if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")):
                 di_outputs[type]["run_analysis"] = True

@@ -41,34 +41,54 @@ sample_list_fastq = sample_conf.fastq
 
 sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
 
-# generate input list of 'post-analysis'
-run_pa = False
-if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/merge_fusionfusion.txt'):
-    run_pa = True
-elif not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/merge_starqc.txt'):
-    run_pa = True
-else:
-    for sample in sample_list_fastq:
-        if not os.path.exists(run_conf.project_root + '/fusion/' + sample + '/fusion_fusion.result.txt'):
-            run_pa = True
-            break
+# generate input list of 'post analysis for fusionfusion'
+pa_outputs_fusion = r_post_analysis.output_files("fusion", sample_conf.fusionfusion, run_conf.project_root, sample_conf_name, genomon_conf)
 
-pa_files = []
-if run_pa == True:
-    for sample in sample_list_fastq:
-        pa_files.append(run_conf.project_root + '/fusion/' + sample + '/fusion_fusion.result.txt')
+pa_inputs_fusion = []
+if len(pa_outputs_fusion["outputs"]) > 0:
+    for complist in sample_conf.fusionfusion:
+        pa_inputs_fusion.append(run_conf.project_root + '/fusion/' + complist[0] +'/fusion_fusion.result.filt.txt')
+        
+# generate input list of 'post analysis for qc'
+pa_outputs_starqc = r_post_analysis.output_files("starqc", sample_conf.qc, run_conf.project_root, sample_conf_name, genomon_conf)
 
-# generate input list of 'paplot'
-run_paplot = False
-if not os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'):
-    run_paplot = True
-elif run_pa == True:
-    run_paplot = True
+pa_inputs_starqc = []
+if pa_outputs_starqc["run_pa"] == True:
+    for sample in sample_conf.qc:
+        pa_inputs_starqc.append(run_conf.project_root + '/star/' + sample + '/' + sample + '.Log.final.out')
 
-paplot_files = []
-if run_paplot == True:
-    paplot_files.append(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/merge_fusionfusion.txt')
-    paplot_files.append(run_conf.project_root + '/post_analysis/' + sample_conf_name + '/merge_starqc.txt')
+# generate input list of paplot
+paplot_output = run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'
+
+## fusionfusion
+run_paplot_fusion = False
+if not os.path.exists(paplot_output): run_paplot_fusion = True
+elif len(pa_outputs_fusion["outputs"]) > 0: run_paplot_fusion = True
+
+paplot_inputs_fusion = []
+if run_paplot_fusion == True: 
+
+    if pa_outputs_fusion["case1"]["output_filt"] != "":
+        paplot_inputs_fusion.append(pa_outputs_fusion["case1"]["output_filt"])
+    if pa_outputs_fusion["case2"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+        paplot_inputs_fusion.append(pa_outputs_fusion["case2"]["output_filt"])
+
+    if len(paplot_inputs_fusion) == 0:
+        if pa_outputs_fusion["all"]["output_filt"] != "":
+            paplot_inputs_fusion.append(pa_outputs_fusion["all"]["output_filt"])
+
+## star-qc
+paplot_inputs_starqc = []
+run_paplot_starqc = False
+if not os.path.exists(paplot_output): run_paplot_starqc = True
+elif pa_outputs_starqc["run_pa"] == True: run_paplot_starqc = True
+
+if run_paplot_starqc == True: 
+    paplot_inputs_starqc.extend(pa_outputs_starqc["outputs"])
+
+paplot_inputs = []
+paplot_inputs.extend(paplot_inputs_starqc)
+paplot_inputs.extend(paplot_inputs_fusion)
 
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.makedirs(run_conf.project_root)
@@ -269,12 +289,15 @@ def task_fusionfusion(input_file, output_file):
         params = "--pooled_control_file " + input_file[1] + " "
 
     arguments = {"fusionfusion": genomon_conf.get("SOFTWARE", "fusionfusion"),
+                 "fusion_utils": genomon_conf.get("SOFTWARE", "fusion_utils"),
                  "blat": genomon_conf.get("SOFTWARE", "blat"),
                  "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
                  "chimeric_sam": input_chimeric_sam,
                  "output_prefix": output_dir_name,
                  "annotation_dir": genomon_conf.get("fusionfusion", "annotation_dir"),
                  "additional_params": params + genomon_conf.get("fusionfusion", "params"),
+                 "filt_params": params + genomon_conf.get("fusionfusion", "filt_params"),
+                 "db_dir": params + genomon_conf.get("REFERENCE", "fusionfusion_resource"),
                  "sample": sample_name,
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
@@ -329,29 +352,60 @@ def task_intron_retention(input_file, output_file):
 
 
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
-@active_if(len(pa_files) > 0)
+@active_if(len(pa_inputs_fusion) > 0)
 @follows(task_fusionfusion)
-@collate(pa_files, formatter(), paplot_files)
-def post_analysis(input_files, output_file):
-    
+@follows(task_genomon_expression)
+@collate(pa_inputs_fusion, formatter(), pa_outputs_fusion["outputs"])
+def post_analysis_fusion(input_files, output_file):
+
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
-                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
                  "genomon_pa":  genomon_conf.get("SOFTWARE", "genomon_pa"),
+                 "mode": "fusion",
                  "genomon_root": run_conf.project_root,
                  "output_dir": run_conf.project_root + "/post_analysis/" + sample_conf_name,
                  "sample_sheet": os.path.abspath(run_conf.sample_conf_file),
                  "config_file": genomon_conf.get("post_analysis", "config_file"),
-                 "input_file_case1": ",".join(sample_list_fastq.keys()),
+                 "samtools": genomon_conf.get("SOFTWARE", "samtools"),
+                 "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "input_file_case1": ",".join(pa_outputs_fusion["case1"]["samples"]),
+                 "input_file_case2": ",".join(pa_outputs_fusion["case2"]["samples"]),
+                 "input_file_case3": "",
+                 "input_file_case4": ""
+                }
+                 
+    r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
+
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
+@active_if(len(pa_inputs_starqc) > 0)
+@follows(task_fusionfusion)
+@follows(task_genomon_expression)
+@collate(pa_inputs_starqc, formatter(), pa_outputs_starqc.values())
+def post_analysis_starqc(input_files, output_file):
+
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "genomon_pa":  genomon_conf.get("SOFTWARE", "genomon_pa"),
+                 "mode": "starqc",
+                 "genomon_root": run_conf.project_root,
+                 "output_dir": run_conf.project_root + "/post_analysis/" + sample_conf_name,
+                 "sample_sheet": os.path.abspath(run_conf.sample_conf_file),
+                 "config_file": genomon_conf.get("post_analysis", "config_file"),
+                 "samtools": genomon_conf.get("SOFTWARE", "samtools"),
+                 "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "input_file_case1": ",".join(sample_conf.qc),
+                 "input_file_case2": "",
+                 "input_file_case3": "",
+                 "input_file_case4": ""
                 }
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
-    
 @active_if(genomon_conf.getboolean("pa_plot", "enable"))
-@active_if(len(paplot_files) > 0)
-@follows(post_analysis)
-@collate(paplot_files, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
+@active_if(len(paplot_inputs) > 0)
+@follows(post_analysis_fusion)
+@follows(post_analysis_starqc)
+@collate(paplot_inputs, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
 def pa_plot(input_file, output_file):
     
     if not os.path.isdir(run_conf.project_root + '/paplot/'): os.mkdir(run_conf.project_root + '/paplot/')
@@ -374,21 +428,12 @@ def pa_plot(input_file, output_file):
 
     remark += "</ul>"
 
-    # input files
-    qc_file = run_conf.project_root + '/post_analysis/' + sample_conf_name + '/merge_starqc.txt'
-    sv_file = run_conf.project_root + '/post_analysis/' + sample_conf_name + '/merge_fusionfusion.txt'
-    print paplot_files
-    print qc_file
-    print sv_file
-    if (qc_file in paplot_files) == False: qc_file = ""
-    if (sv_file in paplot_files) == False: sv_file = ""
-
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
                  "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
-                 "inputs_qc": qc_file,
-                 "inputs_sv": sv_file,
+                 "inputs_qc": ",".join(paplot_inputs_starqc),
+                 "inputs_sv": ",".join(paplot_inputs_fusion),
                  "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
                  "title": genomon_conf.get("pa_plot", "title"),
                  "remarks": remark,
