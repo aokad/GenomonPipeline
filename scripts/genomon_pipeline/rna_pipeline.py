@@ -42,12 +42,12 @@ sample_list_fastq = sample_conf.fastq
 sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
 
 # generate input list of 'post analysis for fusionfusion'
-pa_outputs_fusion = r_post_analysis.output_files("fusion", sample_conf.fusionfusion, run_conf.project_root, sample_conf_name, genomon_conf)
+pa_outputs_fusion = r_post_analysis.output_files("fusion", sample_conf.fusion, run_conf.project_root, sample_conf_name, genomon_conf)
 
 pa_inputs_fusion = []
 if len(pa_outputs_fusion["outputs"]) > 0:
-    for complist in sample_conf.fusionfusion:
-        pa_inputs_fusion.append(run_conf.project_root + '/fusion/' + complist[0] +'/fusion_fusion.result.filt.txt')
+    for complist in sample_conf.fusion:
+        pa_inputs_fusion.append(run_conf.project_root + '/fusion/' + complist[0] + '/' + complist[0] + '.fusion.fusion.result.filt.txt')
         
 # generate input list of 'post analysis for qc'
 pa_outputs_starqc = r_post_analysis.output_files("starqc", sample_conf.qc, run_conf.project_root, sample_conf_name, genomon_conf)
@@ -139,11 +139,11 @@ fusionfusion_bams = []
 fusion_control_panel = []
 chimeric_ctrl_sams = []
 # generate input list of fusionfusion
-for complist in sample_conf.fusionfusion:
+for complist in sample_conf.fusion:
 
     tumor_sample = complist[0]
     control_panel_name = complist[1]
-    if os.path.exists(run_conf.project_root + '/fusion/' + tumor_sample + '/' + tumor_sample + '.fusion.fusion.result.txt'): continue
+    if os.path.exists(run_conf.project_root + '/fusion/' + tumor_sample + '/' + tumor_sample + '.fusion.fusion.result.filt.txt'): continue
 
     # generate input list of 'fusionfusion'
     tumor_bam = run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam'
@@ -276,7 +276,7 @@ def task_fusion_merge(input_file, output_file):
 
 
 @follows( task_fusion_merge )
-@transform(fusionfusion_bams, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/{subdir[0][0]}.fusion.fusion.result.txt")
+@transform(fusionfusion_bams, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/{subdir[0][0]}.fusion.fusion.result.filt.txt")
 def task_fusionfusion(input_file, output_file):
 
     input_dir_name = os.path.dirname(input_file[0])
@@ -296,8 +296,7 @@ def task_fusionfusion(input_file, output_file):
                  "output_prefix": output_dir_name,
                  "annotation_dir": genomon_conf.get("fusionfusion", "annotation_dir"),
                  "additional_params": params + genomon_conf.get("fusionfusion", "params"),
-                 "filt_params": params + genomon_conf.get("fusionfusion", "filt_params"),
-                 "db_dir": params + genomon_conf.get("REFERENCE", "fusionfusion_resource"),
+                 "filt_params": genomon_conf.get("fusionfusion", "filt_params"),
                  "sample": sample_name,
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   

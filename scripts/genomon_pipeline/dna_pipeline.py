@@ -690,6 +690,7 @@ def coverage(input_file, output_file):
                  "genome_file": genome_file,
                  "gaptxt": genomon_conf.get("REFERENCE", "gaptxt"),
                  "bait_file": genomon_conf.get("REFERENCE", "bait_file"),
+                 "samtools_params": genomon_conf.get("qc_coverage", "samtools_params"),
                  "BEDTOOLS": genomon_conf.get("SOFTWARE", "bedtools"),
                  "SAMTOOLS": genomon_conf.get("SOFTWARE", "samtools"),
                  "LD_LIBRARY_PATH": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),

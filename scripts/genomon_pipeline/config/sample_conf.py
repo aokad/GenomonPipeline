@@ -14,7 +14,7 @@ class Sample_conf(object):
         self.sv_detection = []
         self.qc = []
         self.control_panel = {}
-        self.fusionfusion = []
+        self.fusion = []
         self.expression = []
         self.intron_retention = []
         # 
@@ -142,8 +142,8 @@ class Sample_conf(object):
                 elif row[0].lower() == '[controlpanel]':
                     mode = 'controlpanel'
                     continue
-                elif row[0].lower() == '[fusionfusion]':
-                    mode = 'fusionfusion'
+                elif row[0].lower() == '[fusion]':
+                    mode = 'fusion'
                     continue
                 elif row[0].lower() == '[expression]':
                     mode = 'expression'
@@ -153,7 +153,7 @@ class Sample_conf(object):
                     continue
                 else:
                     err_msg = "Section name should be either of [fastq], [bam_tofastq], [bam_import], " + \
-                              "[mutation_call], [sv_detection], [controlpanel], [fusionfusion], [expression] or [intron_retention]. " + \
+                              "[mutation_call], [sv_detection], [controlpanel], [fusion], [expression] or [intron_retention]. " + \
                               "Also, sample name should not start with '['."
                     raise ValueError(err_msg)
             
@@ -323,22 +323,22 @@ class Sample_conf(object):
                 self.control_panel[controlpanelID] = row[1:]
 
 
-            elif mode == 'fusionfusion':
+            elif mode == 'fusion':
 
                 sampleID = row[0]
                 if sampleID not in sampleID_list:
-                    err_msg = "[fusionfusion] section, " + sampleID + " is not defined"
+                    err_msg = "[fusion] section, " + sampleID + " is not defined"
                     raise ValueError(err_msg)
 
                 if sampleID in ff_sampleID_list:
-                    err_msg = "[fusionfusion] section, " + sampleID + " is duplicated"
+                    err_msg = "[fusion] section, " + sampleID + " is duplicated"
                     raise ValueError(err_msg)
 
                 controlpanelID = row[1] if len(row) >= 2 and row[1] not in ['', 'None'] else None
 
                 ff_sampleID_list.append(sampleID)
 
-                self.fusionfusion.append((sampleID,controlpanelID))
+                self.fusion.append((sampleID,controlpanelID))
 
 
             elif mode == 'expression':
