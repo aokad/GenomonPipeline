@@ -677,7 +677,7 @@ def coverage(input_file, output_file):
     genome_file = ""
     data_type = "exome"
     if genomon_conf.get("qc_coverage", "wgs_flag") == "True":
-        genome_file = genomon_conf.get("REFERENCE", "hg19_genome")
+        genome_file = genomon_conf.get("REFERENCE", "genome_size")
         incl_bed_file = output_file + "genome.bed"
         incl_bed_w = genomon_conf.get("qc_coverage", "wgs_incl_bed_width")
         r_qc_coverage.create_incl_bed_wgs(genome_file, incl_bed_file, long(incl_bed_w), "")
