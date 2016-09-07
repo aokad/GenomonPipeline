@@ -62,16 +62,28 @@ else
     cp {out_prefix}.inhouse_normal.${{SGE_TASK_ID}}.txt {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt
 fi
 
-if [ _{active_HGVD_flag} = "_True" ]; then 
-    {mutanno} mutation -t {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt -d {HGVD_database} -c 15 || exit $?
+if [ _{active_HGVD_2013_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt -d {HGVD_2013_database} -c 8 || exit $?
 else
-    cp {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt
+    cp {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_HGVD_2016_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt -d {HGVD_2016_database} -c 11 || exit $?
+else
+    cp {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_ExAC_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt -o {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt -d {ExAC_database} -c 4 || exit $?
+else
+    cp {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt
 fi
 
 if [ _{active_HGMD_flag} = "_True" ]; then 
-    {mutanno} mutation -t {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt -d {HGMD_database} -c 7 || exit $?
+    {mutanno} mutation -t {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt -d {HGMD_database} -c 7 || exit $?
 else
-    cp {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt
+    cp {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt
 fi
 
 if [ _{active_annovar_flag} = "_True" ];then

@@ -484,8 +484,12 @@ def identify_mutations(input_file, output_file, output_dir):
         "inhouse_normal_database":inhouse_normal_tabix_db,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
         "inhouse_tumor_database":inhouse_tumor_tabix_db,
-        "active_HGVD_flag": genomon_conf.get("annotation", "active_HGVD_flag"),
-        "HGVD_database":genomon_conf.get("REFERENCE", "HGVD_tabix_db"),
+        "active_HGVD_2013_flag": genomon_conf.get("annotation", "active_HGVD_2013_flag"),
+        "HGVD_2013_database":genomon_conf.get("REFERENCE", "HGVD_2013_tabix_db"),
+        "active_HGVD_2016_flag": genomon_conf.get("annotation", "active_HGVD_2016_flag"),
+        "HGVD_2016_database":genomon_conf.get("REFERENCE", "HGVD_2016_tabix_db"),
+        "active_ExAC_flag": genomon_conf.get("annotation", "active_ExAC_flag"),
+        "ExAC_database":genomon_conf.get("REFERENCE", "ExAC_tabix_db"),
         "active_HGMD_flag": active_HGMD_flag,
         "HGMD_database": HGMD_tabix_db,
         # annovar
@@ -519,7 +523,9 @@ def identify_mutations(input_file, output_file, output_dir):
         "control_bam_list": input_file[2],
         "active_annovar_flag": genomon_conf.get("annotation", "active_annovar_flag"),
         "annovar_buildver": genomon_conf.get("annotation", "annovar_buildver"),
-        "active_HGVD_flag": genomon_conf.get("annotation", "active_HGVD_flag"),
+        "active_HGVD_2013_flag": genomon_conf.get("annotation", "active_HGVD_2013_flag"),
+        "active_HGVD_2016_flag": genomon_conf.get("annotation", "active_HGVD_2016_flag"),
+        "active_ExAC_flag": genomon_conf.get("annotation", "active_ExAC_flag"),
         "active_HGMD_flag": active_HGMD_flag,
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
         "active_inhouse_tumor_flag": active_inhouse_tumor_flag,
@@ -557,8 +563,12 @@ def identify_mutations(input_file, output_file, output_dir):
            os.unlink(output_dir+'/'+sample_name+'.inhouse_normal.'+str(task_id)+'.txt')
         if os.path.exists(output_dir+'/'+sample_name+'.inhouse_tumor.'+str(task_id)+'.txt'):
            os.unlink(output_dir+'/'+sample_name+'.inhouse_tumor.'+str(task_id)+'.txt')
-        if os.path.exists(output_dir+'/'+sample_name+'.HGVD.'+str(task_id)+'.txt'):
-           os.unlink(output_dir+'/'+sample_name+'.HGVD.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.HGVD_2013.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.HGVD_2013.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.HGVD_2016.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.HGVD_2016.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.ExAC.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.ExAC.'+str(task_id)+'.txt')
         if os.path.exists(output_dir+'/'+sample_name+'.HGMD.'+str(task_id)+'.txt'):
            os.unlink(output_dir+'/'+sample_name+'.HGMD.'+str(task_id)+'.txt')
 

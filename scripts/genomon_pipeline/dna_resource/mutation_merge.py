@@ -62,10 +62,24 @@ then
     print_header=${{print_header}}'\t'${{inhouse_tumor_header}} || exit $?
 fi
 
-if [ _{active_HGVD_flag} = "_True" ]
+if [ _{active_HGVD_2013_flag} = "_True" ]
 then
-    HGVD_header="HGVD_20131010:rsID,HGVD_20131010:AF,HGVD_20131010:JPT_AF,HGVD_20131010:JPT_NS,HGVD_20131010:ASN_AF,HGVD_20131010:EUR_AF,HGVD_20131010:AMR_AF,HGVD_20131010:AFR_AF,HGVD_20131010:NumberOfSamples,HGVD_20131010:Filter,HGVD_20131010:Mean_depth,HGVD_20131010:SD_depth,HGVD_20131010:NR,HGVD_20131010:NA,HGVD_20131010:Gene"
+    HGVD_header="HGVD_20131010:rsID,HGVD_20131010:#Sample,HGVD_20131010:Filter,HGVD_20131010:Mean_depth,HGVD_20131010:SD_depth,HGVD_20131010:NR,HGVD_20131010:NA,HGVD_20131010:Gene"
     tmp_header=`echo $HGVD_header | tr "," "\t"` || exit $?
+    print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
+fi
+
+if [ _{active_HGVD_2016_flag} = "_True" ]
+then
+    HGVD_header="HGVD_20160412:rsID,HGVD_20160412:#Sample,HGVD_20160412:Filter,HGVD_20160412:Mean_depth,HGVD_20160412:SD_depth,HGVD_20160412:RR,HGVD_20160412:RA,HGVD_20160412:AA,HGVD_20160412:NR,HGVD_20160412:NA,HGVD_20160412:Gene"
+    tmp_header=`echo $HGVD_header | tr "," "\t"` || exit $?
+    print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
+fi
+
+if [ _{active_ExAC_flag} = "_True" ]
+then
+    ExAC_header="ExAC:Filter,ExAC:AC_Adj,ExAC:AN_Adj,ExAC:Frequency(AC_Adj/AN_Adj)"
+    tmp_header=`echo $ExAC_header | tr "," "\t"` || exit $?
     print_header=${{print_header}}'\t'${{tmp_header}} || exit $?
 fi
 
@@ -78,19 +92,9 @@ fi
 
 if [ _{control_bam_list} = "_None" ]
 then
-    if [ _{active_HGMD_flag} = "_True" ] || [ _{active_HGVD_flag} = "_True" ]
-    then
-        echo -e "{meta_info_m}" > {out_prefix}.genomon_mutation.result.txt || exit $?
-    else
-        echo -e "{meta_info}" > {out_prefix}.genomon_mutation.result.txt || exit $?
-    fi
+    echo -e "{meta_info_m}" > {out_prefix}.genomon_mutation.result.txt || exit $?
 else
-    if [ _{active_HGMD_flag} = "_True" ] || [ _{active_HGVD_flag} = "_True" ]
-    then
-        echo -e "{meta_info_em}" > {out_prefix}.genomon_mutation.result.txt || exit $?
-    else
-        echo -e "{meta_info_e}" > {out_prefix}.genomon_mutation.result.txt || exit $?
-    fi
+    echo -e "{meta_info_em}" > {out_prefix}.genomon_mutation.result.txt || exit $?
 fi
 
 echo "$print_header" >> {out_prefix}.genomon_mutation.result.txt || exit $?
