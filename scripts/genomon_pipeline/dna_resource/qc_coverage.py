@@ -98,9 +98,8 @@ mv {output}.tmp {output}
             return
     
         # read genome file to dict.
-        f = open(input_genome, "r")
-        genomes = {}    
-        for line in f:
+        genomes = {}
+        for line in open(input_genome):
             cells = line.rstrip().split("\t")
             if len(cells) < 2:
                 break
@@ -108,8 +107,6 @@ mv {output}.tmp {output}
         
             if chrom.isdigit() == True or chrom == "x" or chrom == "y":
                 genomes[chrom] = long(cells[1])
-    
-        f.close()
         
         # write BED file
         f = open(output_bed, "w") 

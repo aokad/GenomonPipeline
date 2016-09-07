@@ -13,7 +13,7 @@ software_version ={'genomon_pipeline':'genomon_pipeline-'+__version__}
 
 dna_reference_list = ["ref_fasta",
                       "interval_list",
-                      "hg19_genome",
+                      "genome_size",
                       "gaptxt",
                       "bait_file",
                       "simple_repeat_tabix_db",
