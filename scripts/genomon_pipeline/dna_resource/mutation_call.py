@@ -45,7 +45,7 @@ else
 fi
 
 if [ _{control_bam_list} != "_None" ]; then 
-    {EBFilter} --loption --region ${{REGION}} -f anno -q {eb_map_quality} -Q {eb_base_quality} {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {disease_bam} {control_bam_list} {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt || exit $?
+    {EBFilter} --loption --region ${{REGION}} -f anno -s "{eb_samtools_params}" {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {disease_bam} {control_bam_list} {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt || exit $?
 else
     cp {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt
 fi
