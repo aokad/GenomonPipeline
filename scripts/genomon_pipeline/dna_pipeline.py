@@ -475,7 +475,9 @@ def identify_mutations(input_file, output_file, output_dir):
         "simple_repeat_db":genomon_conf.get("REFERENCE", "simple_repeat_tabix_db"),
         # EB filter
         "EBFilter": genomon_conf.get("SOFTWARE", "ebfilter"),
-        "eb_samtools_params": genomon_conf.get("eb_filter","samtools_params"),
+        "eb_map_quality": genomon_conf.get("eb_filter","map_quality"),
+        "eb_base_quality": genomon_conf.get("eb_filter","base_quality"),
+        "eb_filter_flags": genomon_conf.get("eb_filter","filter_flags"),
         "control_bam_list": input_file[2],
         # original_annotations
         "mutanno": genomon_conf.get("SOFTWARE", "mutanno"),
