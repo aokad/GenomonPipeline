@@ -236,6 +236,8 @@ def task_star_align(input_files, output_file):
 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
     star_align.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name)
+    os.unlink(input_files[0])
+    os.unlink(input_files[1])
 
 
 @follows( link_import_bam )
