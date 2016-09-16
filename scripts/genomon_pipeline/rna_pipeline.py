@@ -154,18 +154,19 @@ for complist in sample_conf.fusion:
     merged_count = run_conf.project_root + '/fusion/control_panel/' + control_panel_name + ".merged.Chimeric.count" if control_panel_name != None else None
     fusionfusion_bams.append([tumor_bam, merged_count])
    
-    # generate input list of 'fusion count'
-    for panel_sample in sample_conf.control_panel[control_panel_name]:
-        chimeric_ctrl_sams.append(run_conf.project_root + '/star/' + panel_sample + '/' + panel_sample + '.Chimeric.out.sam')
-    chimeric_ctrl_sams = list(set(chimeric_ctrl_sams))
-
-    # generate input list of 'fusion merge control'
-    control_panel_file = run_conf.project_root + '/fusion/control_panel/' + control_panel_name + ".Chimeric_count.list"
-    fusion_control_panel.append(control_panel_file)
-    fusion_control_panel = list(set(fusion_control_panel))
-    with open(control_panel_file,  "w") as out_handle:
+    if control_panel_name != None:
+        # generate input list of 'fusion count'
         for panel_sample in sample_conf.control_panel[control_panel_name]:
-            out_handle.write(run_conf.project_root + '/fusion/' + panel_sample + '/' + panel_sample + '.Chimeric.count' + "\n")
+            chimeric_ctrl_sams.append(run_conf.project_root + '/star/' + panel_sample + '/' + panel_sample + '.Chimeric.out.sam')
+        chimeric_ctrl_sams = list(set(chimeric_ctrl_sams))
+
+        # generate input list of 'fusion merge control'
+        control_panel_file = run_conf.project_root + '/fusion/control_panel/' + control_panel_name + ".Chimeric_count.list"
+        fusion_control_panel.append(control_panel_file)
+        fusion_control_panel = list(set(fusion_control_panel))
+        with open(control_panel_file,  "w") as out_handle:
+            for panel_sample in sample_conf.control_panel[control_panel_name]:
+                out_handle.write(run_conf.project_root + '/fusion/' + panel_sample + '/' + panel_sample + '.Chimeric.count' + "\n")
 
 
 # link the import bam to project directory
