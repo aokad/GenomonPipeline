@@ -28,12 +28,16 @@ r_post_analysis = Res_PostAnalysis(genomon_conf.get("post_analysis", "qsub_optio
 # generate list of linked_fastq file path
 linked_fastq_list = []
 for sample in sample_conf.fastq:
+    if os.path.exists(run_conf.project_root + '/star/' + sample + '/' + sample + '.Aligned.sortedByCoord.out.bam'): continue
+
     linked_fastq_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
                               run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
 
 # generate output list of 'bam2fastq'
 bam2fastq_output_list = []
 for sample in sample_conf.bam_tofastq:
+    if os.path.exists(run_conf.project_root + '/star/' + sample + '/' + sample + '.Aligned.sortedByCoord.out.bam'): continue
+
     bam2fastq_output_list.append([run_conf.project_root + '/fastq/' + sample + '/1_1.fastq',
                                   run_conf.project_root + '/fastq/' + sample + '/1_2.fastq'])
 
