@@ -13,7 +13,7 @@ software_version ={'genomon_pipeline':'genomon_pipeline-'+__version__}
 
 dna_reference_list = ["ref_fasta",
                       "interval_list",
-                      "hg19_genome",
+                      "genome_size",
                       "gaptxt",
                       "bait_file",
                       "simple_repeat_tabix_db",
@@ -42,6 +42,15 @@ dna_software_list = ["blat",
                      "annovar"
                      ]
 
+dna_software_version = {"genomon_sv":"GenomonSV",
+                        "sv_utils": "sv_utils",
+                        "fisher":"GenomonFisher",
+                        "mutfilter":"GenomonMutationFilter",
+                        "ebfilter":"EBFilter",
+                        "mutil": "MutationUtil",
+                        "mutanno": "GenomonMutationAnnotation"
+                        } 
+
 rna_reference_list = ["star_genome"
                       ]
            
@@ -52,13 +61,10 @@ rna_software_list = ["samtools",
                      "fusionfusion"
                      ]
 
-dna_software_version = {"genomon_sv":"GenomonSV",
-                        "sv_utils": "sv_utils",
-                        "fisher":"GenomonFisher",
-                        "mutfilter":"GenomonMutationFilter",
-                        "ebfilter":"EBFilter",
-                        "mutil": "MutationUtil",
-                        "mutanno": "GenomonMutationAnnotation"
+rna_software_version = {"tophat2":"tophat2",
+                        "STAR": "STAR",
+                        "STAR-Fusion":"STAR-Fusion",
+                        "fusionfusion":"fusionfusion",
                         } 
 
 err_msg = 'No target File : \'%s\' for the %s key in the section of %s' 
@@ -161,6 +167,16 @@ def dna_software_version_set():
         version_list = (proc.communicate()[0]).split("\n")
         software_version[key] = version_list[0]
 
+def rna_software_version_set():
+    pythonhome = genomon_conf.get("ENV", "PYTHONHOME")
+    pythonpath = genomon_conf.get("ENV", "PYTHONPATH")
+    ld_library_path = genomon_conf.get("ENV", "LD_LIBRARY_PATH")
+    export_command = "export PYTHONHOME=" +pythonhome+ ";export PATH=$PYTHONHOME/bin:$PATH;export LD_LIBRARY_PATH="+ ld_library_path +";export PYTHONPATH="+ pythonpath +";"
+    for key, name in rna_software_version.iteritems():
+        command = export_command + genomon_conf.get("SOFTWARE", key) + ' --version 2>&1 | grep ' + name
+        proc = subprocess.Popen([command], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        version_list = (proc.communicate()[0]).split("\n")
+        software_version[key] = version_list[0]
 
 def get_version(key):
     return software_version[key]

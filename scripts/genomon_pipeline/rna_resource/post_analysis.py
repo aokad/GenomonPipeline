@@ -23,13 +23,13 @@ export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-{genomon_pa} dna {mode} {output_dir} {genomon_root} {sample_sheet} \
+{genomon_pa} rna {mode} {output_dir} {genomon_root} {sample_sheet} \
 --config_file {config_file} \
 --samtools {samtools} --bedtools {bedtools} \
 --input_file_case1 "{input_file_case1}" \
 --input_file_case2 "{input_file_case2}" \
 --input_file_case3 "{input_file_case3}" \
---input_file_case4 "{input_file_case4}"
+--input_file_case4 "{input_file_case4}" 
 """
 
     def __init__(self, qsub_option, script_dir):
@@ -46,20 +46,20 @@ export PYTHONPATH={pythonpath}
         analysis_dir = genomon_root + "/" + mode
         pa_dir = genomon_root + "/post_analysis/" + sample_conf_name
         
-        if mode == "qc":
+        if mode == "starqc":
             di_outputs = { "outputs": [], "run_analysis":False, "run_pa":False}
         
             if len(samples) == 0:
                 return di_outputs
 
             for sample in samples:
-                if not os.path.exists(analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_qc", "suffix")):
+                if not os.path.exists(analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")):
                     di_outputs["run_analysis"] = True
                     break
             
             if di_outputs["run_analysis"] == True: di_outputs["run_pa"] = True
             
-            output = pa_dir + '/' + pa_conf.get("merge_format_qc", "output_all")
+            output = pa_dir + '/' + pa_conf.get("merge_format_starqc", "output_all")
             if not os.path.exists(output): di_outputs["run_pa"] = True
             
             di_outputs["outputs"].append(output)
@@ -69,20 +69,15 @@ export PYTHONPATH={pythonpath}
         section = ""
         section_in = ""
         
-        if mode == "mutation":
-            section = "merge_format_mutation"
-            section_in = "result_format_mutation"
-        elif mode == "sv":
-            section = "merge_format_sv"
-            section_in = "result_format_sv"
+        if mode == "fusion":
+            section = "merge_format_fusionfusion"
+            section_in = "result_format_fusionfusion"
         else:
             return {}
             
         di_outputs = { \
             "case1":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
             "case2":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
-            "case3":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
-            "case4":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
             "all":  {"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False}, }
         li_outputs = []
         
@@ -90,19 +85,16 @@ export PYTHONPATH={pythonpath}
             di_outputs["outputs"] = []
             return di_outputs
         
-        include_unpair = pa_conf.getboolean(section, "include_unpair")
         include_unpanel = pa_conf.getboolean(section, "include_unpanel")
         for complist in samples:
             type = ""
-            if (complist[1] != None and complist[2] != None): type = "case1"
-            if (complist[1] != None and complist[2] == None and include_unpanel == True): type = "case2"
-            if (complist[1] == None and complist[2] != None and include_unpair == True): type = "case3"
-            if (complist[1] == None and complist[2] == None and include_unpair == True and include_unpanel == True): type = "case4"
+            if complist[1] != None: type = "case1"
+            if (complist[1] == None and include_unpanel == True): type = "case2"
             
             if type == "": continue
             
             di_outputs[type]["samples"].append(complist[0])
-            if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")):
+            if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + pa_conf.get(section_in, "suffix")):
                 di_outputs[type]["run_analysis"] = True
                 di_outputs["all"]["run_analysis"] = True
         

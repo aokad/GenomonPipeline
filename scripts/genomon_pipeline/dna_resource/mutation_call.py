@@ -26,26 +26,26 @@ export PYTHONPATH={pythonpath}
 REGION=`head -n $SGE_TASK_ID {interval_list} | tail -n 1`
 
 if [ _{control_bam} = "_None" ]; then 
-    {fisher} single -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --post_10_q {post_10_q} --min_depth {min_depth} -1 {disease_bam} --samtools_path {samtools} -v {min_variant_read} || exit $?
+    {fisher} single -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} -1 {disease_bam} --samtools_path {samtools} {fisher_single_params} || exit $?
 
-    {mutfilter} realignment --score_difference {realign_score_diff} --window_size {realign_window_size} --max_depth {realign_max_depth} --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} || exit $?
+    {mutfilter} realignment --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} {realignment_params} || exit $?
 
     {mutfilter} simplerepeat --target_mutation_file {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --output {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt --simple_repeat_db {simple_repeat_db} || exit $?
 
 else
-    {fisher} comparison -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} --mapping_quality {map_quality} --base_quality {base_quality}  --min_allele_freq {min_allele_freq} --max_allele_freq {max_allele_freq} --min_depth {min_depth} --fisher_value {fisher_thres} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} -v {min_variant_read} || exit $?
+    {fisher} comparison -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} {fisher_pair_params} || exit $?
 
-    {mutfilter} realignment --score_difference {realign_score_diff} --window_size {realign_window_size} --max_depth {realign_max_depth} --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} -2 {control_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} || exit $?
+    {mutfilter} realignment --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} -2 {control_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} {realignment_params} || exit $?
 
-    {mutfilter} indel --search_length {indel_search_length} --neighbor {indel_neighbor} --base_qual {indel_base_quality} --min_depth {indel_min_depth} --min_mismatch {indel_min_mismatch} --af_thres {indel_min_allele_freq} --target_mutation_file {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt -2 {control_bam} --output {out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt || exit $?
+    {mutfilter} indel --target_mutation_file {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt -2 {control_bam} --output {out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt --samtools_path {samtools} {indel_params} || exit $?
 
-    {mutfilter} breakpoint --max_depth {bp_max_depth} --min_clip_size {bp_min_clip_size} --junc_num_thres {bp_junc_num_thres} --mapq_thres {bp_map_quality} --target_mutation_file {out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt -2 {control_bam} --output {out_prefix}.breakpoint_mutations.${{SGE_TASK_ID}}.txt || exit $?
+    {mutfilter} breakpoint --target_mutation_file {out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt -2 {control_bam} --output {out_prefix}.breakpoint_mutations.${{SGE_TASK_ID}}.txt {breakpoint_params} || exit $?
 
     {mutfilter} simplerepeat --target_mutation_file {out_prefix}.breakpoint_mutations.${{SGE_TASK_ID}}.txt --output {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt --simple_repeat_db {simple_repeat_db} || exit $?
 fi
 
 if [ _{control_bam_list} != "_None" ]; then 
-    {EBFilter} --loption --region ${{REGION}} -f anno -q {eb_map_quality} -Q {eb_base_quality} {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {disease_bam} {control_bam_list} {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt || exit $?
+    {EBFilter} --loption --region ${{REGION}} -f anno -q {eb_map_quality} -Q {eb_base_quality} --ff {filter_flags} {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {disease_bam} {control_bam_list} {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt || exit $?
 else
     cp {out_prefix}.simplerepeat_mutations.${{SGE_TASK_ID}}.txt {out_prefix}.ebfilter_mutations.${{SGE_TASK_ID}}.txt
 fi
@@ -62,22 +62,34 @@ else
     cp {out_prefix}.inhouse_normal.${{SGE_TASK_ID}}.txt {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt
 fi
 
-if [ _{active_HGVD_flag} = "_True" ]; then 
-    {mutanno} mutation -t {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt -d {HGVD_database} -c 15 || exit $?
+if [ _{active_HGVD_2013_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt -d {HGVD_2013_database} -c 5 || exit $?
 else
-    cp {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt
+    cp {out_prefix}.inhouse_tumor.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_HGVD_2016_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt -d {HGVD_2016_database} -c 5 || exit $?
+else
+    cp {out_prefix}.HGVD_2013.${{SGE_TASK_ID}}.txt {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt
+fi
+
+if [ _{active_ExAC_flag} = "_True" ]; then 
+    {mutanno} mutation -t {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt -o {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt -d {ExAC_database} -c 8 || exit $?
+else
+    cp {out_prefix}.HGVD_2016.${{SGE_TASK_ID}}.txt {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt
 fi
 
 if [ _{active_HGMD_flag} = "_True" ]; then 
-    {mutanno} mutation -t {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt -d {HGMD_database} -c 7 || exit $?
+    {mutanno} mutation -t {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt -o {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt -d {HGMD_database} -c 7 || exit $?
 else
-    cp {out_prefix}.HGVD.${{SGE_TASK_ID}}.txt {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt
+    cp {out_prefix}.ExAC.${{SGE_TASK_ID}}.txt {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt
 fi
 
 if [ _{active_annovar_flag} = "_True" ];then
-    {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.${{SGE_TASK_ID}} {table_annovar_params} {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt {annovar}/humandb || exit $?
+    {annovar}/table_annovar.pl --outfile {out_prefix}_mutations_candidate.${{SGE_TASK_ID}} {table_annovar_params} {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt {annovar_database} || exit $?
 else
-    cp {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.hg19_multianno.txt
+    cp {out_prefix}.HGMD.${{SGE_TASK_ID}}.txt {out_prefix}_mutations_candidate.${{SGE_TASK_ID}}.{annovar_buildver}_multianno.txt
 fi
 
 """

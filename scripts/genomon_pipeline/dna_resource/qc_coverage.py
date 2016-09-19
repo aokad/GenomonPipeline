@@ -52,7 +52,7 @@ then
         set -- $line
         let start=$2+1
         
-        {SAMTOOLS} view -F 3072 -f 2 -b -h {input} $1:$start-$3 > {output}.tmp.bam
+        {SAMTOOLS} view {samtools_params} -b -h {input} $1:$start-$3 > {output}.tmp.bam
         {SAMTOOLS} index {output}.tmp.bam
         {SAMTOOLS} depth -r $1:$start-$3 {output}.tmp.bam >> {output}.tmp
 
@@ -75,7 +75,7 @@ else
     rm {output}.noheader.bed {output}.sort.bed {output}.merge.bed
 
     # depth
-    {SAMTOOLS} view -F 3072 -f 2 -b -h {input} | {SAMTOOLS} depth -b $input_bed - > {output}.tmp
+    {SAMTOOLS} view {samtools_params} -b -h {input} | {SAMTOOLS} depth -b $input_bed - > {output}.tmp
 fi
 
 mv {output}.tmp {output}
@@ -98,46 +98,35 @@ mv {output}.tmp {output}
             return
     
         # read genome file to dict.
-        f = open(input_genome, "r")
-        genomes = {}    
-        for line in f:
-            cells = line.split("\t")
+        genomes = {}
+        for line in open(input_genome):
+            cells = line.rstrip().split("\t")
             if len(cells) < 2:
                 break
-            genomes.update({cells[0]:long(cells[1].rstrip('rn'))})
-    
-        f.close()
+            chrom = cells[0].lower().replace("chr", "")
+        
+            if chrom.isdigit() == True or chrom == "x" or chrom == "y":
+                genomes[chrom] = long(cells[1])
         
         # write BED file
         f = open(output_bed, "w") 
-        for i in range(24):
-            if i == 22:
-                title = "chrX"
-            elif i == 23:
-                title = "chrY"        
-            else:
-                title = "chr" + str(i+1)
-            
-            size = genomes[title]
+        for key in genomes:
+
+            size = genomes[key]
             start = 0
             end = width
-            
+
             line_num = long(math.ceil(float(size)/float(width)))
             for j in range(line_num):
                 if end > size:
                     end = size
-                
-                if i == 22:
-                    head = suffix + "X"
-                elif i == 23:
-                    head = suffix + "Y"
-                else:
-                    head = suffix + str(i+1)
-    
+
+                head = suffix + key.upper()
+
                 f.write("{0}\t{1}\t{2}\n".format(head, start, end))
                 start = end
                 end += width
-    
+ 
         f.close()
         
     #
