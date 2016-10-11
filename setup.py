@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='genomon_pipeline',
-      version='2.4.0',
+      version='2.4.1',
       description='Python tools for running genomon pipeline for cancer genome and transcriptome sequencing analysis',
       author='Kenichi Chiba, Ai Okada and Yuichi Shiraishi',
       author_email='genomon.devel@gmail.com',

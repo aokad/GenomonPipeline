@@ -27,15 +27,17 @@ def main(args):
     if run_conf.analysis_type == "dna":
         dna_genomon_conf_check()
         dna_software_version_set()
-        import dna_pipeline
     elif run_conf.analysis_type == "rna":
         rna_genomon_conf_check()
         rna_software_version_set()
-        import rna_pipeline
     else:
         raise NotImplementedError("Just DNA and RNA pipeline is prepared")
 
     if not (args.param_check):
+        if run_conf.analysis_type == "dna":
+            import dna_pipeline
+        elif run_conf.analysis_type == "rna":
+            import rna_pipeline
         pipeline_run(
                      verbose = args.verbose, 
                      multiprocess = args.multiprocess
