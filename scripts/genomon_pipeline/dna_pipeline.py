@@ -18,6 +18,7 @@ from genomon_pipeline.dna_resource.qc_bamstats import *
 from genomon_pipeline.dna_resource.qc_coverage import *
 from genomon_pipeline.dna_resource.qc_merge import *
 from genomon_pipeline.dna_resource.post_analysis import *
+from genomon_pipeline.dna_resource.pmsignature import *
 from genomon_pipeline.dna_resource.paplot import *
 
 # set task classes
@@ -33,8 +34,10 @@ sv_filt = SV_filt(genomon_conf.get("sv_filt", "qsub_option"), run_conf.drmaa)
 r_qc_bamstats = Res_QC_Bamstats(genomon_conf.get("qc_bamstats", "qsub_option"), run_conf.drmaa)
 r_qc_coverage = Res_QC_Coverage(genomon_conf.get("qc_coverage", "qsub_option"), run_conf.drmaa)
 r_qc_merge = Res_QC_Merge(genomon_conf.get("qc_merge", "qsub_option"), run_conf.drmaa)
-r_pa_plot = Res_PA_Plot(genomon_conf.get("pa_plot", "qsub_option"), run_conf.drmaa)
+r_paplot = Res_PA_Plot(genomon_conf.get("paplot", "qsub_option"), run_conf.drmaa)
 r_post_analysis = Res_PostAnalysis(genomon_conf.get("post_analysis", "qsub_option"), run_conf.drmaa)
+r_pm_ind = Res_Pmsignature(genomon_conf.get("pmsignature_ind", "qsub_option"), run_conf.drmaa)
+r_pm_full = Res_Pmsignature(genomon_conf.get("pmsignature_full", "qsub_option"), run_conf.drmaa)
 
 # generate output list of 'linked fastq'
 linked_fastq_list = []
@@ -172,16 +175,56 @@ if run_paplot_mutation == True:
 
     if pa_outputs_mutation["case1"]["output_filt"] != "":
         paplot_inputs_mutation.append(pa_outputs_mutation["case1"]["output_filt"])
-    if pa_outputs_mutation["case2"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+    if pa_outputs_mutation["case2"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel"):
         paplot_inputs_mutation.append(pa_outputs_mutation["case2"]["output_filt"])
-    if pa_outputs_mutation["case3"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpair"):
+    if pa_outputs_mutation["case3"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpair"):
         paplot_inputs_mutation.append(pa_outputs_mutation["case3"]["output_filt"])
-    if pa_outputs_mutation["case4"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpanel") and genomon_conf.getboolean("pa_plot", "include_unpair"):
+    if pa_outputs_mutation["case4"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel") and genomon_conf.getboolean("paplot", "include_unpair"):
         paplot_inputs_mutation.append(pa_outputs_mutation["case4"]["output_filt"])
 
     if len(paplot_inputs_mutation) == 0:
         if pa_outputs_mutation["all"]["output_filt"] != "":
             paplot_inputs_mutation.append(pa_outputs_mutation["all"]["output_filt"])
+
+## pmsignature
+# ind
+ind_outputs = []
+ind_exists = True
+if genomon_conf.getboolean("pmsignature_ind", "enable"):
+    for i in range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_conf.getint("pmsignature_ind", "signum_max") + 1):
+        fname = run_conf.project_root + '/pmsignature/' + sample_conf_name + '/pmsignature.ind.result.%d.json' % i
+        ind_outputs.append(fname)
+        if not os.path.exists(fname): ind_exists = False
+        
+run_ind = False
+if ind_exists == False:
+    run_ind = True
+elif len(pa_outputs_mutation["outputs"]) > 0:
+    run_ind = True
+
+ind_input = ""
+if run_ind == True:
+    ind_input = pa_outputs_mutation["all"]["output_filt"]
+
+# full
+full_outputs = []
+full_exists = True
+if genomon_conf.getboolean("pmsignature_full", "enable"):
+    for i in range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_conf.getint("pmsignature_full", "signum_max") + 1):
+        fname = run_conf.project_root + '/pmsignature/' + sample_conf_name + '/pmsignature.full.result.%d.json' % i
+        full_outputs.append(fname)
+        if not os.path.exists(fname): full_exists = False
+        
+run_full = False
+if full_exists == False:
+    run_full = True
+elif len(pa_outputs_mutation["outputs"]) > 0:
+    run_full = True
+
+full_input = ""
+if run_full == True:
+    full_input = pa_outputs_mutation["all"]["output_filt"]
+
 ## sv
 paplot_inputs_sv = []
 run_paplot_sv = False
@@ -193,11 +236,11 @@ if run_paplot_sv == True:
 
     if pa_outputs_sv["case1"]["output_filt"] != "":
         paplot_inputs_sv.append(pa_outputs_sv["case1"]["output_filt"])
-    if pa_outputs_sv["case2"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+    if pa_outputs_sv["case2"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel"):
         paplot_inputs_sv.append(pa_outputs_sv["case2"]["output_filt"])
-    if pa_outputs_sv["case3"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpair"):
+    if pa_outputs_sv["case3"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpair"):
         paplot_inputs_sv.append(pa_outputs_sv["case3"]["output_filt"])
-    if pa_outputs_sv["case4"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpanel") and genomon_conf.getboolean("pa_plot", "include_unpair"):
+    if pa_outputs_sv["case4"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel") and genomon_conf.getboolean("paplot", "include_unpair"):
         paplot_inputs_sv.append(pa_outputs_sv["case4"]["output_filt"])
 
     if len(paplot_inputs_sv) == 0:
@@ -217,6 +260,8 @@ paplot_inputs = []
 paplot_inputs.extend(paplot_inputs_qc)
 paplot_inputs.extend(paplot_inputs_sv)
 paplot_inputs.extend(paplot_inputs_mutation)
+paplot_inputs.extend(ind_outputs)
+paplot_inputs.extend(full_outputs)
 
 # from pprint import pprint
 # print ("post-analysis-mutation")
@@ -251,6 +296,9 @@ for sample in sample_conf.qc:
 if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.exists(run_conf.project_root + '/post_analysis'): os.mkdir(run_conf.project_root + '/post_analysis')
     if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name): os.mkdir(run_conf.project_root + '/post_analysis/' + sample_conf_name)
+if not os.path.isdir(run_conf.project_root + '/paplot/'): os.mkdir(run_conf.project_root + '/paplot/')
+    if not os.path.isdir(run_conf.project_root + '/paplot/' + sample_conf_name): os.mkdir(run_conf.project_root + '/paplot/' + sample_conf_name)
+
 if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
 
 for outputfiles in (bam2fastq_output_list, linked_fastq_list):
@@ -666,10 +714,13 @@ def bam_stats(input_file, output_file):
     dir_name = os.path.dirname(output_file)
     sample_name = os.path.basename(dir_name)
     
-    arguments = {"bamstats": genomon_conf.get("SOFTWARE", "bamstats"),
-                 "PERL5LIB": genomon_conf.get("ENV", "PERL5LIB"),
-                 "input": input_file,
-                 "output": output_file}
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "genomon_qc": genomon_conf.get("SOFTWARE", "genomon_qc")
+                 "bamstats": genomon_conf.get("SOFTWARE", "bamstats"),
+                 "perl5lib": genomon_conf.get("ENV", "PERL5LIB"),
+                 "input_file": input_file,
+                 "output_file": output_file}
     
     r_qc_bamstats.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
@@ -682,46 +733,48 @@ def bam_stats(input_file, output_file):
 def coverage(input_file, output_file):
     dir_name = os.path.dirname(output_file)
     sample_name = os.path.basename(dir_name)
-    depth_output_file = dir_name+'/'+sample_name+'.depth'
-
-    incl_bed_file = ""
-    genome_file = ""
+    
     data_type = "exome"
     if genomon_conf.get("qc_coverage", "wgs_flag") == "True":
-        genome_file = genomon_conf.get("REFERENCE", "genome_size")
-        incl_bed_file = output_file + "genome.bed"
-        incl_bed_w = genomon_conf.get("qc_coverage", "wgs_incl_bed_width")
-        r_qc_coverage.create_incl_bed_wgs(genome_file, incl_bed_file, long(incl_bed_w), "")
         data_type = "wgs"
 
     arguments = {"data_type": data_type,
+                 "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "genomon_qc": genomon_conf.get("SOFTWARE", "genomon_qc"),
+                 "coverage_text": genomon_conf.get("qc_coverage", "coverage"),
                  "i_bed_lines": genomon_conf.get("qc_coverage", "wgs_i_bed_lines"),
                  "i_bed_size": genomon_conf.get("qc_coverage", "wgs_i_bed_width"),
-                 "incl_bed_file": incl_bed_file,
-                 "genome_file": genome_file,
+                 "incl_bed_file":genomon_conf.get("qc_coverage", "wgs_incl_bed_width"),
+                 "genome_file": genomon_conf.get("REFERENCE", "genome_size"),
                  "gaptxt": genomon_conf.get("REFERENCE", "gaptxt"),
                  "bait_file": genomon_conf.get("REFERENCE", "bait_file"),
                  "samtools_params": genomon_conf.get("qc_coverage", "samtools_params"),
-                 "BEDTOOLS": genomon_conf.get("SOFTWARE", "bedtools"),
-                 "SAMTOOLS": genomon_conf.get("SOFTWARE", "samtools"),
-                 "LD_LIBRARY_PATH": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
+                 "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "samtools": genomon_conf.get("SOFTWARE", "samtools"),
+                 "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "input": input_file,
-                 "output": depth_output_file}
+                 "output": output_file}
 
     r_qc_coverage.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name)
-    
-    r_qc_coverage.calc_coverage(depth_output_file, genomon_conf.get("qc_coverage", "coverage"), output_file)
-    
-    os.unlink(dir_name+'/'+sample_name+'.depth')
-    os.unlink(dir_name+'/'+sample_name+'.depth.input_bed')
-
 
 @follows( bam_stats )
 @follows( coverage )
 @collate(qc_merge_list, formatter(), "{subpath[0][2]}/qc/{subdir[0][0]}/{subdir[0][0]}.genomonQC.result.txt")
 def merge_qc(input_files, output_file):
 
-    r_qc_merge.write_qc(input_files[0], output_file, get_meta_info(["genomon_pipeline"]))
+    dir_name = os.path.dirname(output_file)
+    sample_name = os.path.basename(dir_name)
+    
+    arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
+                 "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
+                 "genomon_qc": genomon_conf.get("SOFTWARE", "genomon_qc")
+                 "bamstats_file": input_file[0],
+                 "coverage_file": input_file[1],
+                 "output_file": output_file,
+                 "meta": get_meta_info(["genomon_pipeline"])}
+    
+    r_qc_merge.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
 #####################
 # post analysis stage
@@ -802,21 +855,111 @@ def post_analysis_qc(input_files, output_file):
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
-@active_if(genomon_conf.getboolean("pa_plot", "enable"))
-@active_if(len(paplot_inputs) > 0)
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
+@active_if(genomon_conf.getboolean("pmsignature_ind", "enable"))
+@active_if(len(ind_input) > 0)
 @follows(post_analysis_mutation)
+@collate(ind_input, formatter(), ind_outputs[0])
+def pmsignature_ind(input_file, output_file):
+    
+    command = r_pmsignature.ind_template.format(
+                "INPUTFILE": input_file,
+                "OUTPUTFILE": run_conf.project_root + '/pmsignature/' + sample_conf_name + '/pmsignature.ind.result.$SGE_TASK_ID.json',
+                "TRDIRFLAG": genomon_conf.getint("pmsignature_ind", "trdirflag"),
+                "TRIALNUM": genomon_conf.getint("pmsignature_ind", "trialnum"),
+                "SCRIPT_PATH": genomon_conf.get("SOFTWARE", "r_scripts"))
+    
+    sig_nums = range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_conf.getint("pmsignature_ind", "signum_max") + i)
+    sig_num_text = ""
+    for i in sig_nums: t += "%d " % i
+
+    arguments = {"R_PATH": genomon_conf.get("ENV", "R_PATH"),
+                 "R_LD_LIBRARY_PATH": genomon_conf.get("ENV", "R_LD_LIBRARY_PATH"),
+                 "R_LIBS": genomon_conf.get("ENV", "R_LIBS"),
+                 "command": command,
+                 "sig_list": sig_num_text
+                }
+    max_task_id = len(sig_nums)
+    r_pm_ind.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis', max_task_id)
+
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
+@active_if(genomon_conf.getboolean("pmsignature_full", "enable"))
+@active_if(len(full_input) > 0)
+@follows(post_analysis_mutation)
+@collate(full_input, formatter(), full_outputs[0])
+def pmsignature_full(input_file, output_file):
+    
+    command = r_pmsignature.full_template.format(
+                "INPUTFILE": input_file,
+                "OUTPUTFILE": run_conf.project_root + '/pmsignature/' + sample_conf_name + '/pmsignature.full.result.$SGE_TASK_ID.json',
+                "TRDIRFLAG": genomon_conf.getint("pmsignature_full", "trdirflag"),
+                "TRIALNUM": genomon_conf.getint("pmsignature_full", "trialnum"),
+                "SCRIPT_PATH": genomon_conf.get("SOFTWARE", "r_scripts"))
+    
+    sig_nums = range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_conf.getint("pmsignature_full", "signum_max") + i)
+    sig_num_text = ""
+    for i in sig_nums: t += "%d " % i
+
+    arguments = {"R_PATH": genomon_conf.get("ENV", "R_PATH"),
+                 "R_LD_LIBRARY_PATH": genomon_conf.get("ENV", "R_LD_LIBRARY_PATH"),
+                 "R_LIBS": genomon_conf.get("ENV", "R_LIBS"),
+                 "command": command,
+                 "sig_list": sig_num_text
+                }
+    max_task_id = len(sig_nums)
+    r_pm_full.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis', max_task_id)
+
+@active_if(genomon_conf.getboolean("paplot", "enable"))
+@active_if(len(paplot_inputs) > 0)
 @follows(post_analysis_sv)
 @follows(post_analysis_qc)
+@follows(pmsignature_ind)
+@follows(pmsignature_full)
 @collate(paplot_inputs, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
-def post_analysis_plot(input_file, output_file):
+def paplot(input_file, output_file):
     
-    if not os.path.isdir(run_conf.project_root + '/paplot/'): os.mkdir(run_conf.project_root + '/paplot/')
-    if not os.path.isdir(run_conf.project_root + '/paplot/' + sample_conf_name): os.mkdir(run_conf.project_root + '/paplot/' + sample_conf_name)
-
-    remark = genomon_conf.get("pa_plot", "remarks")
+    command = ""
+    if len(paplot_inputs_qc) > 0:
+        command += r_paplot.qc_template.format("paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                        "inputs": ",".join(paplot_inputs_qc),
+                        "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
+                        "title": genomon_conf.get("paplot", "title"),
+                        "config_file": genomon_conf.get("paplot", "config_file"))
+                        
+    if len(paplot_inputs_sv) > 0:
+        command += r_paplot.sv_template.format("paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                        "inputs": ",".join(paplot_inputs_sv),
+                        "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
+                        "title": genomon_conf.get("paplot", "title"),
+                        "config_file": genomon_conf.get("paplot", "config_file"))
+                        
+    if len(paplot_inputs_mutation) > 0:
+        command += r_paplot.mutation_template.format("paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                        "inputs": ",".join(paplot_inputs_mutation),
+                        "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
+                        "title": genomon_conf.get("paplot", "title"),
+                        "config_file": genomon_conf.get("paplot", "config_file"))
+                        
+    for i in range(len(ind_outputs)):
+        command += r_paplot.ind_template.format("paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                        "input": ind_outputs[i],
+                        "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
+                        "title": genomon_conf.get("paplot", "title"),
+                        "config_file": genomon_conf.get("paplot", "config_file"),
+                        "signature_num": genomon_conf.getint("pmsignature_ind", "signum_min") + i)
+    
+    for i in range(len(full_outputs)):
+        command += r_paplot.full_template.format("paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                        "input": full_outputs[i],
+                        "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
+                        "title": genomon_conf.get("paplot", "title"),
+                        "config_file": genomon_conf.get("paplot", "config_file"),
+                        "signature_num": genomon_conf.getint("pmsignature_full", "signum_min") + i)
+    
+    remark = genomon_conf.get("paplot", "remarks")
     remark += "<ul>"
     
-    for item in genomon_conf.get("pa_plot", "software").split(","):
+    for item in genomon_conf.get("paplot", "software").split(","):
         key = item.split(":")[0].strip(" ").rstrip(" ")
         name = item.split(":")[1].strip(" ").rstrip(" ")
         try:
@@ -828,21 +971,17 @@ def post_analysis_plot(input_file, output_file):
         remark += "<li>" + name + " " + version[-1] + "</li>"
 
     remark += "</ul>"
-            
+    
+    command += r_paplot.index_template.format("paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                        "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
+                        "remarks": remark)
+
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
-                 "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
-                 "annovar": genomon_conf.getboolean("annotation", "active_annovar_flag"),
-                 "inputs_qc": ",".join(paplot_inputs_qc),
-                 "inputs_sv": ",".join(paplot_inputs_sv),
-                 "inputs_mutation": ",".join(paplot_inputs_mutation),
-                 "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
-                 "title": genomon_conf.get("pa_plot", "title"),
-                 "remarks": remark,
-                 "config_file": genomon_conf.get("pa_plot", "config_file"),
+                 "paplot":  genomon_conf.get("SOFTWARE", "paplot"),
+                 "command": command
                 }
                  
-    r_pa_plot.task_exec(arguments, run_conf.project_root + '/log/paplot', run_conf.project_root + '/script/paplot')
-
+    r_paplot.task_exec(arguments, run_conf.project_root + '/log/paplot', run_conf.project_root + '/script/paplot')
 

@@ -22,7 +22,7 @@ fusion_count = Fusion_count(genomon_conf.get("fusion_count_control", "qsub_optio
 fusion_merge = Fusion_merge(genomon_conf.get("fusion_merge_control", "qsub_option"), run_conf.drmaa)
 genomon_expression = Genomon_expression(genomon_conf.get("genomon_expression", "qsub_option"), run_conf.drmaa)
 intron_retention = Intron_retention(genomon_conf.get("intron_retention", "qsub_option"), run_conf.drmaa)
-r_pa_plot = Res_PA_Plot(genomon_conf.get("pa_plot", "qsub_option"), run_conf.drmaa)
+r_paplot = Res_PA_Plot(genomon_conf.get("paplot", "qsub_option"), run_conf.drmaa)
 r_post_analysis = Res_PostAnalysis(genomon_conf.get("post_analysis", "qsub_option"), run_conf.drmaa)
 
 # generate list of linked_fastq file path
@@ -74,7 +74,7 @@ if run_paplot_fusion == True:
 
     if pa_outputs_fusion["case1"]["output_filt"] != "":
         paplot_inputs_fusion.append(pa_outputs_fusion["case1"]["output_filt"])
-    if pa_outputs_fusion["case2"]["output_filt"] != "" and genomon_conf.getboolean("pa_plot", "include_unpanel"):
+    if pa_outputs_fusion["case2"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel"):
         paplot_inputs_fusion.append(pa_outputs_fusion["case2"]["output_filt"])
 
     if len(paplot_inputs_fusion) == 0:
@@ -407,21 +407,21 @@ def post_analysis_starqc(input_files, output_file):
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
-@active_if(genomon_conf.getboolean("pa_plot", "enable"))
+@active_if(genomon_conf.getboolean("paplot", "enable"))
 @active_if(len(paplot_inputs) > 0)
 @follows(post_analysis_fusion)
 @follows(post_analysis_starqc)
 @collate(paplot_inputs, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
-def pa_plot(input_file, output_file):
+def paplot(input_file, output_file):
     
     if not os.path.isdir(run_conf.project_root + '/paplot/'): os.mkdir(run_conf.project_root + '/paplot/')
     if not os.path.isdir(run_conf.project_root + '/paplot/' + sample_conf_name): os.mkdir(run_conf.project_root + '/paplot/' + sample_conf_name)
 
     # software version in index.html
-    remark = genomon_conf.get("pa_plot", "remarks")
+    remark = genomon_conf.get("paplot", "remarks")
     remark += "<ul>"
     
-    for item in genomon_conf.get("pa_plot", "software").split(","):
+    for item in genomon_conf.get("paplot", "software").split(","):
         key = item.split(":")[0].strip(" ").rstrip(" ")
         name = item.split(":")[1].strip(" ").rstrip(" ")
         try:
@@ -437,15 +437,15 @@ def pa_plot(input_file, output_file):
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),
-                 "pa_plot":  genomon_conf.get("SOFTWARE", "pa_plot"),
+                 "paplot":  genomon_conf.get("SOFTWARE", "paplot"),
                  "inputs_qc": ",".join(paplot_inputs_starqc),
                  "inputs_sv": ",".join(paplot_inputs_fusion),
                  "output_dir": run_conf.project_root + "/paplot/" + sample_conf_name,
-                 "title": genomon_conf.get("pa_plot", "title"),
+                 "title": genomon_conf.get("paplot", "title"),
                  "remarks": remark,
-                 "config_file": genomon_conf.get("pa_plot", "config_file"),
+                 "config_file": genomon_conf.get("paplot", "config_file"),
                 }
                  
-    r_pa_plot.task_exec(arguments, run_conf.project_root + '/log/paplot', run_conf.project_root + '/script/paplot')
+    r_paplot.task_exec(arguments, run_conf.project_root + '/log/paplot', run_conf.project_root + '/script/paplot')
 
 
