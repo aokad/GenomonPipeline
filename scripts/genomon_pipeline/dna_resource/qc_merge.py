@@ -23,7 +23,7 @@ export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-{genomon_qc} merge {coverage_file} {bamstats_file} {output_file} --meta {meta}
+{genomon_qc} merge {coverage_file} {bamstats_file} {output_file} --meta "{meta}"
 """
 
     def __init__(self, qsub_option, script_dir):

@@ -49,7 +49,8 @@ dna_software_version = {"genomon_sv":"GenomonSV",
                         "mutfilter":"GenomonMutationFilter",
                         "ebfilter":"EBFilter",
                         "mutil": "MutationUtil",
-                        "mutanno": "GenomonMutationAnnotation"
+                        "mutanno": "GenomonMutationAnnotation",
+                        "genomon_qc": "genomon_qc"
                         } 
 
 rna_reference_list = ["star_genome"

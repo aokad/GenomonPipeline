@@ -18,29 +18,37 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-# export PATH=/usr/local/package/r/current3/bin:${PATH}
-# export LD_LIBRARY_PATH=/usr/local/package/r/current3/lib64/R/lib:${LD_LIBRARY_PATH}
-# export R_LIBS=/home/aiokada/.R_3_2_5
-# export R_PATH=/usr/local/package/r/current3/bin
-
-export PATH={R_PATH}:$PATH
-export LD_LIBRARY_PATH={R_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
-export R_LIBS={R_LIBS}
-export R_PATH={R_PATH}
+export PATH={r_path}:$PATH
+export LD_LIBRARY_PATH={r_ld_library_path}:$LD_LIBRARY_PATH
+export R_LIBS={r_libs}
+export R_PATH={r_path}
 
 sig_list=({sig_list})
-sig_num=${{sig_list[$SGE_TASK_ID]}}
+sig_num=${{sig_list[$SGE_TASK_ID-1]}}
 
 {command} 
 """
 
     ind_template = """
-${R_PATH}/R --vanilla --slave --args ${INPUTFILE} ${OUTPUTFILE} ${SIGNUM} ${TRDIRFLAG} ${TRIALNUM} < perform_signature.R
-{R_PATH}/R --vanilla --slave --args {INPUTFILE} {OUTPUTFILE} $sig_num {TRDIRFLAG} {TRIALNUM} < {SCRIPT_PATH}/pmsignature/perform_ind.R
+$R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/ind.$sig_num.Rdata $sig_num {trdirflag} {trialnum} < {script_path}/pmsignature/run_pmsignature_ind.R
+if [ $? -ne 0 ]
+then
+    echo pmsignature terminated abnormally.
+    echo "{{'id':[],'ref':[],'alt':[],'strand':[],'mutation':[]}}" > {outputdir}/pmsignature.ind.result.$sig_num.json
+    exit 0
+fi
+$R_PATH/R --vanilla --slave --args {outputdir}/ind.$sig_num.Rdata {outputdir}/pmsignature.ind.result.$sig_num.json < {script_path}/pmsignature/convert_toJson_ind.R
 """
 
     full_template = """
-{R_PATH}/R --vanilla --slave --args {INPUTFILE} {OUTPUTFILE} {SIGNUM} {TRDIRFLAG} {TRIALNUM} < {SCRIPT_PATH}/pmsignature/perform_full.R
+$R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/full.$sig_num.Rdata $sig_num {trdirflag} {trialnum} < {script_path}/pmsignature/run_pmsignature_full.R
+if [ $? -ne 0 ]
+then
+    echo pmsignature terminated abnormally.
+    echo "{{'id':[],'signature':[],'mutation':[]}}" > {outputdir}/pmsignature.full.result.$sig_num.json
+    exit 0
+fi
+$R_PATH/R --vanilla --slave --args {outputdir}/full.$sig_num.Rdata {outputdir}/pmsignature.full.result.$sig_num.json < {script_path}/pmsignature/convert_toJson_full.R
 """
 
     def __init__(self, qsub_option, script_dir):

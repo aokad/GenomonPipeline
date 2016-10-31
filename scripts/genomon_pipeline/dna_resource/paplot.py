@@ -26,25 +26,23 @@ export PYTHONPATH={pythonpath}
 """
 
     qc_template = """
-{paplot} qc '{inputs}' {output_dir} {title} --config_file {config_file}
+{paplot} qc '{inputs}' {output_dir} {title} --config_file {config_file} --title 'QC graphs' --overview 'Quality Control of bam.' --ellipsis qc
 """
     sv_template = """
-{paplot} ca '{inputs}' {output_dir} {title} --config_file {config_file}
+{paplot} ca '{inputs}' {output_dir} {title} --config_file {config_file} --title 'SV graphs' --overview 'Structural Variation.' --ellipsis sv 
 """
     mutation_template = """
 if test '{annovar}' == 'True'; then
-  if test '{inputs_mutation}' != ''; then
-    {paplot} mutation '{inputs}' {output_dir} {title} --config_file {config_file}
-  fi
+    {paplot} mutation '{inputs}' {output_dir} {title} --config_file {config_file} --title 'Mutation matrix' --overview 'Gene-sample mutational profiles.' --ellipsis mutation
 else
-  echo 'paplot: [annotation] active_annovar_flag = False in genomon_conf_file, skip mutation-matrix.'
+    echo 'paplot: [annotation] active_annovar_flag = False in genomon_conf_file, skip mutation-matrix.'
 fi
 """
     full_template = """
-{paplot} signature {input} {output_dir} {title} {signature_num} --config_file {config_file}
+{paplot} signature {input} {output_dir} {title} {signature_num} --config_file {config_file} --title 'Signature' --overview 'Pmsignature type=full.' --ellipsis full{signature_num}
 """
     ind_template = """
-{paplot} pmsignature {input} {output_dir} {title} {pmsignature_num} --config_file {config_file}
+{paplot} pmsignature {input} {output_dir} {title} {signature_num} --config_file {config_file} --title 'Pmsignature' --overview 'Pmsignature type=ind.' --ellipsis ind{signature_num}
 """
 
     index_template = """
