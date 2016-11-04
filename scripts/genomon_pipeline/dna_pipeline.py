@@ -861,11 +861,7 @@ def post_analysis_qc(input_files, output_file):
 @collate(pmsignature_inputs, formatter(), run_conf.project_root + '/pmsignature/' + sample_conf_name + "/mutation.cut.txt")
 def pre_pmsignature(input_files, output_file):
         
-    arguments = {"r_path" : genomon_conf.get("ENV", "R_PATH"),
-                 "r_ld_library_path" : genomon_conf.get("ENV", "R_LD_LIBRARY_PATH"),
-                 "r_libs" : genomon_conf.get("ENV", "R_LIBS"),
-                 "script_path" : genomon_conf.get("SOFTWARE", "r_scripts"),
-                 "input_files" : " ".join(input_files),
+    arguments = {"input_files" : " ".join(input_files),
                  "output_file" : run_conf.project_root + '/pmsignature/' + sample_conf_name + "/mutation.cut.txt"
                 }
 
