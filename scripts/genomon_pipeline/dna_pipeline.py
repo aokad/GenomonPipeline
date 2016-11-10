@@ -200,8 +200,9 @@ for i in range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_con
     if not os.path.exists(fname): ind_exists = False
         
 run_ind = False
-if ind_exists == False: run_ind = True
-elif len(pa_outputs_mutation["outputs"]) > 0: run_ind = True
+if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("post_analysis", "enable"):
+    if ind_exists == False: run_ind = True
+    elif len(pa_outputs_mutation["outputs"]) > 0: run_ind = True
 
 # full
 full_outputs = []
@@ -212,8 +213,9 @@ for i in range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_co
     if not os.path.exists(fname): full_exists = False
         
 run_full = False
-if full_exists == False: run_full = True
-elif len(pa_outputs_mutation["outputs"]) > 0: run_full = True
+if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("post_analysis", "enable"):
+    if full_exists == False: run_full = True
+    elif len(pa_outputs_mutation["outputs"]) > 0: run_full = True
 
 pmsignature_inputs = []
 if run_ind == True or run_full == True: 
@@ -254,9 +256,9 @@ paplot_inputs = []
 paplot_inputs.extend(paplot_inputs_qc)
 paplot_inputs.extend(paplot_inputs_sv)
 paplot_inputs.extend(paplot_inputs_mutation)
-if genomon_conf.getboolean("post_analysis", "enable") and genomon_conf.getboolean("pmsignature_ind", "enable"):
+if run_ind == True:
     paplot_inputs.extend(ind_outputs)
-if genomon_conf.getboolean("post_analysis", "enable") and genomon_conf.getboolean("pmsignature_full", "enable"):
+if run_full == True:
     paplot_inputs.extend(full_outputs)
 
 # from pprint import pprint
