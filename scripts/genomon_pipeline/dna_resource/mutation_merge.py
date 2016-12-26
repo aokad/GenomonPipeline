@@ -28,7 +28,14 @@ if [ _{control_bam} = "_None" ]
 then
     mut_header="Chr,Start,End,Ref,Alt,depth,variantNum,bases,A_C_G_T,misRate,strandRatio,10%_posterior_quantile,posterior_mean,90%_posterior_quantile,readPairNum,variantPairNum,otherPairNum,10%_posterior_quantile(realignment),posterior_mean(realignment),90%_posterior_quantile(realignment),simple_repeat_pos,simple_repeat_seq,P-value(EBCall)"
 else
-    mut_header="Chr,Start,End,Ref,Alt,depth_tumor,variantNum_tumor,depth_normal,variantNum_normal,bases_tumor,bases_normal,A_C_G_T_tumor,A_C_G_T_normal,misRate_tumor,strandRatio_tumor,misRate_normal,strandRatio_normal,P-value(fisher),readPairNum_tumor,variantPairNum_tumor,otherPairNum_tumor,readPairNum_normal,variantPairNum_normal,otherPairNum_normal,P-value(fisher_realignment),indel_mismatch_count,indel_mismatch_rate,bp_mismatch_count,distance_from_breakpoint,simple_repeat_pos,simple_repeat_seq,P-value(EBCall)"
+    mut_header="Chr,Start,End,Ref,Alt,depth_tumor,variantNum_tumor,depth_normal,variantNum_normal,bases_tumor,bases_normal,A_C_G_T_tumor,A_C_G_T_normal,misRate_tumor,strandRatio_tumor,misRate_normal,strandRatio_normal,P-value(fisher)"
+
+    if [ _{active_hotspot_flag} = "_True" ]
+    then 
+        mut_header="${{mut_header}},score(hotspot)"
+    fi
+
+    mut_header="${{mut_header}},readPairNum_tumor,variantPairNum_tumor,otherPairNum_tumor,readPairNum_normal,variantPairNum_normal,otherPairNum_normal,P-value(fisher_realignment),indel_mismatch_count,indel_mismatch_rate,bp_mismatch_count,distance_from_breakpoint,simple_repeat_pos,simple_repeat_seq,P-value(EBCall)"
 fi
 
 if [ _{control_bam_list} = "_None" ]
@@ -92,9 +99,19 @@ fi
 
 if [ _{control_bam_list} = "_None" ]
 then
-    echo -e "{meta_info_m}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    if [ _{active_annovar_flag} = "_True" ]
+    then
+        echo -e "{meta_info_ma}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    else
+        echo -e "{meta_info_m}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    fi
 else
-    echo -e "{meta_info_em}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    if [ _{active_annovar_flag} = "_True" ]
+    then
+        echo -e "{meta_info_ema}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    else
+        echo -e "{meta_info_em}" > {out_prefix}.genomon_mutation.result.txt || exit $?
+    fi
 fi
 
 echo "$print_header" >> {out_prefix}.genomon_mutation.result.txt || exit $?
@@ -109,10 +126,21 @@ do
     fi
 done
 
-if [ _{control_bam} = "_None" ]; then 
-    {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {single_params}
+if [ _{control_bam} = "_None" ]
+then 
+    if [ _{active_hotspot_flag} = "_True" ]
+    then 
+        {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {single_params} --hotspot_db {hotspot_database}
+    else
+        {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {single_params}
+    fi
 else
-    {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {pair_params}
+    if [ _{active_hotspot_flag} = "_True" ]
+    then 
+        {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {pair_params} --hotspot_db {hotspot_database}
+    else
+        {mutil} filter -i {out_prefix}.genomon_mutation.result.txt -o {out_prefix}.genomon_mutation.result.filt.txt {pair_params}
+    fi
 fi
 
 """

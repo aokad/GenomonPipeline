@@ -282,6 +282,7 @@ if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.projec
 if not os.path.isdir(run_conf.project_root + '/bam'): os.mkdir(run_conf.project_root + '/bam')
 if not os.path.isdir(run_conf.project_root + '/mutation'): os.mkdir(run_conf.project_root + '/mutation')
 if not os.path.isdir(run_conf.project_root + '/mutation/control_panel'): os.mkdir(run_conf.project_root + '/mutation/control_panel')
+if not os.path.isdir(run_conf.project_root + '/mutation/hotspot'): os.mkdir(run_conf.project_root + '/mutation/hotspot')
 if not os.path.isdir(run_conf.project_root + '/sv'): os.mkdir(run_conf.project_root + '/sv')
 if not os.path.isdir(run_conf.project_root + '/sv/non_matched_control_panel'): os.mkdir(run_conf.project_root + '/sv/non_matched_control_panel')
 if not os.path.isdir(run_conf.project_root + '/sv/control_panel'): os.mkdir(run_conf.project_root + '/sv/control_panel')
@@ -529,6 +530,12 @@ def identify_mutations(input_file, output_file, output_dir):
         "eb_base_quality": genomon_conf.get("eb_filter","base_quality"),
         "filter_flags": genomon_conf.get("eb_filter","filter_flags"),
         "control_bam_list": input_file[2],
+        # hotspot mutation caller
+        "hotspot": genomon_conf.get("SOFTWARE","hotspot"),
+        "hotspot_database":genomon_conf.get("REFERENCE","hotspot_db"),
+        "active_hotspot_flag":genomon_conf.get("hotspot","active_hotspot_flag"),
+        "hotspot_params": genomon_conf.get("hotspot","params"),
+        "mutil": genomon_conf.get("SOFTWARE", "mutil"),
         # original_annotations
         "mutanno": genomon_conf.get("SOFTWARE", "mutanno"),
         "active_inhouse_normal_flag": active_inhouse_normal_flag,
@@ -584,10 +591,12 @@ def identify_mutations(input_file, output_file, output_dir):
         "mutil": genomon_conf.get("SOFTWARE", "mutil"),
         "pair_params": genomon_conf.get("mutation_util","pair_params"),
         "single_params": genomon_conf.get("mutation_util","single_params"),
+        "active_hotspot_flag":genomon_conf.get("hotspot","active_hotspot_flag"),
+        "hotspot_database":genomon_conf.get("REFERENCE","hotspot_db"),
         "meta_info_em": get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil", "mutanno"]),
-        "meta_info_e":  get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil"]),
         "meta_info_m": get_meta_info(["fisher", "mutfilter", "mutil", "mutanno"]),
-        "meta_info":   get_meta_info(["fisher", "mutfilter", "mutil"]),
+        "meta_info_ema": get_meta_info(["fisher", "mutfilter", "ebfilter", "mutil", "mutanno", "hotspot"]),
+        "meta_info_ma": get_meta_info(["fisher", "mutfilter", "mutil", "mutanno", "hotspot"]),
         "out_prefix": output_dir + '/' + sample_name}
 
     mutation_merge.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
@@ -600,6 +609,10 @@ def identify_mutations(input_file, output_file, output_dir):
     for task_id in range(1,(max_task_id + 1)):
         if os.path.exists(output_dir+'/'+sample_name+'.fisher_mutations.'+str(task_id)+'.txt'):
             os.unlink(output_dir+'/'+sample_name+'.fisher_mutations.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.hotspot_mutations.'+str(task_id)+'.txt'):
+            os.unlink(output_dir+'/'+sample_name+'.hotspot_mutations.'+str(task_id)+'.txt')
+        if os.path.exists(output_dir+'/'+sample_name+'.fisher_hotspot_mutations.'+str(task_id)+'.txt'):
+           os.unlink(output_dir+'/'+sample_name+'.fisher_hotspot_mutations.'+str(task_id)+'.txt')
         if os.path.exists(output_dir+'/'+sample_name+'.realignment_mutations.'+str(task_id)+'.txt'):
             os.unlink(output_dir+'/'+sample_name+'.realignment_mutations.'+str(task_id)+'.txt')
         if os.path.exists(output_dir+'/'+sample_name+'.indel_mutations.'+str(task_id)+'.txt'):
