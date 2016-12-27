@@ -83,58 +83,54 @@ export PYTHONPATH={pythonpath}
             "case2":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
             "case3":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
             "case4":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
-            "all":  {"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False}, }
-        li_outputs = []
-        
+            "all":  {"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False}, \
+            "outputs": [], \
+        }
         if len(samples) == 0:
-            di_outputs["outputs"] = []
             return di_outputs
         
         use_case1 = pa_conf.getboolean(section, "output_case1") or pa_conf.getboolean(section, "output_filt_case1")
         use_case2 = pa_conf.getboolean(section, "output_case2") or pa_conf.getboolean(section, "output_filt_case2")
         use_case3 = pa_conf.getboolean(section, "output_case3") or pa_conf.getboolean(section, "output_filt_case3")
         use_case4 = pa_conf.getboolean(section, "output_case4") or pa_conf.getboolean(section, "output_filt_case4")
+        output_all = pa_conf.getboolean(section, "output_all") or pa_conf.getboolean(section, "output_filt_all")
         
         for complist in samples:
             type = ""
-            if (complist[1] != None and complist[2] != None and use_case1 == True): type = "case1"
-            if (complist[1] != None and complist[2] == None and use_case2 == True): type = "case2"
-            if (complist[1] == None and complist[2] != None and use_case3 == True): type = "case3"
-            if (complist[1] == None and complist[2] == None and use_case4 == True): type = "case4"
-            
-            if type == "": continue
+            if   (complist[1] != None and complist[2] != None and use_case1 == True): type = "case1"
+            elif (complist[1] != None and complist[2] == None and use_case2 == True): type = "case2"
+            elif (complist[1] == None and complist[2] != None and use_case3 == True): type = "case3"
+            elif (complist[1] == None and complist[2] == None and use_case4 == True): type = "case4"
+            else: continue
             
             di_outputs[type]["samples"].append(complist[0])
             if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")):
                 di_outputs[type]["run_analysis"] = True
-                di_outputs["all"]["run_analysis"] = True
+                if output_all:
+                    di_outputs["all"]["run_analysis"] = True
         
         # each case
         for key in di_outputs:
+            if key == "outputs": continue
             if key != "all":
                 if len(di_outputs[key]["samples"]) == 0: continue
             
             if di_outputs[key]["run_analysis"] == True: di_outputs[key]["run_pa"] = True
             
-            output_filt = ""
             if pa_conf.getboolean(section, "output_filt_" + key):
                 output_filt = pa_dir + '/' + pa_conf.get(section, "filename_filt_" + key)
-                if not os.path.exists(output_filt): di_outputs[key]["run_pa"] = True
-            
-            output_unfilt = ""
+                
+                if not os.path.exists(output_filt):
+                    di_outputs[key]["run_pa"] = True
+                    di_outputs[key]["output_filt"] = output_filt
+                    di_outputs["outputs"].append(output_filt)
+                    
             if pa_conf.getboolean(section, "output_" + key):
                 output_unfilt = pa_dir + '/' + pa_conf.get(section, "filename_" + key)
-                if not os.path.exists(output_unfilt): di_outputs[key]["run_pa"] = True
-            
-            di_outputs[key]["output_filt"] = output_filt
-            di_outputs[key]["output_unfilt"] = output_unfilt
-            
-            if di_outputs[key]["run_pa"] == True:
-                li_outputs.append(output_filt)
-                li_outputs.append(output_unfilt)
-                di_outputs["all"]["run_pa"] = True
-       
-        di_outputs["outputs"] = []
-        di_outputs["outputs"].extend(li_outputs)
+                
+                if not os.path.exists(output_unfilt):
+                    di_outputs[key]["run_pa"] = True
+                    di_outputs[key]["output_unfilt"] = output_unfilt
+                    di_outputs["outputs"].append(output_unfilt)
         
         return di_outputs

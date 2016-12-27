@@ -893,6 +893,8 @@ def pmsignature_ind(input_file, output_file):
                 outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
                 trdirflag = genomon_conf.get("pmsignature_ind", "trdirflag").upper(),
                 trialnum = genomon_conf.getint("pmsignature_ind", "trialnum"),
+                bs_genome = genomon_conf.get("pmsignature_ind", "bs_genome"),
+                txdb_transcript = genomon_conf.get("pmsignature_ind", "txdb_transcript"),
                 script_path = genomon_conf.get("SOFTWARE", "r_scripts"))
     
     sig_nums = range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_conf.getint("pmsignature_ind", "signum_max") + 1)
@@ -919,6 +921,8 @@ def pmsignature_full(input_file, output_file):
                 outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
                 trdirflag = genomon_conf.get("pmsignature_full", "trdirflag").upper(),
                 trialnum = genomon_conf.getint("pmsignature_full", "trialnum"),
+                bs_genome = genomon_conf.get("pmsignature_full", "bs_genome"),
+                txdb_transcript = genomon_conf.get("pmsignature_full", "txdb_transcript"),
                 script_path = genomon_conf.get("SOFTWARE", "r_scripts"))
     
     sig_nums = range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_conf.getint("pmsignature_full", "signum_max") + 1)
