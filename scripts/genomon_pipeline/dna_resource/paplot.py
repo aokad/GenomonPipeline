@@ -39,10 +39,10 @@ else
 fi
 """
     full_template = """
-{paplot} signature {input} {output_dir} {title} --config_file {config_file} --title 'Signature' --overview 'Pmsignature type=full.' --ellipsis full{signature_num}
+{paplot} signature {input} {output_dir} {title} --config_file {config_file} --title 'Signature' --overview 'Pmsignature type=full.' --ellipsis full
 """
     ind_template = """
-{paplot} pmsignature {input} {output_dir} {title} --config_file {config_file} --title 'Pmsignature' --overview 'Pmsignature type=ind.' --ellipsis ind{signature_num}
+{paplot} pmsignature {input} {output_dir} {title} --config_file {config_file} --title 'Pmsignature' --overview 'Pmsignature type=ind.' --ellipsis ind
 """
 
     index_template = """
