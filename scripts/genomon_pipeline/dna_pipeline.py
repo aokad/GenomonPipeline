@@ -980,8 +980,7 @@ def paplot(input_file, output_file):
                         input = ind_outputs[i],
                         output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
                         title = genomon_conf.get("paplot", "title"),
-                        config_file = genomon_conf.get("paplot", "config_file"),
-                        signature_num = genomon_conf.getint("pmsignature_ind", "signum_min") + i)
+                        config_file = genomon_conf.get("paplot", "config_file"))
     
     if genomon_conf.getboolean("post_analysis", "enable") and genomon_conf.getboolean("pmsignature_full", "enable"):
         for i in range(len(full_outputs)):
@@ -990,8 +989,7 @@ def paplot(input_file, output_file):
                         input = full_outputs[i],
                         output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
                         title = genomon_conf.get("paplot", "title"),
-                        config_file = genomon_conf.get("paplot", "config_file"),
-                        signature_num = genomon_conf.getint("pmsignature_full", "signum_min") + i)
+                        config_file = genomon_conf.get("paplot", "config_file"))
     
     remark = genomon_conf.get("paplot", "remarks")
     remark += "<ul>"
