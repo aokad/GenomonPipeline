@@ -136,7 +136,9 @@ for sample in sample_conf.qc:
     if not os.path.exists(run_conf.project_root + '/qc/' + sample + '/' + sample + '.coverage'):
         qc_coverage_list.append(run_conf.project_root + '/bam/' + sample +'/'+ sample +'.markdup.bam')
 
-
+### 
+# input/output lists of post-analysis
+###
 genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
 sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
 
@@ -144,7 +146,7 @@ sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_f
 pa_outputs_mutation = r_post_analysis.output_files("mutation", sample_conf.mutation_call, run_conf.project_root, sample_conf_name, genomon_conf)
 
 pa_inputs_mutation = []
-if len(pa_outputs_mutation["outputs"]) > 0:
+if pa_outputs_mutation["run_pa"] == True:
     for complist in sample_conf.mutation_call:
         pa_inputs_mutation.append(run_conf.project_root + '/mutation/' + complist[0] +'/'+ complist[0] +'.genomon_mutation.result.filt.txt')
         
@@ -152,7 +154,7 @@ if len(pa_outputs_mutation["outputs"]) > 0:
 pa_outputs_sv = r_post_analysis.output_files("sv", sample_conf.sv_detection, run_conf.project_root, sample_conf_name, genomon_conf)
 
 pa_inputs_sv = []
-if len(pa_outputs_sv["outputs"]) > 0:
+if pa_outputs_sv["run_pa"] == True:
     for complist in sample_conf.sv_detection:
         pa_inputs_sv.append(run_conf.project_root + '/sv/' + complist[0] +'/'+ complist[0] +'.genomonSV.result.filt.txt')
         
@@ -164,31 +166,29 @@ if pa_outputs_qc["run_pa"] == True:
     for sample in sample_conf.qc:
         pa_inputs_qc.append(run_conf.project_root + '/qc/' + sample + '/' + sample + '.genomonQC.result.txt')
 
-# generate input list of paplot
+### 
+# input/output lists of paplot
+###
 paplot_output = run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'
 
 ## mutation
-run_paplot_mutation = False
-if not os.path.exists(paplot_output): run_paplot_mutation = True
-elif len(pa_outputs_mutation["outputs"]) > 0: run_paplot_mutation = True
-
-use_pa_mutations = []
+use_mutations = []
 if pa_outputs_mutation["case1"]["output_filt"] != "":
-    use_pa_mutations.append(pa_outputs_mutation["case1"]["output_filt"])
+    use_mutations.append(pa_outputs_mutation["case1"]["output_filt"])
 if pa_outputs_mutation["case2"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel"):
-    use_pa_mutations.append(pa_outputs_mutation["case2"]["output_filt"])
+    use_mutations.append(pa_outputs_mutation["case2"]["output_filt"])
 if pa_outputs_mutation["case3"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpair"):
-    use_pa_mutations.append(pa_outputs_mutation["case3"]["output_filt"])
+    use_mutations.append(pa_outputs_mutation["case3"]["output_filt"])
 if pa_outputs_mutation["case4"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel") and genomon_conf.getboolean("paplot", "include_unpair"):
-    use_pa_mutations.append(pa_outputs_mutation["case4"]["output_filt"])
+    use_mutations.append(pa_outputs_mutation["case4"]["output_filt"])
 
-if len(use_pa_mutations) == 0:
+if len(use_mutations) == 0:
     if pa_outputs_mutation["all"]["output_filt"] != "":
-        use_pa_mutations.append(pa_outputs_mutation["all"]["output_filt"])
-
+        use_mutations.append(pa_outputs_mutation["all"]["output_filt"])
+        
 paplot_inputs_mutation = []
-if run_paplot_mutation == True: 
-    paplot_inputs_mutation.extend(use_pa_mutations)
+if os.path.exists(paplot_output) == False or pa_outputs_mutation["run_pa"] == True:
+    paplot_inputs_mutation.extend(use_mutations)
 
 ## pmsignature
 # ind
@@ -202,8 +202,13 @@ for i in range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_con
 run_ind = False
 if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("post_analysis", "enable"):
     if ind_exists == False: run_ind = True
-    elif len(pa_outputs_mutation["outputs"]) > 0: run_ind = True
+    elif pa_outputs_mutation["run_pa"] == True: run_ind = True
+    elif not os.path.exists(run_conf.project_root + '/pmsignature/' + sample_conf_name + '/mutation.cut.txt'): run_ind = True
 
+paplot_inputs_ind = []
+if os.path.exists(paplot_output) == False or run_ind == True:
+    paplot_inputs_ind.extend(ind_outputs)
+    
 # full
 full_outputs = []
 full_exists = True
@@ -215,20 +220,21 @@ for i in range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_co
 run_full = False
 if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("post_analysis", "enable"):
     if full_exists == False: run_full = True
-    elif len(pa_outputs_mutation["outputs"]) > 0: run_full = True
+    elif pa_outputs_mutation["run_pa"] == True: run_full = True
+    elif not os.path.exists(run_conf.project_root + '/pmsignature/' + sample_conf_name + '/mutation.cut.txt'): run_full = True
+    
+paplot_inputs_full = []
+if os.path.exists(paplot_output) == False or run_full == True:
+    paplot_inputs_full.extend(full_outputs)
 
+    
 pmsignature_inputs = []
 if run_ind == True or run_full == True: 
-    pmsignature_inputs.extend(use_pa_mutations)
-
+    pmsignature_inputs.extend(use_mutations)
+    
 ## sv
 paplot_inputs_sv = []
-run_paplot_sv = False
-if not os.path.exists(paplot_output): run_paplot_sv = True
-elif len(pa_outputs_sv["outputs"]) > 0: run_paplot_sv = True
-
-paplot_inputs_sv = []
-if run_paplot_sv == True: 
+if os.path.exists(paplot_output) == False or pa_outputs_sv["run_pa"] == True:
 
     if pa_outputs_sv["case1"]["output_filt"] != "":
         paplot_inputs_sv.append(pa_outputs_sv["case1"]["output_filt"])
@@ -245,21 +251,15 @@ if run_paplot_sv == True:
 
 ## qc
 paplot_inputs_qc = []
-run_paplot_qc = False
-if not os.path.exists(paplot_output): run_paplot_qc = True
-elif pa_outputs_qc["run_pa"] == True: run_paplot_qc = True
-
-if run_paplot_qc == True: 
+if os.path.exists(paplot_output) == False or pa_outputs_qc["run_pa"] == True:
     paplot_inputs_qc.extend(pa_outputs_qc["outputs"])
 
 paplot_inputs = []
 paplot_inputs.extend(paplot_inputs_qc)
 paplot_inputs.extend(paplot_inputs_sv)
 paplot_inputs.extend(paplot_inputs_mutation)
-if run_ind == True:
-    paplot_inputs.extend(ind_outputs)
-if run_full == True:
-    paplot_inputs.extend(full_outputs)
+paplot_inputs.extend(paplot_inputs_ind)
+paplot_inputs.extend(paplot_inputs_full)
 
 # from pprint import pprint
 # print ("post-analysis-mutation");  pprint (pa_outputs_mutation); print ("post-analysis-sv");  pprint (pa_outputs_sv); print ("post-analysis-qc");  pprint (pa_outputs_qc)
@@ -974,19 +974,19 @@ def paplot(input_file, output_file):
                         annovar = genomon_conf.getboolean("annotation", "active_annovar_flag"))
     
     if genomon_conf.getboolean("post_analysis", "enable") and genomon_conf.getboolean("pmsignature_ind", "enable"):
-        for i in range(len(ind_outputs)):
+        for i in range(len(paplot_inputs_ind)):
             command += r_paplot.ind_template.format(
                         paplot = genomon_conf.get("SOFTWARE", "paplot"),
-                        input = ind_outputs[i],
+                        input = paplot_inputs_ind[i],
                         output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
                         title = genomon_conf.get("paplot", "title"),
                         config_file = genomon_conf.get("paplot", "config_file"))
     
     if genomon_conf.getboolean("post_analysis", "enable") and genomon_conf.getboolean("pmsignature_full", "enable"):
-        for i in range(len(full_outputs)):
+        for i in range(len(paplot_inputs_full)):
             command += r_paplot.full_template.format(
                         paplot =genomon_conf.get("SOFTWARE", "paplot"),
-                        input = full_outputs[i],
+                        input = paplot_inputs_full[i],
                         output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
                         title = genomon_conf.get("paplot", "title"),
                         config_file = genomon_conf.get("paplot", "config_file"))

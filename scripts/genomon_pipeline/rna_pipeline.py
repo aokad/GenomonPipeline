@@ -49,7 +49,7 @@ sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_f
 pa_outputs_fusion = r_post_analysis.output_files("fusion", sample_conf.fusion, run_conf.project_root, sample_conf_name, genomon_conf)
 
 pa_inputs_fusion = []
-if len(pa_outputs_fusion["outputs"]) > 0:
+if pa_outputs_fusion["run_pa"] == True:
     for complist in sample_conf.fusion:
         pa_inputs_fusion.append(run_conf.project_root + '/fusion/' + complist[0] + '/' + complist[0] + '.fusion.fusion.result.filt.txt')
         
@@ -65,12 +65,8 @@ if pa_outputs_starqc["run_pa"] == True:
 paplot_output = run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'
 
 ## fusionfusion
-run_paplot_fusion = False
-if not os.path.exists(paplot_output): run_paplot_fusion = True
-elif len(pa_outputs_fusion["outputs"]) > 0: run_paplot_fusion = True
-
 paplot_inputs_fusion = []
-if run_paplot_fusion == True: 
+if os.path.exists(paplot_output) == False or pa_outputs_fusion["run_pa"] == True:
 
     if pa_outputs_fusion["case1"]["output_filt"] != "":
         paplot_inputs_fusion.append(pa_outputs_fusion["case1"]["output_filt"])
@@ -83,11 +79,7 @@ if run_paplot_fusion == True:
 
 ## star-qc
 paplot_inputs_starqc = []
-run_paplot_starqc = False
-if not os.path.exists(paplot_output): run_paplot_starqc = True
-elif pa_outputs_starqc["run_pa"] == True: run_paplot_starqc = True
-
-if run_paplot_starqc == True: 
+if os.path.exists(paplot_output) == False or pa_outputs_starqc["run_pa"] == True:
     paplot_inputs_starqc.extend(pa_outputs_starqc["outputs"])
 
 paplot_inputs = []

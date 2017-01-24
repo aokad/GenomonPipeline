@@ -47,17 +47,19 @@ export PYTHONPATH={pythonpath}
         pa_dir = genomon_root + "/post_analysis/" + sample_conf_name
         
         if mode == "starqc":
-            di_outputs = { "outputs": [], "run_analysis":False, "run_pa":False}
+            di_outputs = { "outputs": [], "run_pa":False}
         
             if len(samples) == 0:
                 return di_outputs
+            
+            run_analysis = False
 
             for sample in samples:
                 if not os.path.exists(analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")):
-                    di_outputs["run_analysis"] = True
+                    run_analysis = True
                     break
             
-            if di_outputs["run_analysis"] == True: di_outputs["run_pa"] = True
+            if run_analysis == True: di_outputs["run_pa"] = True
             
             output = pa_dir + '/' + pa_conf.get("merge_format_starqc", "filename_all")
             if not os.path.exists(output): di_outputs["run_pa"] = True
@@ -76,13 +78,16 @@ export PYTHONPATH={pythonpath}
             return {}
             
         di_outputs = { \
-            "case1":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
-            "case2":{"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False, "samples":[]}, \
-            "all":  {"output_filt":"", "output_unfilt":"", "run_analysis":False, "run_pa":False}, \
+            "case1":{"output_filt":"", "output_unfilt":"", "run_pa":False, "samples":[]}, \
+            "case2":{"output_filt":"", "output_unfilt":"", "run_pa":False, "samples":[]}, \
+            "all":  {"output_filt":"", "output_unfilt":"", "run_pa":False}, \
             "outputs": [], \
+            "run_pa": False \
         }
         if len(samples) == 0:
             return di_outputs
+        
+        run_analysis = {"case1":False, "case2":False, "all":  False}
         
         use_case1 = pa_conf.getboolean(section, "output_case1") or pa_conf.getboolean(section, "output_filt_case1")
         use_case2 = pa_conf.getboolean(section, "output_case2") or pa_conf.getboolean(section, "output_filt_case2")
@@ -96,32 +101,34 @@ export PYTHONPATH={pythonpath}
             
             di_outputs[type]["samples"].append(complist[0])
             if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + pa_conf.get(section_in, "suffix")):
-                di_outputs[type]["run_analysis"] = True
+                run_analysis[type] = True
                 if output_all:
-                    di_outputs["all"]["run_analysis"] = True
+                    run_analysis["all"] = True
         
         # each case
-        for key in di_outputs:
-            if key == "outputs": continue
+        for key in ["case1", "case2", "all"]:
             if key != "all":
                 if len(di_outputs[key]["samples"]) == 0: continue
                 
-            if di_outputs[key]["run_analysis"] == True: di_outputs[key]["run_pa"] = True
+            if run_analysis[key] == True: di_outputs[key]["run_pa"] = True
             
             if pa_conf.getboolean(section, "output_filt_" + key):
                 output_filt = pa_dir + '/' + pa_conf.get(section, "filename_filt_" + key)
+                di_outputs[key]["output_filt"] = output_filt
+                di_outputs["outputs"].append(output_filt)
                 
                 if not os.path.exists(output_filt):
                     di_outputs[key]["run_pa"] = True
-                    di_outputs[key]["output_filt"] = output_filt
-                    di_outputs["outputs"].append(output_filt)
-                    
+                
             if pa_conf.getboolean(section, "output_" + key):
                 output_unfilt = pa_dir + '/' + pa_conf.get(section, "filename_" + key)
+                di_outputs[key]["output_unfilt"] = output_unfilt
+                di_outputs["outputs"].append(output_unfilt)
                 
                 if not os.path.exists(output_unfilt):
                     di_outputs[key]["run_pa"] = True
-                    di_outputs[key]["output_unfilt"] = output_unfilt
-                    di_outputs["outputs"].append(output_unfilt)
 
+            if di_outputs[key]["run_pa"] == True:
+                di_outputs["run_pa"] = True
+                
         return di_outputs
