@@ -34,7 +34,7 @@ $R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/ind.$sig_num.Rdata $s
 if [ $? -ne 0 ]
 then
     echo pmsignature terminated abnormally.
-    echo "{{'id':[],'ref':[],'alt':[],'strand':[],'mutation':[]}}" > {outputdir}/pmsignature.ind.result.$sig_num.json
+    echo '{{"id":[],"ref":[],"alt":[],"strand":[],"mutation":[]}}' > {outputdir}/pmsignature.ind.result.$sig_num.json
     exit 0
 fi
 $R_PATH/R --vanilla --slave --args {outputdir}/ind.$sig_num.Rdata {outputdir}/pmsignature.ind.result.$sig_num.json < {script_path}/pmsignature/convert_toJson_ind.R
@@ -45,7 +45,7 @@ $R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/full.$sig_num.Rdata $
 if [ $? -ne 0 ]
 then
     echo pmsignature terminated abnormally.
-    echo "{{'id':[],'signature':[],'mutation':[]}}" > {outputdir}/pmsignature.full.result.$sig_num.json
+    echo '{{"id":[],"signature":[],"mutation":[]}}' > {outputdir}/pmsignature.full.result.$sig_num.json
     exit 0
 fi
 $R_PATH/R --vanilla --slave --args {outputdir}/full.$sig_num.Rdata {outputdir}/pmsignature.full.result.$sig_num.json < {script_path}/pmsignature/convert_toJson_full.R
