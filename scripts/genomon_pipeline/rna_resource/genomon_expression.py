@@ -21,10 +21,10 @@ set -xv
 # set python environment
 export PYTHONHOME={pythonhome}
 bedtools_home={bedtools}
-export PATH=${{bedtools_home%/*}}:$PYTHONHOME/bin:$PATH
+export PATH=${{bedtools_home%/*}}:{htslib}:$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-{genomon_expression} {additional_params} {input_bam} {output_prefix} {annotation_file}
+{genomon_expression} {additional_params} {input_bam} {output_prefix}
 """
 
     def __init__(self, qsub_option, script_dir):

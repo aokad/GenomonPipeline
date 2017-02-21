@@ -290,10 +290,10 @@ def task_fusionfusion(input_file, output_file):
     arguments = {"fusionfusion": genomon_conf.get("SOFTWARE", "fusionfusion"),
                  "fusion_utils": genomon_conf.get("SOFTWARE", "fusion_utils"),
                  "blat": genomon_conf.get("SOFTWARE", "blat"),
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib"),
                  "ref_fa":genomon_conf.get("REFERENCE", "ref_fasta"),
                  "chimeric_sam": input_chimeric_sam,
                  "output_prefix": output_dir_name,
-                 "annotation_dir": genomon_conf.get("fusionfusion", "annotation_dir"),
                  "additional_params": params + genomon_conf.get("fusionfusion", "params"),
                  "filt_params": genomon_conf.get("fusionfusion", "filt_params"),
                  "sample": sample_name,
@@ -316,9 +316,9 @@ def task_genomon_expression(input_file, output_file):
 
     arguments = {"genomon_expression": genomon_conf.get("SOFTWARE", "genomon_expression"),
                  "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib"),
                  "input_bam": input_file,
                  "output_prefix": output_dir_name + '/' + sample_name,
-                 "annotation_file": genomon_conf.get("genomon_expression", "annotation_file"),
                  "additional_params": genomon_conf.get("genomon_expression", "params"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH")}  
@@ -338,9 +338,9 @@ def task_intron_retention(input_file, output_file):
 
     arguments = {"intron_retention_utils": genomon_conf.get("SOFTWARE", "intron_retention_utils"),
                  "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib"),
                  "input_bam": input_file,
                  "output": output_file,
-                 "ref_gene": genomon_conf.get("intron_retention", "ref_gene"),
                  "additional_params": genomon_conf.get("intron_retention", "params"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH")}  
