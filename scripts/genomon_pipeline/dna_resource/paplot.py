@@ -22,19 +22,31 @@ export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-if test "{inputs_qc}" != ""; then
-  {pa_plot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" || exit $?
-fi
-if test "{inputs_sv}" != ""; then
-  {pa_plot} sv "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" || exit $?
-fi
-if test "{annovar}" == "True"; then
-  if test "{inputs_mutation}" != ""; then
-    {pa_plot} mutation "{inputs_mutation}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" || exit $?
-  fi
+{command} 
+"""
+
+    qc_template = """
+{paplot} qc '{inputs}' {output_dir} {title} --config_file {config_file} --title 'QC graphs' --overview 'Quality Control of bam.' --ellipsis qc
+"""
+    sv_template = """
+{paplot} ca '{inputs}' {output_dir} {title} --config_file {config_file} --title 'SV graphs' --overview 'Structural Variation.' --ellipsis sv 
+"""
+    mutation_template = """
+if test '{annovar}' == 'True'; then
+    {paplot} mutation '{inputs}' {output_dir} {title} --config_file {config_file} --title 'Mutation matrix' --overview 'Gene-sample mutational profiles.' --ellipsis mutation
 else
-  echo "paplot: [annotation] active_annovar_flag = False in genomon_conf_file, skip mutation-matrix."
+    echo 'paplot: [annotation] active_annovar_flag = False in genomon_conf_file, skip mutation-matrix.'
 fi
+"""
+    full_template = """
+{paplot} signature {input} {output_dir} {title} --config_file {config_file} --title 'Signature' --overview 'Pmsignature type=full.' --ellipsis full
+"""
+    ind_template = """
+{paplot} pmsignature {input} {output_dir} {title} --config_file {config_file} --title 'Pmsignature' --overview 'Pmsignature type=ind.' --ellipsis ind
+"""
+
+    index_template = """
+{paplot} index {output_dir} --config_file {config_file} --remarks '{remarks}'
 """
 
     def __init__(self, qsub_option, script_dir):

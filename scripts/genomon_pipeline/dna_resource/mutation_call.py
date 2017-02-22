@@ -35,7 +35,19 @@ if [ _{control_bam} = "_None" ]; then
 else
     {fisher} comparison -R ${{REGION}} -o {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt --ref_fa {ref_fa} -2 {control_bam} -1 {disease_bam} --samtools_path {samtools} {fisher_pair_params} || exit $?
 
-    {mutfilter} realignment --target_mutation_file {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -1 {disease_bam} -2 {control_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} {realignment_params} || exit $?
+    realignment_input={out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt
+
+    if [ _{active_hotspot_flag} = "_True" ]; then 
+
+        {hotspot} {hotspot_params} {disease_bam} {control_bam} {out_prefix}.hotspot_mutations.${{SGE_TASK_ID}}.txt {hotspot_database}.${{SGE_TASK_ID}} || exit $?
+
+        {mutil} merge_hotspot -i {out_prefix}.hotspot_mutations.${{SGE_TASK_ID}}.txt -f {out_prefix}.fisher_mutations.${{SGE_TASK_ID}}.txt -o {out_prefix}.fisher_hotspot_mutations.${{SGE_TASK_ID}}.txt --hotspot_header || exit $?
+
+        realignment_input={out_prefix}.fisher_hotspot_mutations.${{SGE_TASK_ID}}.txt
+
+    fi
+
+    {mutfilter} realignment --target_mutation_file ${{realignment_input}} -1 {disease_bam} -2 {control_bam} --output {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt --ref_genome {ref_fa} --blat_path {blat} {realignment_params} || exit $?
 
     {mutfilter} indel --target_mutation_file {out_prefix}.realignment_mutations.${{SGE_TASK_ID}}.txt -2 {control_bam} --output {out_prefix}.indel_mutations.${{SGE_TASK_ID}}.txt --samtools_path {samtools} {indel_params} || exit $?
 

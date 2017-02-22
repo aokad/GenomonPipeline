@@ -23,10 +23,10 @@ export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
 if test "{inputs_qc}" != ""; then
-    {pa_plot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+    {paplot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}  --title 'QC graphs' --overview 'Quality Control of bam.' --ellipsis qc"
 fi
 if test "{inputs_sv}" != ""; then
-    {pa_plot} sv "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}"
+    {paplot} ca "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" --title 'Fusion graphs' --overview 'Fusion.' --ellipsis fusion
 fi
 """
 

@@ -17,10 +17,13 @@ dna_reference_list = ["ref_fasta",
                       "gaptxt",
                       "bait_file",
                       "simple_repeat_tabix_db",
-                      "HGVD_tabix_db",
+                      "HGVD_2013_tabix_db",
+                      "HGVD_2016_tabix_db",
                       "HGMD_tabix_db",
                       "inhouse_tumor_tabix_db",
-                      "inhouse_normal_tabix_db"
+                      "inhouse_normal_tabix_db",
+                      "ExAC_tabix_db",
+                      "hotspot_db"
                       ]
            
 dna_software_list = ["blat",
@@ -35,11 +38,13 @@ dna_software_list = ["blat",
                      "mutfilter",
                      "ebfilter",
                      "fisher",
+                     "genomon_qc",
                      "genomon_pa",
-                     "pa_plot",
+                     "paplot",
                      "mutil",
                      "mutanno",
-                     "annovar"
+                     "annovar",
+                     "hotspot"
                      ]
 
 dna_software_version = {"genomon_sv":"GenomonSV",
@@ -48,7 +53,9 @@ dna_software_version = {"genomon_sv":"GenomonSV",
                         "mutfilter":"GenomonMutationFilter",
                         "ebfilter":"EBFilter",
                         "mutil": "MutationUtil",
-                        "mutanno": "GenomonMutationAnnotation"
+                        "mutanno": "GenomonMutationAnnotation",
+                        "genomon_qc": "genomon_qc",
+                        "hotspot": "hotspotCall",
                         } 
 
 rna_reference_list = ["star_genome"
@@ -96,9 +103,18 @@ def dna_genomon_conf_check():
                         raise ValueError(err_msg % (value, key, section))
             continue
             
-        if key == "HGVD_tabix_db":
-            if genomon_conf.has_option("annotation", "active_HGVD_flag"):
-                flag = genomon_conf.get("annotation", "active_HGVD_flag")
+        if key == "HGVD_2013_tabix_db":
+            if genomon_conf.has_option("annotation", "active_HGVD_2013_flag"):
+                flag = genomon_conf.get("annotation", "active_HGVD_2013_flag")
+                if flag == "True":
+                    value = genomon_conf.get(section, key)
+                    if not os.path.exists(value):
+                        raise ValueError(err_msg % (value, key, section))
+            continue
+            
+        if key == "HGVD_2016_tabix_db":
+            if genomon_conf.has_option("annotation", "active_HGVD_2016_flag"):
+                flag = genomon_conf.get("annotation", "active_HGVD_2016_flag")
                 if flag == "True":
                     value = genomon_conf.get(section, key)
                     if not os.path.exists(value):
@@ -113,6 +129,25 @@ def dna_genomon_conf_check():
                     if not os.path.exists(value):
                         raise ValueError(err_msg % (value, key, section))
             continue
+            
+        if key == "ExAC_tabix_db":
+            if genomon_conf.has_option("annotation", "active_ExAC_flag"):
+                flag = genomon_conf.get("annotation", "active_ExAC_flag")
+                if flag == "True":
+                    value = genomon_conf.get(section, key)
+                    if not os.path.exists(value):
+                        raise ValueError(err_msg % (value, key, section))
+            continue
+
+        if key == "hotspot_db":
+            if genomon_conf.has_option("hotspot", "active_hotspot_flag"):
+                flag = genomon_conf.get("hotspot", "active_hotspot_flag")
+                if flag == "True":
+                    value = genomon_conf.get(section, key)
+                    if not os.path.exists(value):
+                        raise ValueError(err_msg % (value, key, section))
+            continue
+            
             
         value = genomon_conf.get(section, key)
         if not os.path.exists(value):

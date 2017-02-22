@@ -18,10 +18,12 @@ hostname                # print hostname
 date                    # print date
 set -xv
 
-export PERL5LIB={PERL5LIB}
+# set python environment
+export PYTHONHOME={pythonhome}
+export PATH=$PYTHONHOME/bin:$PATH
+export PYTHONPATH={pythonpath}
 
-{bamstats} -i {input} -o {output}.tmp || exit $?
-mv {output}.tmp {output}
+{genomon_qc} bamstats {input_file} {output_file} --perl5lib {perl5lib} --bamstats {bamstats}
 """
 
     def __init__(self, qsub_option, script_dir):

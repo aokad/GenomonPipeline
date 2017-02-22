@@ -21,10 +21,10 @@ set -xv
 # set python environment
 export PYTHONHOME={pythonhome}
 bedtools_home={bedtools}
-export PATH=${{bedtools_home%/*}}:$PYTHONHOME/bin:$PATH
+export PATH=${{bedtools_home%/*}}:{htslib}:$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
-{intron_retention_utils} simple_count {additional_params} {input_bam} {output} {ref_gene}
+{intron_retention_utils} simple_count {additional_params} {input_bam} {output}
 """
 
     def __init__(self, qsub_option, script_dir):
