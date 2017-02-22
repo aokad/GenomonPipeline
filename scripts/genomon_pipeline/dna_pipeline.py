@@ -401,17 +401,21 @@ def split_files(input_files, output_files, target_dir):
     for oo in output_files:
         os.unlink(oo)
 
+    split_lines = genomon_conf.get("split_fastq", "split_fastq_line_number")
+
     input_prefix, ext = os.path.splitext(input_files[0][0])
-    arguments = {"lines": genomon_conf.get("split_fastq", "split_fastq_line_number"),
+    arguments = {"lines": split_lines,
                  "fastq_filter": genomon_conf.get("split_fastq", "fastq_filter"),
                  "target_dir": target_dir,
                  "ext": ext}
     
     fastq_splitter.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/'+ sample_name, 2)
    
-    all_line_num = 0
-    for fastq in glob.glob(target_dir + '/1_*.fastq_split'):
-        all_line_num += sum(1 for line in open(fastq))
+    file_list = glob.glob(target_dir + '/1_*.fastq_split')
+    file_list.sort()
+    last_file_lines = sum(1 for line in open(file_list[-1]))
+    all_line_num = ((len(file_list)-1)*int(split_lines)) + last_file_lines
+    
     with open(target_dir + "/fastq_line_num.txt",  "w") as out_handle:
         out_handle.write(str(all_line_num)+"\n")
     
