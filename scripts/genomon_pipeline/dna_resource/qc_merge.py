@@ -23,6 +23,18 @@ export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
+if [ -f {fastq_line_num_file} ]; then
+
+    total_reads=`awk 'NR==2 {{print $15}}' {bamstats_file}`
+    fastq_reads_tmp=`cat {fastq_line_num_file}`
+    fastq_reads=`expr $fastq_reads_tmp / 2`
+
+    if [ $total_reads -ne $fastq_reads ]; then
+        echo "Total read count is not good for this data. BAM file: ${{total_reads}} reads. FASTQ file: ${{fastq_reads}} reads." >&2
+        exit 1
+    fi
+fi
+
 {genomon_qc} merge {coverage_file} {bamstats_file} {output_file} --meta "{meta}"
 """
 
