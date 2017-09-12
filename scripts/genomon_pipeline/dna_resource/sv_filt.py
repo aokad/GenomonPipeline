@@ -20,7 +20,8 @@ set -xv
 
 # set python environment
 export PYTHONHOME={pythonhome}
-export PATH={htslib}:$PYTHONHOME/bin:$PATH
+blat_home={blat}
+export PATH=${{blat_home%/*}}:{htslib}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
