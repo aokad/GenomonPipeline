@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -o pipefail
 
 tmp_num=`expr ${{SGE_TASK_ID}} - 1`
 num=`printf "%04d" ${{tmp_num}}`

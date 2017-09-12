@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -o pipefail
 
 # set python environment
 export PYTHONHOME={pythonhome}

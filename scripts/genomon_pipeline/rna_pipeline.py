@@ -73,10 +73,6 @@ if os.path.exists(paplot_output) == False or pa_outputs_fusion["run_pa"] == True
     if pa_outputs_fusion["case2"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel"):
         paplot_inputs_fusion.append(pa_outputs_fusion["case2"]["output_filt"])
 
-    if len(paplot_inputs_fusion) == 0:
-        if pa_outputs_fusion["all"]["output_filt"] != "":
-            paplot_inputs_fusion.append(pa_outputs_fusion["all"]["output_filt"])
-
 ## star-qc
 paplot_inputs_starqc = []
 if os.path.exists(paplot_output) == False or pa_outputs_starqc["run_pa"] == True:

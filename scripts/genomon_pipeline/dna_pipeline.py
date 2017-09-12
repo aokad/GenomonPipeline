@@ -97,7 +97,7 @@ for complist in sample_conf.sv_detection:
 for bam in unique_bams:
     dir_name = os.path.dirname(bam)
     sample_name = os.path.basename(dir_name)
-    if os.path.exists(run_conf.project_root + '/sv/' + sample_name + '/' + sample_name + '.junction.clustered.bedpe.gz'): continue
+    if os.path.exists(run_conf.project_root + '/sv/' + sample_name + '/' + sample_name + '.junction.clustered.bedpe.gz') and os.path.exists(run_conf.project_root + '/sv/' + sample_name + '/' + sample_name + '.junction.clustered.bedpe.gz.tbi'): continue
     parse_sv_bam_list.append(bam)
 
 # generate input list of 'SV merge'
@@ -109,7 +109,7 @@ for complist in sample_conf.sv_detection:
         unique_complist.append(control_panel_name)
 
 for control_panel_name in unique_complist:
-    if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz'): continue
+    if os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz') and os.path.exists(run_conf.project_root + '/sv/non_matched_control_panel/' + control_panel_name + '.merged.junction.control.bedpe.gz.tbi'): continue
     tmp_list = []
     tmp_list.append(run_conf.project_root + '/sv/control_panel/' + control_panel_name + ".control_info.txt")
     for sample in sample_conf.control_panel[control_panel_name]:
@@ -137,7 +137,7 @@ for sample in sample_conf.qc:
         qc_coverage_list.append(run_conf.project_root + '/bam/' + sample +'/'+ sample +'.markdup.bam')
 
 ### 
-# input/output lists of post-analysis
+# input/output lists for post-analysis
 ###
 genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
 sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
@@ -167,7 +167,7 @@ if pa_outputs_qc["run_pa"] == True:
         pa_inputs_qc.append(run_conf.project_root + '/qc/' + sample + '/' + sample + '.genomonQC.result.txt')
 
 ### 
-# input/output lists of paplot
+# input/output lists for paplot
 ###
 paplot_output = run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html'
 
@@ -182,10 +182,6 @@ if pa_outputs_mutation["case3"]["output_filt"] != "" and genomon_conf.getboolean
 if pa_outputs_mutation["case4"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel") and genomon_conf.getboolean("paplot", "include_unpair"):
     use_mutations.append(pa_outputs_mutation["case4"]["output_filt"])
 
-if len(use_mutations) == 0:
-    if pa_outputs_mutation["all"]["output_filt"] != "":
-        use_mutations.append(pa_outputs_mutation["all"]["output_filt"])
-        
 paplot_inputs_mutation = []
 if os.path.exists(paplot_output) == False or pa_outputs_mutation["run_pa"] == True:
     paplot_inputs_mutation.extend(use_mutations)
@@ -240,10 +236,6 @@ if os.path.exists(paplot_output) == False or pa_outputs_sv["run_pa"] == True:
         paplot_inputs_sv.append(pa_outputs_sv["case3"]["output_filt"])
     if pa_outputs_sv["case4"]["output_filt"] != "" and genomon_conf.getboolean("paplot", "include_unpanel") and genomon_conf.getboolean("paplot", "include_unpair"):
         paplot_inputs_sv.append(pa_outputs_sv["case4"]["output_filt"])
-
-    if len(paplot_inputs_sv) == 0:
-        if pa_outputs_sv["all"]["output_filt"] != "":
-            paplot_inputs_sv.append(pa_outputs_sv["all"]["output_filt"])
 
 ## qc
 paplot_inputs_qc = []

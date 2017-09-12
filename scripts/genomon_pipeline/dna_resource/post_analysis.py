@@ -29,7 +29,7 @@ export PYTHONPATH={pythonpath}
 --input_file_case1 "{input_file_case1}" \
 --input_file_case2 "{input_file_case2}" \
 --input_file_case3 "{input_file_case3}" \
---input_file_case4 "{input_file_case4}" || exit $?
+--input_file_case4 "{input_file_case4}"
 """
 
     def __init__(self, qsub_option, script_dir):

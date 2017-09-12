@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -o pipefail
 
 to_val=`ls {target_dir}/*_${{SGE_TASK_ID}}{ext} | wc -l`
 input_files=""

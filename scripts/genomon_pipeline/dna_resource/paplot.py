@@ -17,6 +17,9 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -eu
+set -o pipefail
+
 # set python environment
 export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
@@ -39,10 +42,10 @@ else
 fi
 """
     full_template = """
-{paplot} signature {input} {output_dir} {title} --config_file {config_file} --title 'Signature' --overview 'Pmsignature type=full.' --ellipsis full
+{paplot} signature {input} {output_dir} {title} --config_file {config_file} --title 'Mutational Signature' --overview 'Pmsignature type=full.' --ellipsis full
 """
     ind_template = """
-{paplot} pmsignature {input} {output_dir} {title} --config_file {config_file} --title 'Pmsignature' --overview 'Pmsignature type=ind.' --ellipsis ind
+{paplot} pmsignature {input} {output_dir} {title} --config_file {config_file} --title 'pmsignature' --overview 'Pmsignature type=ind.' --ellipsis ind
 """
 
     index_template = """

@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -o pipefail
 
 bams=( `echo "{input_bam}" | tr -s ';' ' '`)
 

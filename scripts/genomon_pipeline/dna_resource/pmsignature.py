@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -o pipefail
 
 export PATH={r_path}:$PATH
 export LD_LIBRARY_PATH={r_ld_library_path}:$LD_LIBRARY_PATH
