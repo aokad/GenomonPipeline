@@ -714,7 +714,8 @@ def filt_sv(input_files,  output_file):
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH"),   
                  "ld_library_path": genomon_conf.get("ENV", "LD_LIBRARY_PATH"),
-                 "htslib": genomon_conf.get("SOFTWARE", "htslib")}
+                 "htslib": genomon_conf.get("SOFTWARE", "htslib"),
+                 "blat": genomon_conf.get("SOFTWARE", "blat")}
 
     sv_filt.task_exec(arguments, run_conf.project_root + '/log/' + sample_name, run_conf.project_root + '/script/' + sample_name)
 
