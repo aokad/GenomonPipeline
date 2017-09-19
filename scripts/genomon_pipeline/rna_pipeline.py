@@ -187,6 +187,7 @@ def bam2fastq(outputfiles):
     output_dir = run_conf.project_root + '/fastq/' + sample
             
     arguments = {"biobambam": genomon_conf.get("SOFTWARE", "biobambam"),
+                 "param": genomon_conf.get("bam2fastq", "params"),
                  "input_bam": sample_conf.bam_tofastq[sample],
                  "f1_name": outputfiles[0],
                  "f2_name": outputfiles[1],

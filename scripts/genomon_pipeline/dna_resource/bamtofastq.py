@@ -24,7 +24,7 @@ bams=( `echo "{input_bam}" | tr -s ';' ' '`)
 if [ ${{#bams[@]}} -eq 1 ]; then
     bam=${{bams[0]}}
     echo $bam
-    {biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename=${{bam}} F={f1_name} F2={f2_name} T={t} S={s} O={o1_name} O2={o2_name} || exit $?    
+    {biobambam}/bamtofastq {param} filename=${{bam}} F={f1_name} F2={f2_name} T={t} S={s} O={o1_name} O2={o2_name} || exit $?    
 
 else
     echo -n > {f1_name}
@@ -36,7 +36,7 @@ else
 
     for bam in ${{bams[@]}}; do
         echo $bam
-        {biobambam}/bamtofastq collate=1 exclude=QCFAIL,SECONDARY,SUPPLEMENTARY filename=${{bam}} F={f1_name}.tmp F2={f2_name}.tmp T={t}.tmp S={s}.tmp O={o1_name}.tmp O2={o2_name}.tmp || exit $?
+        {biobambam}/bamtofastq {param} filename=${{bam}} F={f1_name}.tmp F2={f2_name}.tmp T={t}.tmp S={s}.tmp O={o1_name}.tmp O2={o2_name}.tmp || exit $?
         cat {f1_name}.tmp >> {f1_name} || exit $?
         cat {f2_name}.tmp >> {f2_name} || exit $?
         if [ -s {t}.tmp ]; then
