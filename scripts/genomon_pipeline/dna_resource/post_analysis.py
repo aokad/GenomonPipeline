@@ -111,6 +111,7 @@ export PYTHONPATH={pythonpath}
             
             di_outputs[type]["samples"].append(complist[0])
             if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")):
+                # print analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")
                 run_analysis[type] = True
                 if output_all:
                     run_analysis["all"] = True

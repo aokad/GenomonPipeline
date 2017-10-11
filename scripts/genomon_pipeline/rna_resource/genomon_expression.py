@@ -26,6 +26,7 @@ export PATH=${{bedtools_home%/*}}:{htslib}:$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
 {genomon_expression} {additional_params} {input_bam} {output_prefix}
+mv {output_prefix}.sym2fpkm.txt {output_prefix}.genomonExpression.result.txt
 """
 
     def __init__(self, qsub_option, script_dir):

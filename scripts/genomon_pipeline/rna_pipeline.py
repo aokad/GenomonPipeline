@@ -25,6 +25,11 @@ intron_retention = Intron_retention(genomon_conf.get("intron_retention", "qsub_o
 r_paplot = Res_PA_Plot(genomon_conf.get("paplot", "qsub_option"), run_conf.drmaa)
 r_post_analysis = Res_PostAnalysis(genomon_conf.get("post_analysis", "qsub_option"), run_conf.drmaa)
 
+_debug = False
+if genomon_conf.has_section("develop"):
+    if genomon_conf.has_option("develop", "debug") == True:
+        _debug = genomon_conf.getboolean("develop", "debug")
+
 # generate list of linked_fastq file path
 linked_fastq_list = []
 for sample in sample_conf.fastq:
@@ -51,7 +56,7 @@ pa_outputs_fusion = r_post_analysis.output_files("fusion", sample_conf.fusion, r
 pa_inputs_fusion = []
 if pa_outputs_fusion["run_pa"] == True:
     for complist in sample_conf.fusion:
-        pa_inputs_fusion.append(run_conf.project_root + '/fusion/' + complist[0] + '/' + complist[0] + '.fusion.fusion.result.filt.txt')
+        pa_inputs_fusion.append(run_conf.project_root + '/fusion/' + complist[0] + '/' + complist[0] + '.genomonFusion.result.filt.txt')
         
 # generate input list of 'post analysis for qc'
 pa_outputs_starqc = r_post_analysis.output_files("starqc", sample_conf.qc, run_conf.project_root, sample_conf_name, genomon_conf)
@@ -82,16 +87,17 @@ paplot_inputs = []
 paplot_inputs.extend(paplot_inputs_starqc)
 paplot_inputs.extend(paplot_inputs_fusion)
 
+if _debug:
+    from pprint import pprint
+    print ("post-analysis-fusion");  pprint (pa_outputs_fusion); print ("post-analysis-starqc");  pprint (pa_outputs_starqc)
+    print ("paplot"); pprint (paplot_inputs)
+
 # prepare output directories
 if not os.path.isdir(run_conf.project_root): os.makedirs(run_conf.project_root)
 if not os.path.isdir(run_conf.project_root + '/script'): os.mkdir(run_conf.project_root + '/script')
 if not os.path.isdir(run_conf.project_root + '/script/fusion_merge'): os.mkdir(run_conf.project_root + '/script/fusion_merge')
-if not os.path.isdir(run_conf.project_root + '/script/post_analysis'): os.mkdir(run_conf.project_root + '/script/post_analysis')
-if not os.path.isdir(run_conf.project_root + '/script/paplot'): os.mkdir(run_conf.project_root + '/script/paplot')
 if not os.path.isdir(run_conf.project_root + '/log'): os.mkdir(run_conf.project_root + '/log')
 if not os.path.isdir(run_conf.project_root + '/log/fusion_merge'): os.mkdir(run_conf.project_root + '/log/fusion_merge')
-if not os.path.isdir(run_conf.project_root + '/log/post_analysis'): os.mkdir(run_conf.project_root + '/log/post_analysis')
-if not os.path.isdir(run_conf.project_root + '/log/paplot'): os.mkdir(run_conf.project_root + '/log/paplot')
 if not os.path.isdir(run_conf.project_root + '/fastq'): os.mkdir(run_conf.project_root + '/fastq')
 if not os.path.isdir(run_conf.project_root + '/star'): os.mkdir(run_conf.project_root + '/star')
 if not os.path.isdir(run_conf.project_root + '/fusion'): os.mkdir(run_conf.project_root + '/fusion')
@@ -99,9 +105,18 @@ if not os.path.isdir(run_conf.project_root + '/fusion/control_panel'): os.mkdir(
 if not os.path.isdir(run_conf.project_root + '/config'): os.mkdir(run_conf.project_root + '/config')
 if not os.path.isdir(run_conf.project_root + '/expression'): os.mkdir(run_conf.project_root + '/expression')
 if not os.path.isdir(run_conf.project_root + '/intron_retention'): os.mkdir(run_conf.project_root + '/intron_retention')
+
 if (genomon_conf.getboolean("post_analysis", "enable") == True):
     if not os.path.exists(run_conf.project_root + '/post_analysis'): os.mkdir(run_conf.project_root + '/post_analysis')
     if not os.path.exists(run_conf.project_root + '/post_analysis/' + sample_conf_name): os.mkdir(run_conf.project_root + '/post_analysis/' + sample_conf_name)
+    if not os.path.isdir(run_conf.project_root + '/script/post_analysis'): os.mkdir(run_conf.project_root + '/script/post_analysis')
+    if not os.path.isdir(run_conf.project_root + '/log/post_analysis'): os.mkdir(run_conf.project_root + '/log/post_analysis')
+
+    if (genomon_conf.getboolean("paplot", "enable") == True):
+        if not os.path.exists(run_conf.project_root + '/paplot'): os.mkdir(run_conf.project_root + '/paplot')
+        if not os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name): os.mkdir(run_conf.project_root + '/paplot/' + sample_conf_name)
+        if not os.path.isdir(run_conf.project_root + '/script/paplot'): os.mkdir(run_conf.project_root + '/script/paplot')
+        if not os.path.isdir(run_conf.project_root + '/log/paplot'): os.mkdir(run_conf.project_root + '/log/paplot')
 
 for target_sample_dict in (sample_conf.bam_import, sample_conf.fastq, sample_conf.bam_tofastq):
     for sample in target_sample_dict:
@@ -118,13 +133,13 @@ shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + 
 expression_bams = []
 # generate input list of genomon expression
 for tumor_sample in sample_conf.expression:
-    if os.path.exists(run_conf.project_root + '/expression/' + tumor_sample + '/' + tumor_sample + '.sym2fkpm.txt'): continue
+    if os.path.exists(run_conf.project_root + '/expression/' + tumor_sample + '/' + tumor_sample + '.genomonExpression.result.txt'): continue
     expression_bams.append(run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam')
 
 intron_retention_bams = []
 # generate input list of intron_retention
 for tumor_sample in sample_conf.intron_retention:
-    if os.path.exists(run_conf.project_root + '/intron_retention/' + tumor_sample + '/' + tumor_sample + '.ir_simple_count.txt'): continue
+    if os.path.exists(run_conf.project_root + '/intron_retention/' + tumor_sample + '/' + tumor_sample + '.genomonIR.result.txt'): continue
     intron_retention_bams.append(run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam')
 
 fusionfusion_bams = []
@@ -135,7 +150,7 @@ for complist in sample_conf.fusion:
 
     tumor_sample = complist[0]
     control_panel_name = complist[1]
-    if os.path.exists(run_conf.project_root + '/fusion/' + tumor_sample + '/' + tumor_sample + '.fusion.fusion.result.filt.txt'): continue
+    if os.path.exists(run_conf.project_root + '/fusion/' + tumor_sample + '/' + tumor_sample + '.genomonFusion.result.filt.txt'): continue
 
     # generate input list of 'fusionfusion'
     tumor_bam = run_conf.project_root + '/star/' + tumor_sample + '/' + tumor_sample + '.Aligned.sortedByCoord.out.bam'
@@ -272,7 +287,7 @@ def task_fusion_merge(input_file, output_file):
 
 
 @follows( task_fusion_merge )
-@transform(fusionfusion_bams, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/{subdir[0][0]}.fusion.fusion.result.filt.txt")
+@transform(fusionfusion_bams, formatter(), "{subpath[0][2]}/fusion/{subdir[0][0]}/{subdir[0][0]}.genomonFusion.result.filt.txt")
 def task_fusionfusion(input_file, output_file):
 
     input_dir_name = os.path.dirname(input_file[0])
@@ -304,7 +319,7 @@ def task_fusionfusion(input_file, output_file):
 
 @follows( link_import_bam )
 @follows( task_star_align )
-@transform(expression_bams, formatter(), "{subpath[0][2]}/expression/{subdir[0][0]}/{subdir[0][0]}.sym2fkpm.txt")
+@transform(expression_bams, formatter(), "{subpath[0][2]}/expression/{subdir[0][0]}/{subdir[0][0]}.genomonExpression.result.txt")
 def task_genomon_expression(input_file, output_file):
 
     input_dir_name = os.path.dirname(input_file)
@@ -326,7 +341,7 @@ def task_genomon_expression(input_file, output_file):
 
 @follows( link_import_bam )
 @follows( task_star_align )
-@transform(intron_retention_bams, formatter(), "{subpath[0][2]}/intron_retention/{subdir[0][0]}/{subdir[0][0]}.ir_simple_count.txt")
+@transform(intron_retention_bams, formatter(), "{subpath[0][2]}/intron_retention/{subdir[0][0]}/{subdir[0][0]}.genomonIR.result.txt")
 def task_intron_retention(input_file, output_file):
 
     input_dir_name = os.path.dirname(input_file)
@@ -337,7 +352,8 @@ def task_intron_retention(input_file, output_file):
                  "bedtools": genomon_conf.get("SOFTWARE", "bedtools"),
                  "htslib": genomon_conf.get("SOFTWARE", "htslib"),
                  "input_bam": input_file,
-                 "output": output_file,
+#                 "output": output_file,
+                 "output_prefix": output_dir_name + "/" + sample_name,
                  "additional_params": genomon_conf.get("intron_retention", "params"),
                  "pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),
                  "pythonpath": genomon_conf.get("ENV", "PYTHONPATH")}  
@@ -396,6 +412,7 @@ def post_analysis_starqc(input_files, output_file):
                  
     r_post_analysis.task_exec(arguments, run_conf.project_root + '/log/post_analysis', run_conf.project_root + '/script/post_analysis')
     
+@active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(genomon_conf.getboolean("paplot", "enable"))
 @active_if(len(paplot_inputs) > 0)
 @follows(post_analysis_fusion)
@@ -403,9 +420,6 @@ def post_analysis_starqc(input_files, output_file):
 @collate(paplot_inputs, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
 def paplot(input_file, output_file):
     
-    if not os.path.isdir(run_conf.project_root + '/paplot/'): os.mkdir(run_conf.project_root + '/paplot/')
-    if not os.path.isdir(run_conf.project_root + '/paplot/' + sample_conf_name): os.mkdir(run_conf.project_root + '/paplot/' + sample_conf_name)
-
     # software version in index.html
     remark = genomon_conf.get("paplot", "remarks")
     remark += "<ul>"

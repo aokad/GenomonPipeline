@@ -29,9 +29,10 @@ export PYTHONPATH={pythonpath}
 {fusionfusion} --star {chimeric_sam} --out {output_prefix} --reference_genome {ref_fa} {additional_params} || exit $?
 
 mv {output_prefix}/star.fusion.result.txt {output_prefix}/{sample}.star.fusion.result.txt || exit $?
-mv {output_prefix}/fusion_fusion.result.txt {output_prefix}/{sample}.fusion.fusion.result.txt || exit $?
+mv {output_prefix}/fusion_fusion.result.txt {output_prefix}/{sample}.genomonFusion.result.txt || exit $?
 
-{fusion_utils} filt {output_prefix}/{sample}.fusion.fusion.result.txt {output_prefix}/{sample}.fusion.fusion.result.filt.txt {filt_params}
+{fusion_utils} filt {output_prefix}/{sample}.genomonFusion.result.txt {output_prefix}/{sample}.fusion.fusion.result.filt.txt {filt_params} || exit $?
+mv {output_prefix}/{sample}.fusion.fusion.result.filt.txt {output_prefix}/{sample}.genomonFusion.result.filt.txt
 """
 
     def __init__(self, qsub_option, script_dir):
