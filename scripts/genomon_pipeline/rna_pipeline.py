@@ -125,10 +125,10 @@ for target_sample_dict in (sample_conf.bam_import, sample_conf.fastq, sample_con
         if not os.path.isdir(script_dir): os.mkdir(script_dir)
         if not os.path.isdir(log_dir): os.mkdir(log_dir)
 
-genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
-sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
-shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
-shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + sample_conf_name +'_'+ run_conf.analysis_timestamp + ext)
+genomon_conf_name, genomon_conf_ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
+sample_conf_name, sample_conf_ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
+shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + genomon_conf_ext)
+shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + sample_conf_name +'_'+ run_conf.analysis_timestamp + sample_conf_ext)
 
 expression_bams = []
 # generate input list of genomon expression

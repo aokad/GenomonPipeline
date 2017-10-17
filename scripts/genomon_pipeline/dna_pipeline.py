@@ -144,8 +144,8 @@ for sample in sample_conf.qc:
 ### 
 # input/output lists for post-analysis
 ###
-genomon_conf_name, ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
-sample_conf_name, ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
+genomon_conf_name, genomon_conf_ext = os.path.splitext(os.path.basename(run_conf.genomon_conf_file))
+sample_conf_name, sample_conf_ext = os.path.splitext(os.path.basename(run_conf.sample_conf_file))
 
 # generate input list of 'post analysis for mutation'
 pa_outputs_mutation = r_post_analysis.output_files("mutation", sample_conf.mutation_call, run_conf.project_root, sample_conf_name, genomon_conf)
@@ -314,8 +314,8 @@ for target_sample_dict in (sample_conf.bam_import, sample_conf.fastq, sample_con
         if not os.path.isdir(script_dir): os.mkdir(script_dir)
         if not os.path.isdir(log_dir): os.mkdir(log_dir)
 
-shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + ext)
-shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + sample_conf_name +'_'+ run_conf.analysis_timestamp + ext)
+shutil.copyfile(run_conf.genomon_conf_file, run_conf.project_root + '/config/' + genomon_conf_name +'_'+ run_conf.analysis_timestamp + genomon_conf_ext)
+shutil.copyfile(run_conf.sample_conf_file, run_conf.project_root + '/config/' + sample_conf_name +'_'+ run_conf.analysis_timestamp + sample_conf_ext)
 
 # prepare output directory for each sample and make mutation control panel file
 for complist in sample_conf.mutation_call:
