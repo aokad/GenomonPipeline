@@ -391,7 +391,7 @@ def post_analysis_fusion(input_files, output_file):
 @active_if(len(pa_inputs_starqc) > 0)
 @follows(task_fusionfusion)
 @follows(task_genomon_expression)
-@collate(pa_inputs_starqc, formatter(), pa_outputs_starqc.values())
+@collate(pa_inputs_starqc, formatter(), pa_outputs_starqc["outputs"])
 def post_analysis_starqc(input_files, output_file):
 
     arguments = {"pythonhome": genomon_conf.get("ENV", "PYTHONHOME"),

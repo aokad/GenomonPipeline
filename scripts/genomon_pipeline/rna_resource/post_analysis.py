@@ -54,10 +54,10 @@ export PYTHONPATH={pythonpath}
                 return di_outputs
             
             run_analysis = False
-
+            analysis_dir = genomon_root + "/star"
             for sample in samples:
                 if not os.path.exists(analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")):
-                    #print analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")
+                    # print analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")
                     run_analysis = True
                     break
             

@@ -31,7 +31,7 @@ sig_num=${{sig_list[$SGE_TASK_ID-1]}}
 """
 
     ind_template = """
-$R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/ind.$sig_num.Rdata $sig_num {trdirflag} {trialnum} {bs_genome} {txdb_transcript} < {script_path}/pmsignature/run_pmsignature_ind.R
+$R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/ind.$sig_num.Rdata $sig_num {trdirflag} {trialnum} {bgflag} {bs_genome} {txdb_transcript} < {script_path}/pmsignature/run_pmsignature_ind.R
 if [ $? -ne 0 ]
 then
     echo pmsignature terminated abnormally.
@@ -42,7 +42,7 @@ $R_PATH/R --vanilla --slave --args {outputdir}/ind.$sig_num.Rdata {outputdir}/pm
 """
 
     full_template = """
-$R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/full.$sig_num.Rdata $sig_num {trdirflag} {trialnum} {bs_genome} {txdb_transcript} < {script_path}/pmsignature/run_pmsignature_full.R
+$R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/full.$sig_num.Rdata $sig_num {trdirflag} {trialnum} {bgflag} {bs_genome} {txdb_transcript} < {script_path}/pmsignature/run_pmsignature_full.R
 if [ $? -ne 0 ]
 then
     echo pmsignature terminated abnormally.

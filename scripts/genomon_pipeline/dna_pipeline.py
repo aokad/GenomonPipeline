@@ -206,7 +206,7 @@ if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_i
     if ind_exists == False: run_ind = True
     elif pa_outputs_mutation["run_pa"] == True: run_ind = True
     elif not os.path.exists(run_conf.project_root + '/pmsignature/' + sample_conf_name + '/mutation.cut.txt'): run_ind = True
-    if run_ind == True:    
+    if os.path.exists(paplot_output) == False or run_ind == True:    
         paplot_inputs_ind.extend(ind_outputs)
     
 # full
@@ -223,7 +223,7 @@ if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_f
     if full_exists == False: run_full = True
     elif pa_outputs_mutation["run_pa"] == True: run_full = True
     elif not os.path.exists(run_conf.project_root + '/pmsignature/' + sample_conf_name + '/mutation.cut.txt'): run_full = True
-    if run_full == True:
+    if os.path.exists(paplot_output) == False or run_full == True:
         paplot_inputs_full.extend(full_outputs)
  
 pmsignature_inputs = []
@@ -898,6 +898,7 @@ def pmsignature_ind(input_file, output_file):
                 trdirflag = genomon_conf.get("pmsignature_ind", "trdirflag").upper(),
                 trialnum = genomon_conf.getint("pmsignature_ind", "trialnum"),
                 bs_genome = genomon_conf.get("pmsignature_ind", "bs_genome"),
+                bgflag = genomon_conf.get("pmsignature_ind", "bgflag"),
                 txdb_transcript = genomon_conf.get("pmsignature_ind", "txdb_transcript"),
                 script_path = genomon_conf.get("SOFTWARE", "r_scripts"))
     
@@ -926,6 +927,7 @@ def pmsignature_full(input_file, output_file):
                 outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
                 trdirflag = genomon_conf.get("pmsignature_full", "trdirflag").upper(),
                 trialnum = genomon_conf.getint("pmsignature_full", "trialnum"),
+                bgflag = genomon_conf.get("pmsignature_full", "bgflag"),
                 bs_genome = genomon_conf.get("pmsignature_full", "bs_genome"),
                 txdb_transcript = genomon_conf.get("pmsignature_full", "txdb_transcript"),
                 script_path = genomon_conf.get("SOFTWARE", "r_scripts"))
@@ -952,50 +954,52 @@ def pmsignature_full(input_file, output_file):
 @follows(pmsignature_full)
 @collate(paplot_inputs, formatter(), run_conf.project_root + '/paplot/' + sample_conf_name + '/index.html')
 def paplot(input_file, output_file):
-    
+    if not os.path.exists(paplot_output) and os.path.exists(run_conf.project_root + '/paplot/' + sample_conf_name + '/.meta.json'):
+        os.unlink(run_conf.project_root + '/paplot/' + sample_conf_name + '/.meta.json')
+
     command = ""
     if len(paplot_inputs_qc) > 0:
         command += r_paplot.qc_template.format(
-                        paplot = genomon_conf.get("SOFTWARE", "paplot"),
-                        inputs = ",".join(paplot_inputs_qc),
-                        output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
-                        title = genomon_conf.get("paplot", "title"),
-                        config_file = genomon_conf.get("paplot", "config_file"))
+                    paplot = genomon_conf.get("SOFTWARE", "paplot"),
+                    inputs = ",".join(paplot_inputs_qc),
+                    output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
+                    title = genomon_conf.get("paplot", "title"),
+                    config_file = genomon_conf.get("paplot", "config_file"))
                         
     if len(paplot_inputs_sv) > 0:
         command += r_paplot.sv_template.format(
-                        paplot = genomon_conf.get("SOFTWARE", "paplot"),
-                        inputs = ",".join(paplot_inputs_sv),
-                        output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
-                        title = genomon_conf.get("paplot", "title"),
-                        config_file = genomon_conf.get("paplot", "config_file"))
+                    paplot = genomon_conf.get("SOFTWARE", "paplot"),
+                    inputs = ",".join(paplot_inputs_sv),
+                    output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
+                    title = genomon_conf.get("paplot", "title"),
+                    config_file = genomon_conf.get("paplot", "config_file"))
                         
     if len(paplot_inputs_mutation) > 0:
         command += r_paplot.mutation_template.format(
+                    paplot = genomon_conf.get("SOFTWARE", "paplot"),
+                    inputs = ",".join(paplot_inputs_mutation),
+                    output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
+                    title = genomon_conf.get("paplot", "title"),
+                    config_file = genomon_conf.get("paplot", "config_file"),
+                    annovar = genomon_conf.getboolean("annotation", "active_annovar_flag"))
+    
+    if genomon_conf.getboolean("pmsignature_ind", "enable"):
+        for i in range(len(paplot_inputs_ind)):
+            command += r_paplot.ind_template.format(
                         paplot = genomon_conf.get("SOFTWARE", "paplot"),
-                        inputs = ",".join(paplot_inputs_mutation),
+                        input = paplot_inputs_ind[i],
                         output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
                         title = genomon_conf.get("paplot", "title"),
-                        config_file = genomon_conf.get("paplot", "config_file"),
-                        annovar = genomon_conf.getboolean("annotation", "active_annovar_flag"))
+                        config_file = genomon_conf.get("paplot", "config_file"))
     
-        if genomon_conf.getboolean("pmsignature_ind", "enable"):
-            for i in range(len(paplot_inputs_ind)):
-                command += r_paplot.ind_template.format(
-                            paplot = genomon_conf.get("SOFTWARE", "paplot"),
-                            input = paplot_inputs_ind[i],
-                            output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
-                            title = genomon_conf.get("paplot", "title"),
-                            config_file = genomon_conf.get("paplot", "config_file"))
-    
-        if genomon_conf.getboolean("pmsignature_full", "enable"):
-            for i in range(len(paplot_inputs_full)):
-                command += r_paplot.full_template.format(
-                            paplot =genomon_conf.get("SOFTWARE", "paplot"),
-                            input = paplot_inputs_full[i],
-                            output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
-                            title = genomon_conf.get("paplot", "title"),
-                            config_file = genomon_conf.get("paplot", "config_file"))
+    if genomon_conf.getboolean("pmsignature_full", "enable"):
+        for i in range(len(paplot_inputs_full)):
+            command += r_paplot.full_template.format(
+                        paplot =genomon_conf.get("SOFTWARE", "paplot"),
+                        input = paplot_inputs_full[i],
+                        output_dir = run_conf.project_root + "/paplot/" + sample_conf_name,
+                        title = genomon_conf.get("paplot", "title"),
+                        config_file = genomon_conf.get("paplot", "config_file"))
     
     remark = genomon_conf.get("paplot", "remarks")
     remark += "<ul>"
