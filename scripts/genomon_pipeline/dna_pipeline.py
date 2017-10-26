@@ -202,7 +202,7 @@ for i in range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_con
         
 run_ind = False
 paplot_inputs_ind = []
-if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_ind", "enable"):
+if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_ind", "enable") and len(use_mutations) > 0:
     if ind_exists == False: run_ind = True
     elif pa_outputs_mutation["run_pa"] == True: run_ind = True
     elif not os.path.exists(run_conf.project_root + '/pmsignature/' + sample_conf_name + '/mutation.cut.txt'): run_ind = True
@@ -219,7 +219,7 @@ for i in range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_co
         
 run_full = False
 paplot_inputs_full = []
-if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_full", "enable"):
+if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_full", "enable") and len(use_mutations) > 0:
     if full_exists == False: run_full = True
     elif pa_outputs_mutation["run_pa"] == True: run_full = True
     elif not os.path.exists(run_conf.project_root + '/pmsignature/' + sample_conf_name + '/mutation.cut.txt'): run_full = True
@@ -229,7 +229,7 @@ if len(sample_conf.mutation_call) > 0 and genomon_conf.getboolean("pmsignature_f
 pmsignature_inputs = []
 if run_ind == True or run_full == True: 
     pmsignature_inputs.extend(use_mutations)
-    
+
 ## sv
 paplot_inputs_sv = []
 if os.path.exists(paplot_output) == False or pa_outputs_sv["run_pa"] == True:
