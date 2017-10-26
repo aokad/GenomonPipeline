@@ -180,11 +180,16 @@ class Sample_conf(object):
                 sequence1 = row[1].split(';')
                 sequence2 = row[2].split(';')
 
-                for seq in sequence1 + sequence2:
-                    if not os.path.exists(seq):
-                        err_msg = sampleID + ": " + seq +  " does not exists" 
+                for s in range(len(sequence1)):
+                    if not os.path.exists(sequence1[s]):
+                        err_msg = sampleID + ": " + sequence1[s] +  " does not exists" 
                         raise ValueError(err_msg)
-
+                    if not os.path.exists(sequence2[s]):
+                        err_msg = sampleID + ": " + sequence2[s] +  " does not exists" 
+                        raise ValueError(err_msg)
+                    if sequence1[s] == sequence2[s]:
+                        err_msg = sampleID + ": read1 and read2 are same path" 
+                        raise ValueError(err_msg)
                 self.fastq[sampleID] = [sequence1, sequence2]
 
             elif mode == 'bam_tofastq':

@@ -17,13 +17,16 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -eu
+set -o pipefail
+
 # set python environment
 export PYTHONHOME={pythonhome}
 export PATH=$PYTHONHOME/bin:$PATH
 export PYTHONPATH={pythonpath}
 
 if test "{inputs_qc}" != ""; then
-    {paplot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}  --title 'QC graphs' --overview 'Quality Control of bam.' --ellipsis qc"
+    {paplot} qc "{inputs_qc}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" --title 'QC graphs' --overview 'Quality Control of bam.' --ellipsis qc
 fi
 if test "{inputs_sv}" != ""; then
     {paplot} ca "{inputs_sv}" {output_dir} {title} --config_file {config_file} --remarks "{remarks}" --title 'Fusion graphs' --overview 'Fusion.' --ellipsis fusion

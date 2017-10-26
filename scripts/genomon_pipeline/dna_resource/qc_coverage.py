@@ -18,6 +18,7 @@ hostname                # print hostname
 date                    # print date
 set -xv
 set -eu
+set -o pipefail
 
 # set python environment
 export PYTHONHOME={pythonhome}

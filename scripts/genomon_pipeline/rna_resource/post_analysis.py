@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -o pipefail
 
 # set python environment
 export PYTHONHOME={pythonhome}
@@ -53,9 +54,10 @@ export PYTHONPATH={pythonpath}
                 return di_outputs
             
             run_analysis = False
-
+            analysis_dir = genomon_root + "/star"
             for sample in samples:
                 if not os.path.exists(analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")):
+                    # print analysis_dir + "/" + sample + "/" + sample + pa_conf.get("result_format_starqc", "suffix")
                     run_analysis = True
                     break
             
@@ -100,7 +102,8 @@ export PYTHONPATH={pythonpath}
             else: continue
             
             di_outputs[type]["samples"].append(complist[0])
-            if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + pa_conf.get(section_in, "suffix")):
+            if not os.path.exists(analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")):
+                #print analysis_dir + "/" + complist[0] + "/" + complist[0] + pa_conf.get(section_in, "suffix")
                 run_analysis[type] = True
                 if output_all:
                     run_analysis["all"] = True
