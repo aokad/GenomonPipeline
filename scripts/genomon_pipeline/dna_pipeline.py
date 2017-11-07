@@ -427,15 +427,15 @@ def map_dna_sequence(input_files, output_files, input_dir, output_dir):
 
     sample_name = os.path.basename(output_dir)
 
-    all_line_num = 0
-    with open(input_dir + "/fastq_line_num.txt") as in_handle:
-        tmp_num = in_handle.read()
-        all_line_num = int(tmp_num)
-    split_lines = genomon_conf.get("split_fastq", "split_fastq_line_number")
+    #all_line_num = 0
+    #with open(input_dir + "/fastq_line_num.txt") as in_handle:
+    #    tmp_num = in_handle.read()
+    #    all_line_num = int(tmp_num)
+    #split_lines = genomon_conf.get("split_fastq", "split_fastq_line_number")
 
-    ans_quotient = all_line_num / int(split_lines)
-    ans_remainder = all_line_num % int(split_lines)
-    max_task_id = ans_quotient if ans_remainder == 0 else ans_quotient + 1
+    #ans_quotient = all_line_num / int(split_lines)
+    #ans_remainder = all_line_num % int(split_lines)
+    #max_task_id = ans_quotient if ans_remainder == 0 else ans_quotient + 1
     
     arguments = {"input_dir": input_dir,
                  "output_dir": output_dir,
@@ -891,7 +891,7 @@ def pre_pmsignature(input_files, output_file):
 @follows(pre_pmsignature)
 @transform(run_conf.project_root + '/pmsignature/' + sample_conf_name + "/mutation.cut.txt", formatter(), ind_outputs[0])
 def pmsignature_ind(input_file, output_file):
-    
+    """
     command = r_pmsignature_ind.ind_template.format(
                 inputfile =  input_file,
                 outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
@@ -914,7 +914,28 @@ def pmsignature_ind(input_file, output_file):
                 }
     max_task_id = len(sig_nums)
     r_pmsignature_ind.task_exec(arguments, run_conf.project_root + '/log/pmsignature', run_conf.project_root + '/script/pmsignature', max_task_id)
-
+    """
+    sig_nums = range(genomon_conf.getint("pmsignature_ind", "signum_min"), genomon_conf.getint("pmsignature_ind", "signum_max") + 1)
+    command = ""
+    for i in sig_nums:
+        command = r_pmsignature_ind.ind_template.format(
+                inputfile =  input_file,
+                outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
+                trdirflag = genomon_conf.get("pmsignature_ind", "trdirflag").upper(),
+                trialnum = genomon_conf.getint("pmsignature_ind", "trialnum"),
+                bs_genome = genomon_conf.get("pmsignature_ind", "bs_genome"),
+                bgflag = genomon_conf.get("pmsignature_ind", "bgflag"),
+                txdb_transcript = genomon_conf.get("pmsignature_ind", "txdb_transcript"),
+                script_path = genomon_conf.get("SOFTWARE", "r_scripts"),
+                sig_num = i)
+    
+    arguments = {"r_path": genomon_conf.get("ENV", "R_PATH"),
+                 "r_ld_library_path": genomon_conf.get("ENV", "R_LD_LIBRARY_PATH"),
+                 "r_libs": genomon_conf.get("ENV", "R_LIBS"),
+                 "command": command
+                }
+    r_pmsignature_ind.task_exec(arguments, run_conf.project_root + '/log/pmsignature', run_conf.project_root + '/script/pmsignature')
+    
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(genomon_conf.getboolean("pmsignature_full", "enable"))
 @active_if(run_full)
@@ -922,6 +943,7 @@ def pmsignature_ind(input_file, output_file):
 @transform(run_conf.project_root + '/pmsignature/' + sample_conf_name + "/mutation.cut.txt", formatter(), full_outputs[0])
 def pmsignature_full(input_file, output_file):
     
+    """
     command = r_pmsignature_full.full_template.format(
                 inputfile = input_file,
                 outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
@@ -944,6 +966,28 @@ def pmsignature_full(input_file, output_file):
                 }
     max_task_id = len(sig_nums)
     r_pmsignature_full.task_exec(arguments, run_conf.project_root + '/log/pmsignature', run_conf.project_root + '/script/pmsignature', max_task_id)
+
+    """
+    sig_nums = range(genomon_conf.getint("pmsignature_full", "signum_min"), genomon_conf.getint("pmsignature_full", "signum_max") + 1)
+    command = ""
+    for i in sig_nums:
+        command += r_pmsignature_full.full_template.format(
+                inputfile = input_file,
+                outputdir = run_conf.project_root + '/pmsignature/' + sample_conf_name,
+                trdirflag = genomon_conf.get("pmsignature_full", "trdirflag").upper(),
+                trialnum = genomon_conf.getint("pmsignature_full", "trialnum"),
+                bgflag = genomon_conf.get("pmsignature_full", "bgflag"),
+                bs_genome = genomon_conf.get("pmsignature_full", "bs_genome"),
+                txdb_transcript = genomon_conf.get("pmsignature_full", "txdb_transcript"),
+                script_path = genomon_conf.get("SOFTWARE", "r_scripts"),
+                sig_num = i)
+
+    arguments = {"r_path": genomon_conf.get("ENV", "R_PATH"),
+                 "r_ld_library_path": genomon_conf.get("ENV", "R_LD_LIBRARY_PATH"),
+                 "r_libs": genomon_conf.get("ENV", "R_LIBS"),
+                 "command": command
+                }
+    r_pmsignature_full.task_exec(arguments, run_conf.project_root + '/log/pmsignature', run_conf.project_root + '/script/pmsignature')
 
 @active_if(genomon_conf.getboolean("post_analysis", "enable"))
 @active_if(genomon_conf.getboolean("paplot", "enable"))

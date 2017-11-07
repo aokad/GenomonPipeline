@@ -105,13 +105,13 @@ class Stage_task(object):
                 raise RuntimeError("Job: " + str(retval.jobId)  + ' failed at Date/Time: ' + date)
 
         else:
-            qsub_commands = ['qsub', '-sync', 'yes']
-            if max_task != 0:
-                qsub_commands.extend(['-t', '1-'+str(max_task)+':1'])
+            #qsub_commands = ['qsub', '-sync', 'yes']
+            #if max_task != 0:
+            #    qsub_commands.extend(['-t', '1-'+str(max_task)+':1'])
 
-            qsub_options = self.qsub_option.split(' ')
-            returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
-
+            #qsub_options = self.qsub_option.split(' ')
+            #returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
+            returncode = subprocess.call(['bash'] + [shell_script_full_path])
             if returncode != 0: 
                 raise RuntimeError("The batch job failed.")
 

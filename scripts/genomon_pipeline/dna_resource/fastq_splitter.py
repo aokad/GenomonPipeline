@@ -19,7 +19,9 @@ date                    # print date
 set -xv
 set -o pipefail
 
-to_val=`ls {target_dir}/*_${{SGE_TASK_ID}}{ext} | wc -l`
+SGE_TASK_ID=1
+to_val=1
+# to_val=`ls {target_dir}/*_${{SGE_TASK_ID}}{ext} | wc -l`
 input_files=""
 for i in `seq 1 ${{to_val}}`; do
     input_files="${{input_files}} {target_dir}/${{i}}_${{SGE_TASK_ID}}{ext}"
