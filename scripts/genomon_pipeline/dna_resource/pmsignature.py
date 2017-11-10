@@ -24,14 +24,14 @@ export LD_LIBRARY_PATH={r_ld_library_path}:$LD_LIBRARY_PATH
 export R_LIBS={r_libs}
 export R_PATH={r_path}
 
-#sig_list=({sig_list})
-#sig_num=${{sig_list[$SGE_TASK_ID-1]}}
+SGE_TASK_ID=$1
+sig_list=({sig_list})
+sig_num=${{sig_list[$SGE_TASK_ID-1]}}
 
 {command} 
 """
 
     ind_template = """
-sig_num={sig_num}
 $R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/ind.$sig_num.Rdata $sig_num {trdirflag} {trialnum} {bgflag} {bs_genome} {txdb_transcript} < {script_path}/pmsignature/run_pmsignature_ind.R
 if [ $? -ne 0 ]
 then
@@ -43,7 +43,6 @@ $R_PATH/R --vanilla --slave --args {outputdir}/ind.$sig_num.Rdata {outputdir}/pm
 """
 
     full_template = """
-sig_num={sig_num}
 $R_PATH/R --vanilla --slave --args {inputfile} {outputdir}/full.$sig_num.Rdata $sig_num {trdirflag} {trialnum} {bgflag} {bs_genome} {txdb_transcript} < {script_path}/pmsignature/run_pmsignature_full.R
 if [ $? -ne 0 ]
 then

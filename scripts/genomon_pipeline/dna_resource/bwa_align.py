@@ -19,6 +19,7 @@ date                    # print date
 set -xv
 set -o pipefail
 
+SGE_TASK_ID=$1
 tmp_num=`expr ${{SGE_TASK_ID}} - 1`
 num=`printf "%04d" ${{tmp_num}}`
 

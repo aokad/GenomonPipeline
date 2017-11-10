@@ -35,6 +35,20 @@ class Stage_task(object):
         shell_script_file.write(self.script_template.format(**arguments))
         shell_script_file.close()
 
+        now = datetime.datetime.now()
+        date = now.strftime("%Y-%m-%d %H:%M:%S")
+        print >> sys.stderr, "Your job: " + shell_script_name + " has been submitted at Date/Time: " + date
+        if max_task != 0:
+            for i in range(max_task):
+                subprocess.check_call('bash %s %d 2>&1 > %s/%s.%d.log' % (shell_script_full_path, i+1, log_dir, shell_script_name, i+1), shell=True)
+        else:
+            subprocess.check_call('bash %s 2>&1 > %s/%s.log' % (shell_script_full_path, log_dir, shell_script_name), shell=True)
+        now = datetime.datetime.now()
+        date = now.strftime("%Y-%m-%d %H:%M:%S")
+        print >> sys.stderr, "Job: " + shell_script_name + " finished at Date/Time: " + date
+        
+        
+        """
         if self.drmaa:
             import drmaa
         
@@ -105,15 +119,14 @@ class Stage_task(object):
                 raise RuntimeError("Job: " + str(retval.jobId)  + ' failed at Date/Time: ' + date)
 
         else:
-            #qsub_commands = ['qsub', '-sync', 'yes']
-            #if max_task != 0:
-            #    qsub_commands.extend(['-t', '1-'+str(max_task)+':1'])
+            qsub_commands = ['qsub', '-sync', 'yes']
+            if max_task != 0:
+                qsub_commands.extend(['-t', '1-'+str(max_task)+':1'])
 
-            #qsub_options = self.qsub_option.split(' ')
-            #returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
-            returncode = subprocess.call(['bash'] + [shell_script_full_path])
+            qsub_options = self.qsub_option.split(' ')
+            returncode = subprocess.call(qsub_commands + qsub_options + [shell_script_full_path])
+
             if returncode != 0: 
                 raise RuntimeError("The batch job failed.")
-
-
+        """
 

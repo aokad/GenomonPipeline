@@ -24,6 +24,7 @@ export PATH=${{samtools_home%/*}}:$PYTHONHOME/bin:$PATH
 export LD_LIBRARY_PATH={ld_library_path}
 export PYTHONPATH={pythonpath}
 
+SGE_TASK_ID=$1
 REGION=`head -n $SGE_TASK_ID {interval_list} | tail -n 1`
 
 if [ _{control_bam} = "_None" ]; then 
