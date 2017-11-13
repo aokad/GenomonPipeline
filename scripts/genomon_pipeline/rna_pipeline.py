@@ -227,6 +227,8 @@ def link_input_fastq(output_file, sample_list_fastq):
     if not os.path.exists(link_dir + '/1_1.fastq'): os.symlink(sample_list_fastq[sample][0][0], link_dir + '/1_1.fastq')
     if not os.path.exists(link_dir + '/1_2.fastq'): os.symlink(sample_list_fastq[sample][1][0], link_dir + '/1_2.fastq')
 
+    if not os.path.exists(link_dir + '/1_1.fastq'): raise RuntimeError("link_input_fastq failed.")
+    if not os.path.exists(link_dir + '/1_2.fastq'): raise RuntimeError("link_input_fastq failed.")
 
 @transform([bam2fastq,link_input_fastq], formatter(), "{subpath[0][2]}/star/{subdir[0][0]}/{subdir[0][0]}.Aligned.sortedByCoord.out.bam")
 def task_star_align(input_files, output_file):
@@ -245,8 +247,8 @@ def task_star_align(input_files, output_file):
 
     if not os.path.isdir(dir_name): os.mkdir(dir_name)
     star_align.task_exec(arguments, run_conf.project_root + '/log/' + sample_name , run_conf.project_root + '/script/' + sample_name)
-    os.unlink(input_files[0])
-    os.unlink(input_files[1])
+#    os.unlink(input_files[0])
+#    os.unlink(input_files[1])
 
 
 @follows( link_import_bam )

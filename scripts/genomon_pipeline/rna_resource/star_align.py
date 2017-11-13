@@ -17,6 +17,7 @@ pwd                     # print current working directory
 hostname                # print hostname
 date                    # print date
 set -xv
+set -eu
 set -o pipefail
 
 {star} --genomeDir {star_genome} --readFilesIn {fastq1} {fastq2} --outFileNamePrefix {out_prefix} {additional_params} 
