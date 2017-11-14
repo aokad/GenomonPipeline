@@ -40,9 +40,14 @@ class Stage_task(object):
         print >> sys.stderr, "Your job: " + shell_script_name + " has been submitted at Date/Time: " + date
         if max_task != 0:
             for i in range(max_task):
-                subprocess.check_call('bash %s %d 2>&1 | tee > %s/%s.%d.log' % (shell_script_full_path, i+1, log_dir, shell_script_name, i+1), shell=True)
+                returncode = subprocess.call('bash -c "set -o pipefail; bash %s %d 2>&1 | tee > %s/%s.%d.log"' % (shell_script_full_path, i+1, log_dir, shell_script_name, i+1), shell=True)
+                if returncode != 0: 
+                    raise RuntimeError("The batch job failed: %s.%d" % (shell_script_full_path, i+1))
         else:
-            subprocess.check_call('bash %s 2>&1 | tee > %s/%s.log' % (shell_script_full_path, log_dir, shell_script_name), shell=True)
+            returncode = subprocess.call('bash -c "set -o pipefail; bash %s 2>&1 | tee > %s/%s.log"' % (shell_script_full_path, log_dir, shell_script_name), shell=True)
+            if returncode != 0: 
+                raise RuntimeError("The batch job failed: %s" % (shell_script_full_path))
+                
         now = datetime.datetime.now()
         date = now.strftime("%Y-%m-%d %H:%M:%S")
         print >> sys.stderr, "Job: " + shell_script_name + " finished at Date/Time: " + date
